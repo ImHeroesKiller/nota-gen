@@ -82,9 +82,16 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
       return;
     }
     
-    // Bersihkan URL sebelum disimpan
+    // Bersihkan dan validasi URL
+    let cleanUrl = config.workerUrl.trim().replace(/\/+$/, '');
+    
+    // Auto-add https:// jika tidak ada protocol
+    if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+      cleanUrl = `https://${cleanUrl}`;
+    }
+    
     const cleanConfig = {
-      workerUrl: config.workerUrl.trim().replace(/\/+$/, ''),
+      workerUrl: cleanUrl,
       apiKey: config.apiKey.trim(),
     };
     
@@ -425,7 +432,10 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
               <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Worker URL</label>
               <input value={config.workerUrl} onChange={e => setConfig(c => ({ ...c, workerUrl: e.target.value }))}
                 className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary} focus:outline-none focus:ring-2 focus:ring-[#0A2540]/30`}
-                placeholder="https://your-worker.your-subdomain.workers.dev" />
+                placeholder="https://documents-api.indosatmobileagent.workers.dev" />
+              <p className={`text-[9px] mt-1 ${textSecondary}`}>
+                ⚠️ Wajib diawali <code className="bg-black/20 px-1 rounded">https://</code> • Tanpa trailing slash
+              </p>
             </div>
             <div>
               <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>API Key</label>
