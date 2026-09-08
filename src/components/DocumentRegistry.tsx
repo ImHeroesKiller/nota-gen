@@ -113,11 +113,11 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
         throw new Error('Konfigurasi belum disimpan');
       }
       
-      const url = `${config.workerUrl.replace(/\/$/, '')}/documents`;
+      // Test endpoint tidak perlu API key
+      const url = `${config.workerUrl.replace(/\/$/, '')}/test`;
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': config.apiKey,
         },
       });
       
@@ -127,13 +127,27 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
         throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}`);
       }
       
+      let data;
       try {
-        JSON.parse(responseText);
-        setSuccessMsg('✓ Koneksi berhasil! Worker mengembalikan JSON yang valid.');
+        data = JSON.parse(responseText);
       } catch {
         throw new Error(`Response bukan JSON: "${responseText.substring(0, 100)}..."`);
       }
       
+      // Check status Worker
+      const issues = [];
+      if (data.hasDB === false) {
+        issues.push('D1 database belum di-bind (hasDB: false)');
+      }
+      if (data.hasAPIKey === false) {
+        issues.push('Environment variable API_KEY belum di-set (hasAPIKey: false)');
+      }
+      
+      if (issues.length > 0) {
+        throw new Error(`Worker aktif tapi ada masalah:\n• ${issues.join('\n• ')}`);
+      }
+      
+      setSuccessMsg(`✓ Worker aktif dan terkonfigurasi dengan benar!\nTimestamp: ${data.timestamp}`);
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal test koneksi');
@@ -293,14 +307,50 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                 <li>Set environment variable "API_KEY" di Worker</li>
                 <li>Deploy Worker, masukkan URL-nya di bawah</li>
               </ol>
-              <div className="mt-3 pt-3 border-t border-[#30363d]">
-                <p className="font-medium text-amber-500 mb-1">⚠️ Troubleshooting:</p>
-                <ul className="list-disc list-inside space-y-0.5 text-[10px]">
-                  <li>Error "The page c..." = Worker URL salah atau Worker belum aktif</li>
-                  <li>Error "Unauthorized" = API Key tidak cocok dengan environment variable di Worker</li>
-                  <li>Pastikan Worker URL format: <code className="bg-black/20 px-1 rounded">https://your-worker.workers.dev</code> (tanpa trailing slash)</li>
-                  <li>Gunakan tombol "Test Koneksi" untuk debug</li>
-                </ul>
+              <div className="mt-3 pt-3 border-t border-[#30363d] space-y-2">
+                <p className="font-medium text-amber-500">⚠️ Troubleshooting:</p>
+                
+                <div className="space-y-1.5">
+                  <div>
+                    <p className="font-medium text-red-400">Error "The page c..." atau HTML response:</p>
+                    <ul className="list-disc list-inside ml-2 text-[10px] space-y-0.5">
+                      <li>Worker URL salah atau Worker belum aktif</li>
+                      <li>Pastikan format: <code className="bg-black/20 px-1 rounded">https://documents-api.indosatmobileagent.workers.dev</code></li>
+                      <li>Cek di browser: buka <a href={`https://${config.workerUrl || 'your-worker.workers.dev'}/test`} target="_blank" rel="noopener" className="text-blue-400 underline">https://{config.workerUrl || 'your-worker.workers.dev'}/test</a></li>
+                      <li>Jika muncul JSON → Worker aktif ✓</li>
+                      <li>Jika muncul HTML error → Worker belum deploy atau ada error di code</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-red-400">Error "Unauthorized":</p>
+                    <ul className="list-disc list-inside ml-2 text-[10px] space-y-0.5">
+                      <li>API Key tidak cocok dengan environment variable di Worker</li>
+                      <li>Cek di Cloudflare Dashboard → Workers → Your Worker → Settings → Variables</li>
+                      <li>Pastikan "API_KEY" sudah di-set dan value-nya sama</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-red-400">Error "hasDB: false":</p>
+                    <ul className="list-disc list-inside ml-2 text-[10px] space-y-0.5">
+                      <li>D1 database belum di-bind ke Worker</li>
+                      <li>Di Worker Settings → Bindings → Add → D1 Database</li>
+                      <li>Variable name harus: <code className="bg-black/20 px-1 rounded">DB</code></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[#30363d]">
+                  <p className="font-medium text-blue-400 mb-1">🔍 Debug Steps:</p>
+                  <ol className="list-decimal list-inside ml-2 text-[10px] space-y-0.5">
+                    <li>Buka Worker di browser: <code className="bg-black/20 px-1 rounded">https://{config.workerUrl || 'your-worker.workers.dev'}/test</code></li>
+                    <li>Lihat response - harus ada JSON dengan <code className="bg-black/20 px-1 rounded">hasDB</code> dan <code className="bg-black/20 px-1 rounded">hasAPIKey</code></li>
+                    <li>Jika <code className="bg-black/20 px-1 rounded">hasDB: false</code> → bind D1 database</li>
+                    <li>Jika <code className="bg-black/20 px-1 rounded">hasAPIKey: false</code> → set environment variable</li>
+                    <li>Gunakan tombol "Test Koneksi" di bawah untuk test dari aplikasi</li>
+                  </ol>
+                </div>
               </div>
               <button onClick={() => setShowWorkerCode(!showWorkerCode)}
                 className="text-xs text-[#0A2540] dark:text-[#58a6ff] font-medium hover:underline">

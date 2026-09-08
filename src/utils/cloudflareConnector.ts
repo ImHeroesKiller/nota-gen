@@ -55,18 +55,33 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
     };
 
+    // Handle CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // API Key check
-    const apiKey = request.headers.get('X-API-Key');
-    if (apiKey !== env.API_KEY) {
-      return Response.json({ success: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
-    }
-
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Test endpoint - no auth required for debugging
+    if (path === '/test' && request.method === 'GET') {
+      return Response.json({ 
+        success: true, 
+        message: 'Worker is running!',
+        timestamp: new Date().toISOString(),
+        hasDB: !!env.DB,
+        hasAPIKey: !!env.API_KEY
+      }, { headers: corsHeaders });
+    }
+
+    // API Key check for all other endpoints
+    const apiKey = request.headers.get('X-API-Key');
+    if (!apiKey || apiKey !== env.API_KEY) {
+      return Response.json({ 
+        success: false, 
+        error: 'Unauthorized - Invalid or missing API Key' 
+      }, { status: 401, headers: corsHeaders });
+    }
 
     try {
       // GET /documents - List all
@@ -114,9 +129,14 @@ export default {
         return Response.json({ success: true, message: 'Database initialized' }, { headers: corsHeaders });
       }
 
-      return Response.json({ success: false, error: 'Not found' }, { status: 404, headers: corsHeaders });
+      return Response.json({ success: false, error: 'Not found - Path: ' + path }, { status: 404, headers: corsHeaders });
     } catch (err) {
-      return Response.json({ success: false, error: err.message }, { status: 500, headers: corsHeaders });
+      console.error('Worker error:', err);
+      return Response.json({ 
+        success: false, 
+        error: err.message || 'Internal server error',
+        stack: err.stack 
+      }, { status: 500, headers: corsHeaders });
     }
   }
 };
