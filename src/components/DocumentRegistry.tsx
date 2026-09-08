@@ -298,15 +298,44 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
           
           {!isConfigured && (
             <div className={`p-3 rounded-lg mb-3 text-xs ${cardBg} ${textSecondary} space-y-2`}>
-              <p className="font-medium text-[#0A2540] dark:text-[#58a6ff]">📋 Cara Setup:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Buat akun di <a href="https://dash.cloudflare.com" target="_blank" rel="noopener" className="underline">dash.cloudflare.com</a></li>
-                <li>Buat D1 Database di menu "Workers & Pages" → "D1"</li>
-                <li>Buat Worker baru, paste kode template di bawah</li>
-                <li>Bind D1 database ke Worker dengan nama "DB"</li>
-                <li>Set environment variable "API_KEY" di Worker</li>
-                <li>Deploy Worker, masukkan URL-nya di bawah</li>
-              </ol>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-medium text-[#0A2540] dark:text-[#58a6ff]">📋 Cara Setup Cloudflare Worker:</p>
+                <a href="https://github.com/your-repo/CLOUDFLARE_SETUP_GUIDE.md" target="_blank" rel="noopener" className="text-[10px] text-blue-500 hover:underline">
+                  Panduan Lengkap →
+                </a>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="p-2 rounded bg-red-500/10 border border-red-500/20">
+                  <p className="font-medium text-red-400 mb-1">🔴 Error 404 "The page could not be found":</p>
+                  <p className="text-[10px]">Worker belum di-deploy. Ikuti langkah di bawah dengan teliti!</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-[11px]">Langkah-langkah:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-[10px]">
+                    <li>Buka <a href="https://dash.cloudflare.com" target="_blank" rel="noopener" className="text-blue-400 underline">dash.cloudflare.com</a></li>
+                    <li>Klik "Workers & Pages" → Tab "D1 SQL Database" → "Create database"</li>
+                    <li>Kembali ke "Workers & Pages" → "Create application" → "Create Worker"</li>
+                    <li>Deploy Worker dulu (yang default), lalu klik "Edit code"</li>
+                    <li><strong className="text-amber-400">HAPUS SEMUA</strong> kode, lalu <strong className="text-amber-400">COPY-PASTE</strong> kode template di bawah</li>
+                    <li>Klik "Deploy" di pojok kanan atas</li>
+                    <li>Kembali ke Worker → Tab "Settings" → Scroll ke "Bindings"</li>
+                    <li>"Add binding" → Type: "D1 Database" → Variable name: <code className="bg-black/20 px-1 rounded font-bold">DB</code></li>
+                    <li>Scroll ke "Variables" → "Add variable" → Type: "Secret" → Name: <code className="bg-black/20 px-1 rounded font-bold">API_KEY</code></li>
+                    <li>Test di browser: <code className="bg-black/20 px-1 rounded">https://your-worker.workers.dev/test</code></li>
+                  </ol>
+                </div>
+
+                <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
+                  <p className="font-medium text-amber-400 text-[10px]">⚠️ PENTING:</p>
+                  <ul className="text-[10px] space-y-0.5 mt-1">
+                    <li>• Variable name HARUS <code className="bg-black/20 px-1 rounded">DB</code> (case-sensitive!)</li>
+                    <li>• Variable name HARUS <code className="bg-black/20 px-1 rounded">API_KEY</code> (case-sensitive!)</li>
+                    <li>• Worker URL di aplikasi <strong>TANPA</strong> trailing slash</li>
+                  </ul>
+                </div>
+              </div>
               <div className="mt-3 pt-3 border-t border-[#30363d] space-y-2">
                 <p className="font-medium text-amber-500">⚠️ Troubleshooting:</p>
                 
