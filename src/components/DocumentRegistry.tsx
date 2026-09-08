@@ -81,12 +81,19 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
       setError('Worker URL dan API Key wajib diisi');
       return;
     }
-    cloudflareConnector.saveConfig(config);
+    
+    // Bersihkan URL sebelum disimpan
+    const cleanConfig = {
+      workerUrl: config.workerUrl.trim().replace(/\/+$/, ''),
+      apiKey: config.apiKey.trim(),
+    };
+    
+    cloudflareConnector.saveConfig(cleanConfig);
     setIsConfigured(true);
     setShowSetup(false);
     setError(null);
-    setSuccessMsg('Konfigurasi berhasil disimpan');
-    setTimeout(() => setSuccessMsg(null), 3000);
+    setSuccessMsg(`✓ Konfigurasi berhasil disimpan!\nWorker URL: ${cleanConfig.workerUrl}`);
+    setTimeout(() => setSuccessMsg(null), 5000);
   };
 
   const handleSetup = async () => {
@@ -113,25 +120,35 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
         throw new Error('Konfigurasi belum disimpan');
       }
       
+      // Bersihkan URL - hapus trailing slash dan spasi
+      const cleanUrl = config.workerUrl.trim().replace(/\/+$/, '');
+      
       // Test endpoint tidak perlu API key
-      const url = `${config.workerUrl.replace(/\/$/, '')}/test`;
-      const response = await fetch(url, {
+      const testUrl = `${cleanUrl}/test`;
+      
+      console.log('Testing URL:', testUrl);
+      
+      const response = await fetch(testUrl, {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
       
       const responseText = await response.text();
       
+      console.log('Response status:', response.status);
+      console.log('Response text:', responseText);
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}`);
+        throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}\n\nURL yang di-request: ${testUrl}\n\nPastikan URL Worker benar dan Worker sudah di-deploy.`);
       }
       
       let data;
       try {
         data = JSON.parse(responseText);
       } catch {
-        throw new Error(`Response bukan JSON: "${responseText.substring(0, 100)}..."`);
+        throw new Error(`Response bukan JSON: "${responseText.substring(0, 100)}..."\n\nURL: ${testUrl}`);
       }
       
       // Check status Worker

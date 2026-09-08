@@ -183,9 +183,15 @@ class CloudflareConnector {
       throw new Error('Cloudflare belum dikonfigurasi');
     }
 
-    const url = `${this.config.workerUrl.replace(/\/$/, '')}${endpoint}`;
+    // Bersihkan URL - hapus trailing slash dan spasi
+    const cleanBaseUrl = this.config.workerUrl.trim().replace(/\/+$/, '');
+    const url = `${cleanBaseUrl}${endpoint}`;
+    
+    console.log('Cloudflare Request:', { url, method, endpoint });
+    
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
       'X-API-Key': this.config.apiKey,
     };
 
@@ -198,13 +204,14 @@ class CloudflareConnector {
     try {
       response = await fetch(url, options);
     } catch (err) {
-      throw new Error(`Gagal terhubung ke Cloudflare Worker: ${err instanceof Error ? err.message : 'Unknown error'}. Pastikan URL Worker benar dan Worker aktif.`);
+      throw new Error(`Gagal terhubung ke Cloudflare Worker: ${err instanceof Error ? err.message : 'Unknown error'}.\nURL: ${url}\nPastikan URL Worker benar dan Worker aktif.`);
     }
 
     const responseText = await response.text();
+    console.log('Cloudflare Response:', { status: response.status, text: responseText.substring(0, 200) });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}`);
+      throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}\n\nURL: ${url}`);
     }
 
     let data: DocumentRegistryResponse;
