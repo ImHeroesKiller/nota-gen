@@ -1,46 +1,90 @@
 @import "tailwindcss";
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@theme {
+  --color-perada: #0A2540;
+  --color-perada-hover: #1E3A5F;
+  --color-perada-light: #0A254010;
+  --color-emerald-accent: #059669;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+@layer base {
+  html {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  html.dark body {
+    background-color: #0f1419;
+    color: #e8eaed;
+  }
+
+  html.light body {
+    background-color: #f8f9fb;
+    color: #1a1a2e;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #4b5563;
-  border-radius: 3px;
-}
+@layer components {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
+  .preview-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .preview-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .preview-scroll::-webkit-scrollbar-thumb {
+    background: #4b556380;
+    border-radius: 4px;
+  }
 
-html.light ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-}
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
 
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-/* Smooth transitions */
-* {
-  transition-property: background-color, border-color;
-  transition-duration: 150ms;
-}
+  .slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
 
-/* Prevent layout shift */
-html, body, #root {
-  height: 100%;
-  overflow: hidden;
-}
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-/* Input number spinner hide */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1;
+  .pulse-dot {
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .progress-bar {
+    transition: width 0.3s ease-out;
+  }
 }
