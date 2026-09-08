@@ -104,6 +104,44 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     }
   };
 
+  const handleTestConnection = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const config = cloudflareConnector.getConfig();
+      if (!config) {
+        throw new Error('Konfigurasi belum disimpan');
+      }
+      
+      const url = `${config.workerUrl.replace(/\/$/, '')}/documents`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': config.apiKey,
+        },
+      });
+      
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}`);
+      }
+      
+      try {
+        JSON.parse(responseText);
+        setSuccessMsg('✓ Koneksi berhasil! Worker mengembalikan JSON yang valid.');
+      } catch {
+        throw new Error(`Response bukan JSON: "${responseText.substring(0, 100)}..."`);
+      }
+      
+      setTimeout(() => setSuccessMsg(null), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal test koneksi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGenerateNumber = async () => {
     const typeInfo = DOC_TYPES.find(t => t.value === formData.doc_type);
     if (!typeInfo) return;
@@ -255,6 +293,15 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                 <li>Set environment variable "API_KEY" di Worker</li>
                 <li>Deploy Worker, masukkan URL-nya di bawah</li>
               </ol>
+              <div className="mt-3 pt-3 border-t border-[#30363d]">
+                <p className="font-medium text-amber-500 mb-1">⚠️ Troubleshooting:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-[10px]">
+                  <li>Error "The page c..." = Worker URL salah atau Worker belum aktif</li>
+                  <li>Error "Unauthorized" = API Key tidak cocok dengan environment variable di Worker</li>
+                  <li>Pastikan Worker URL format: <code className="bg-black/20 px-1 rounded">https://your-worker.workers.dev</code> (tanpa trailing slash)</li>
+                  <li>Gunakan tombol "Test Koneksi" untuk debug</li>
+                </ul>
+              </div>
               <button onClick={() => setShowWorkerCode(!showWorkerCode)}
                 className="text-xs text-[#0A2540] dark:text-[#58a6ff] font-medium hover:underline">
                 {showWorkerCode ? 'Sembunyikan' : 'Lihat'} Kode Worker Template →
@@ -296,10 +343,16 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                 Simpan & Connect
               </button>
               {isConfigured && (
-                <button onClick={handleSetup} disabled={isLoading}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">
-                  {isLoading ? 'Setting up...' : 'Init Database'}
-                </button>
+                <>
+                  <button onClick={handleTestConnection} disabled={isLoading}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-500 hover:bg-blue-500/10 transition-colors disabled:opacity-50">
+                    {isLoading ? 'Testing...' : 'Test Koneksi'}
+                  </button>
+                  <button onClick={handleSetup} disabled={isLoading}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">
+                    {isLoading ? 'Setting up...' : 'Init Database'}
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -174,8 +174,26 @@ class CloudflareConnector {
       options.body = JSON.stringify(body);
     }
 
-    const response = await fetch(url, options);
-    const data = await response.json();
+    let response: Response;
+    try {
+      response = await fetch(url, options);
+    } catch (err) {
+      throw new Error(`Gagal terhubung ke Cloudflare Worker: ${err instanceof Error ? err.message : 'Unknown error'}. Pastikan URL Worker benar dan Worker aktif.`);
+    }
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}`);
+    }
+
+    let data: DocumentRegistryResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch (err) {
+      console.error('Response dari Worker bukan JSON:', responseText);
+      throw new Error(`Response tidak valid (bukan JSON). Response: "${responseText.substring(0, 100)}..."`);
+    }
 
     if (!data.success) {
       throw new Error(data.error || 'Request gagal');
