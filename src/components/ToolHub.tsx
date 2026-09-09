@@ -44,8 +44,13 @@ import AssetTracker from './AssetTracker';
 import EventRundown from './EventRundown';
 import VendorDatabase from './VendorDatabase';
 import PettyCashForm from './PettyCashForm';
+import ReimbursementForm from './ReimbursementForm';
+import VehicleChecklist from './VehicleChecklist';
+import IncidentReport from './IncidentReport';
+import LeaveRequestForm from './LeaveRequestForm';
+import VendorPaymentTracker from './VendorPaymentTracker';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker';
 
 interface Tool {
   id: ToolId;
@@ -143,6 +148,17 @@ const categories: Category[] = [
       </svg>
     ),
     color: 'from-teal-500 to-cyan-500',
+  },
+  {
+    id: 'operations-hr',
+    name: 'Operations & HR',
+    description: 'Tools untuk operasional lapangan dan manajemen HR',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    ),
+    color: 'from-orange-500 to-pink-500',
   },
 ];
 
@@ -713,6 +729,68 @@ const tools: Tool[] = [
     color: 'bg-purple-600',
     category: 'business-support',
   },
+
+  // Operations & HR
+  {
+    id: 'reimbursement-form',
+    name: 'Reimbursement Form',
+    description: 'Form klaim biaya dengan kategori (Bensin, Tol, dll), input jumlah, dan simulasi upload struk',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+      </svg>
+    ),
+    color: 'bg-orange-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'vehicle-checklist',
+    name: 'Vehicle Checklist',
+    description: 'Form inspeksi kendaraan harian dengan opsi Pass/Fail untuk komponen mesin, ban, dan kelengkapan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+    color: 'bg-red-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'incident-report',
+    name: 'Incident Report',
+    description: 'Form pelaporan kronologi insiden lapangan dengan opsi tingkat keparahan (Low, Medium, High)',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+    color: 'bg-yellow-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'leave-request-form',
+    name: 'Leave Request Form',
+    description: 'Form pengajuan cuti/izin dengan input tanggal mulai-selesai dan alasan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-green-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'vendor-payment-tracker',
+    name: 'Vendor Payment Tracker',
+    description: 'Tabel tracking status pembayaran invoice vendor (Pending, Processed, Paid)',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-blue-500',
+    category: 'operations-hr',
+  },
 ];
 
 export default function ToolHub() {
@@ -791,6 +869,11 @@ export default function ToolHub() {
     'event-rundown': EventRundown,
     'vendor-database': VendorDatabase,
     'petty-cash-form': PettyCashForm,
+    'reimbursement-form': ReimbursementForm,
+    'vehicle-checklist': VehicleChecklist,
+    'incident-report': IncidentReport,
+    'leave-request-form': LeaveRequestForm,
+    'vendor-payment-tracker': VendorPaymentTracker,
   }), []);
 
   // NOW we can have conditional logic after all hooks
