@@ -228,62 +228,13 @@ const tools: Tool[] = [
 ];
 
 export default function ToolHub() {
+  // ALL HOOKS MUST BE AT TOP LEVEL - NO EARLY RETURNS BEFORE THIS
   const [activeTool, setActiveTool] = useState<ToolId | 'hub'>('hub');
   const [darkMode, setDarkMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Tool routing - simplified for debugging
-  if (activeTool !== 'hub') {
-    console.log('Rendering tool:', activeTool);
-    const toolProps = {
-      onBack: () => {
-        console.log('Going back to hub');
-        setActiveTool('hub');
-      },
-      darkMode,
-      setDarkMode
-    };
-
-    switch (activeTool) {
-      case 'nota-to-pdf':
-        return <NotaToPdf {...toolProps} />;
-      case 'batch-renamer':
-        return <BatchRenamer {...toolProps} />;
-      case 'pdf-splitter':
-        return <PdfSplitter {...toolProps} />;
-      case 'label-generator':
-        return <LabelGenerator {...toolProps} />;
-      case 'document-registry':
-        return <DocumentRegistry {...toolProps} />;
-      case 'invoice-generator':
-        return <InvoiceGenerator {...toolProps} />;
-      case 'client-database':
-        return <ClientDatabase {...toolProps} />;
-      case 'barcode-generator':
-        return <BarcodeGenerator {...toolProps} />;
-      case 'delivery-order-generator':
-        return <DeliveryOrderGenerator {...toolProps} />;
-      case 'pdf-processor':
-        return <PDFProcessor {...toolProps} />;
-      case 'test-tool':
-        return <TestTool {...toolProps} />;
-      default:
-        console.error('Tool not found:', activeTool);
-        return <div className="p-8 text-center">Tool not found: {activeTool}</div>;
-    }
-  }
-
-  // Theme
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
-  const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
-  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
-  const cardBg = darkMode ? 'bg-[#1c2128]' : 'bg-[#f3f4f6]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
-  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
-
-  // Filter tools
+  // Filter tools - MUST be called before any early returns
   const filteredTools = useMemo(() => {
     return tools.filter(tool => {
       const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -293,7 +244,7 @@ export default function ToolHub() {
     });
   }, [searchQuery, selectedCategory]);
 
-  // Group tools by category
+  // Group tools by category - MUST be called before any early returns
   const groupedTools = useMemo(() => {
     const groups: Record<string, Tool[]> = {};
     filteredTools.forEach(tool => {
@@ -304,6 +255,45 @@ export default function ToolHub() {
     });
     return groups;
   }, [filteredTools]);
+
+  // Tool component map - defined at top level
+  const toolMap: Record<ToolId, React.ComponentType<any>> = useMemo(() => ({
+    'nota-to-pdf': NotaToPdf,
+    'batch-renamer': BatchRenamer,
+    'pdf-splitter': PdfSplitter,
+    'label-generator': LabelGenerator,
+    'document-registry': DocumentRegistry,
+    'invoice-generator': InvoiceGenerator,
+    'client-database': ClientDatabase,
+    'barcode-generator': BarcodeGenerator,
+    'delivery-order-generator': DeliveryOrderGenerator,
+    'pdf-processor': PDFProcessor,
+    'test-tool': TestTool,
+  }), []);
+
+  // NOW we can have conditional logic after all hooks
+  if (activeTool !== 'hub') {
+    const ToolComponent = toolMap[activeTool as ToolId];
+    if (ToolComponent) {
+      return (
+        <ToolComponent
+          onBack={() => setActiveTool('hub')}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+        />
+      );
+    }
+    return <div className="p-8 text-center text-red-500">Tool not found: {activeTool}</div>;
+  }
+
+  // Theme variables - after all hooks and conditional returns
+  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
+  const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
+  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
+  const cardBg = darkMode ? 'bg-[#1c2128]' : 'bg-[#f3f4f6]';
+  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
+  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
+  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
 
   // Helper function to safely render tool icon
   const renderToolIcon = (tool: Tool) => {
