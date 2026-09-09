@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cloudflareConnector, DocumentRecord, WORKER_CODE_TEMPLATE, D1_SCHEMA } from '../utils/cloudflareConnector';
+import PDFPreview from './PDFPreview';
 
 interface DocumentRegistryProps {
   onBack: () => void;
@@ -31,6 +32,7 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
   const [editingDoc, setEditingDoc] = useState<DocumentRecord | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentRecord | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showWorkerCode, setShowWorkerCode] = useState(false);
@@ -354,6 +356,14 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
 
   const handleView = async (doc: DocumentRecord) => {
     setViewingDoc(doc);
+  };
+
+  const handlePreview = (doc: DocumentRecord) => {
+    if (!doc.file_key) {
+      setError('Dokumen ini belum memiliki file');
+      return;
+    }
+    setPreviewDoc(doc);
   };
 
   const filteredDocs = documents.filter(doc => {
@@ -871,14 +881,19 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <button onClick={() => handlePreview(viewingDoc)}
+                            className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#0A2540] hover:bg-[#1E3A5F] text-white transition-colors flex items-center justify-center gap-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            Preview PDF
+                          </button>
                           <button onClick={() => handleDownload(viewingDoc)}
                             className="flex-1 py-2 rounded-lg text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors flex items-center justify-center gap-1.5">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                            Download PDF
+                            Download
                           </button>
                           <label className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-1.5 cursor-pointer`}>
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                            {uploadingFile ? 'Uploading...' : 'Ganti File'}
+                            {uploadingFile ? 'Uploading...' : 'Ganti'}
                             <input type="file" accept="application/pdf" className="hidden" disabled={uploadingFile}
                               onChange={e => {
                                 const file = e.target.files?.[0];
@@ -975,6 +990,16 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
             </div>
           </div>
         </div>
+      )}
+
+      {/* PDF Preview Modal */}
+      {previewDoc && (
+        <PDFPreview
+          url={cloudflareConnector.getDownloadUrl(previewDoc.id!)}
+          fileName={previewDoc.file_name || 'document.pdf'}
+          onClose={() => setPreviewDoc(null)}
+          darkMode={darkMode}
+        />
       )}
 
       {/* Footer */}
