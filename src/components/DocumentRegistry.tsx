@@ -29,6 +29,8 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentRecord | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<DocumentRecord | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showWorkerCode, setShowWorkerCode] = useState(false);
@@ -163,6 +165,9 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
       if (data.hasDB === false) {
         issues.push('D1 database belum di-bind (hasDB: false)');
       }
+      if (data.hasR2 === false) {
+        issues.push('R2 bucket belum di-bind (hasR2: false) - Upload file tidak akan berfungsi');
+      }
       if (data.hasAPIKey === false) {
         issues.push('Environment variable API_KEY belum di-set (hasAPIKey: false)');
       }
@@ -243,6 +248,49 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleUpload = async (docId: number, file: File) => {
+    if (file.type !== 'application/pdf') {
+      setError('Hanya file PDF yang didukung');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Ukuran file maksimal 10MB');
+      return;
+    }
+    
+    setUploadingFile(true);
+    setError(null);
+    try {
+      await cloudflareConnector.uploadFile(docId, file);
+      setSuccessMsg('File berhasil diupload');
+      setTimeout(() => setSuccessMsg(null), 3000);
+      loadDocuments();
+      
+      // Update viewing doc if it's the same one
+      if (viewingDoc && viewingDoc.id === docId) {
+        const updated = await cloudflareConnector.getDocument(docId);
+        if (updated) setViewingDoc(updated);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal upload file');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
+  const handleDownload = (doc: DocumentRecord) => {
+    if (!doc.file_key) {
+      setError('Dokumen ini belum memiliki file');
+      return;
+    }
+    const url = cloudflareConnector.getDownloadUrl(doc.id!);
+    window.open(url, '_blank');
+  };
+
+  const handleView = async (doc: DocumentRecord) => {
+    setViewingDoc(doc);
   };
 
   const filteredDocs = documents.filter(doc => {
@@ -340,12 +388,14 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                   <ol className="list-decimal list-inside space-y-1 text-[10px]">
                     <li>Buka <a href="https://dash.cloudflare.com" target="_blank" rel="noopener" className="text-blue-400 underline">dash.cloudflare.com</a></li>
                     <li>Klik "Workers & Pages" → Tab "D1 SQL Database" → "Create database"</li>
+                    <li>Klik "R2 Object Storage" → "Create bucket" → Nama: <code className="bg-black/20 px-1 rounded font-bold">perada-docs</code></li>
                     <li>Kembali ke "Workers & Pages" → "Create application" → "Create Worker"</li>
                     <li>Deploy Worker dulu (yang default), lalu klik "Edit code"</li>
                     <li><strong className="text-amber-400">HAPUS SEMUA</strong> kode, lalu <strong className="text-amber-400">COPY-PASTE</strong> kode template di bawah</li>
                     <li>Klik "Deploy" di pojok kanan atas</li>
                     <li>Kembali ke Worker → Tab "Settings" → Scroll ke "Bindings"</li>
                     <li>"Add binding" → Type: "D1 Database" → Variable name: <code className="bg-black/20 px-1 rounded font-bold">DB</code></li>
+                    <li>"Add binding" → Type: "R2 Bucket" → Variable name: <code className="bg-black/20 px-1 rounded font-bold">DOCS</code> → Pilih bucket <code className="bg-black/20 px-1 rounded">perada-docs</code></li>
                     <li>Scroll ke "Variables" → "Add variable" → Type: "Secret" → Name: <code className="bg-black/20 px-1 rounded font-bold">API_KEY</code></li>
                     <li>Test di browser: <code className="bg-black/20 px-1 rounded">https://your-worker.workers.dev/test</code></li>
                   </ol>
@@ -354,8 +404,9 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                 <div className="p-2 rounded bg-amber-500/10 border border-amber-500/20">
                   <p className="font-medium text-amber-400 text-[10px]">⚠️ PENTING:</p>
                   <ul className="text-[10px] space-y-0.5 mt-1">
-                    <li>• Variable name HARUS <code className="bg-black/20 px-1 rounded">DB</code> (case-sensitive!)</li>
-                    <li>• Variable name HARUS <code className="bg-black/20 px-1 rounded">API_KEY</code> (case-sensitive!)</li>
+                    <li>• Variable name D1 HARUS <code className="bg-black/20 px-1 rounded">DB</code> (case-sensitive!)</li>
+                    <li>• Variable name R2 HARUS <code className="bg-black/20 px-1 rounded">DOCS</code> (case-sensitive!)</li>
+                    <li>• Variable name API Key HARUS <code className="bg-black/20 px-1 rounded">API_KEY</code> (case-sensitive!)</li>
                     <li>• Worker URL di aplikasi <strong>TANPA</strong> trailing slash</li>
                   </ul>
                 </div>
@@ -392,14 +443,25 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                       <li>Variable name harus: <code className="bg-black/20 px-1 rounded">DB</code></li>
                     </ul>
                   </div>
+
+                  <div>
+                    <p className="font-medium text-red-400">Error "hasR2: false" atau upload gagal:</p>
+                    <ul className="list-disc list-inside ml-2 text-[10px] space-y-0.5">
+                      <li>R2 bucket belum di-bind ke Worker</li>
+                      <li>Di Worker Settings → Bindings → Add → R2 Bucket</li>
+                      <li>Variable name harus: <code className="bg-black/20 px-1 rounded">DOCS</code></li>
+                      <li>Pastikan bucket R2 sudah dibuat sebelumnya</li>
+                    </ul>
+                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-[#30363d]">
                   <p className="font-medium text-blue-400 mb-1">🔍 Debug Steps:</p>
                   <ol className="list-decimal list-inside ml-2 text-[10px] space-y-0.5">
                     <li>Buka Worker di browser: <code className="bg-black/20 px-1 rounded">https://{config.workerUrl || 'your-worker.workers.dev'}/test</code></li>
-                    <li>Lihat response - harus ada JSON dengan <code className="bg-black/20 px-1 rounded">hasDB</code> dan <code className="bg-black/20 px-1 rounded">hasAPIKey</code></li>
+                    <li>Lihat response - harus ada JSON dengan <code className="bg-black/20 px-1 rounded">hasDB</code>, <code className="bg-black/20 px-1 rounded">hasR2</code>, dan <code className="bg-black/20 px-1 rounded">hasAPIKey</code></li>
                     <li>Jika <code className="bg-black/20 px-1 rounded">hasDB: false</code> → bind D1 database</li>
+                    <li>Jika <code className="bg-black/20 px-1 rounded">hasR2: false</code> → bind R2 bucket</li>
                     <li>Jika <code className="bg-black/20 px-1 rounded">hasAPIKey: false</code> → set environment variable</li>
                     <li>Gunakan tombol "Test Koneksi" di bawah untuk test dari aplikasi</li>
                   </ol>
@@ -550,13 +612,26 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                             {DOC_TYPES.find(t => t.value === doc.doc_type)?.label || doc.doc_type}
                           </span>
                         </td>
-                        <td className="px-4 py-2.5 font-medium">{doc.title}</td>
+                        <td className="px-4 py-2.5 font-medium">
+                          <div className="flex items-center gap-1.5">
+                            {doc.title}
+                            {doc.file_key && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
+                                PDF
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className={`px-4 py-2.5 ${textSecondary}`}>{doc.reference || '-'}</td>
                         <td className={`px-4 py-2.5 ${textSecondary}`}>
                           {doc.created_at ? new Date(doc.created_at).toLocaleDateString('id-ID') : '-'}
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => handleView(doc)}
+                              className={`w-6 h-6 rounded flex items-center justify-center ${hoverBg}`} title="Lihat Detail">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            </button>
                             <button onClick={() => handleEdit(doc)}
                               className={`w-6 h-6 rounded flex items-center justify-center ${hoverBg}`} title="Edit">
                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
@@ -640,6 +715,136 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                       {isLoading ? 'Menyimpan...' : editingDoc ? 'Update' : 'Register'}
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Detail View Modal */}
+          {viewingDoc && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setViewingDoc(null)}>
+              <div className={`w-full max-w-2xl rounded-2xl shadow-2xl ${sidebarBg} border ${borderColor} max-h-[90vh] flex flex-col`} onClick={e => e.stopPropagation()}>
+                <div className={`flex items-center justify-between p-5 border-b ${borderColor}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm">Detail Dokumen</h3>
+                      <p className={`text-[10px] ${textSecondary}`}>{viewingDoc.doc_number}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setViewingDoc(null)} className={`w-6 h-6 rounded-lg flex items-center justify-center ${hoverBg}`}>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Tipe Dokumen</label>
+                      <p className="text-sm">{DOC_TYPES.find(t => t.value === viewingDoc.doc_type)?.label || viewingDoc.doc_type}</p>
+                    </div>
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Nomor Dokumen</label>
+                      <p className="text-sm font-mono">{viewingDoc.doc_number}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Judul</label>
+                    <p className="text-sm font-medium">{viewingDoc.title}</p>
+                  </div>
+
+                  {viewingDoc.description && (
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Deskripsi</label>
+                      <p className={`text-sm ${textSecondary}`}>{viewingDoc.description}</p>
+                    </div>
+                  )}
+
+                  {viewingDoc.reference && (
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Referensi</label>
+                      <p className="text-sm">{viewingDoc.reference}</p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Tanggal Dibuat</label>
+                      <p className="text-sm">{viewingDoc.created_at ? new Date(viewingDoc.created_at).toLocaleString('id-ID') : '-'}</p>
+                    </div>
+                    <div>
+                      <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>Terakhir Diupdate</label>
+                      <p className="text-sm">{viewingDoc.updated_at ? new Date(viewingDoc.updated_at).toLocaleString('id-ID') : '-'}</p>
+                    </div>
+                  </div>
+
+                  {/* File Section */}
+                  <div className={`p-4 rounded-xl border ${borderColor} ${cardBg}`}>
+                    <h4 className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} mb-3`}>File Dokumen</h4>
+                    
+                    {viewingDoc.file_key ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{viewingDoc.file_name || 'document.pdf'}</p>
+                            <p className={`text-[10px] ${textSecondary}`}>
+                              {viewingDoc.file_size ? `${(viewingDoc.file_size / 1024).toFixed(1)} KB` : '-'} • {viewingDoc.file_type || 'PDF'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleDownload(viewingDoc)}
+                            className="flex-1 py-2 rounded-lg text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors flex items-center justify-center gap-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download PDF
+                          </button>
+                          <label className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-1.5 cursor-pointer`}>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                            {uploadingFile ? 'Uploading...' : 'Ganti File'}
+                            <input type="file" accept="application/pdf" className="hidden" disabled={uploadingFile}
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file && viewingDoc.id) handleUpload(viewingDoc.id, file);
+                              }} />
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className={`text-center py-4 ${textSecondary}`}>
+                          <svg className="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" /></svg>
+                          <p className="text-xs">Belum ada file yang diupload</p>
+                        </div>
+                        <label className={`w-full py-3 rounded-lg text-xs font-medium border-2 border-dashed transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-2 cursor-pointer`}>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                          {uploadingFile ? 'Uploading...' : 'Upload File PDF'}
+                          <input type="file" accept="application/pdf" className="hidden" disabled={uploadingFile}
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file && viewingDoc.id) handleUpload(viewingDoc.id, file);
+                            }} />
+                        </label>
+                        <p className={`text-[10px] ${textSecondary} text-center`}>Maksimal 10MB • Format PDF</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={`flex gap-2 p-5 border-t ${borderColor}`}>
+                  <button onClick={() => { handleEdit(viewingDoc); setViewingDoc(null); }}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${borderColor} ${hoverBg}`}>
+                    Edit Dokumen
+                  </button>
+                  <button onClick={() => setViewingDoc(null)}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium bg-[#0A2540] hover:bg-[#1E3A5F] text-white transition-colors">
+                    Tutup
+                  </button>
                 </div>
               </div>
             </div>
