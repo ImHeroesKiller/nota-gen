@@ -457,7 +457,7 @@ class CloudflareConnector {
   }
 
   // Upload file to R2
-  async uploadFile(id: number, file: File): Promise<{ fileKey: string; size: number }> {
+  async uploadFile(id: number, file: File): Promise<{ fileKey: string; size: number; fileName: string }> {
     if (!this.config) {
       throw new Error('Cloudflare belum dikonfigurasi');
     }
@@ -465,6 +465,9 @@ class CloudflareConnector {
     // Include filename in URL path to avoid CORS header issues
     const fileName = encodeURIComponent(file.name);
     const url = `${this.config.workerUrl.replace(/\/+$/, '')}/upload/${id}/${fileName}`;
+    
+    console.log('Uploading file:', { url, fileName: file.name, size: file.size });
+    
     const response = await fetch(url, {
       method: 'POST',
       mode: 'cors',
@@ -476,6 +479,20 @@ class CloudflareConnector {
     });
 
     const responseText = await response.text();
+    console.log('Upload response:', { status: response.status, text: responseText.substring(0, 200) });
+
+    // Check response status first
+    if (!response.ok) {
+      let errorDetail = '';
+      try {
+        const errorJson = JSON.parse(responseText);
+        errorDetail = errorJson.error || errorJson.details || '';
+      } catch {
+        errorDetail = responseText.substring(0, 200);
+      }
+      throw new Error(`Upload gagal (HTTP ${response.status}): ${errorDetail}`);
+    }
+
     let data;
     try {
       data = JSON.parse(responseText);
