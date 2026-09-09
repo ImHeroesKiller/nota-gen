@@ -9,9 +9,13 @@ import ClientDatabase from './ClientDatabase';
 import BarcodeGenerator from './BarcodeGenerator';
 import DeliveryOrderGenerator from './DeliveryOrderGenerator';
 import PDFProcessor from './PDFProcessor';
-import TestTool from './TestTool';
+import PdfToImage from './PdfToImage';
+import PdfWatermark from './PdfWatermark';
+import PdfPageOrganizer from './PdfPageOrganizer';
+import PdfMetadataEditor from './PdfMetadataEditor';
+import PdfPageNumberer from './PdfPageNumberer';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'test-tool';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer';
 
 interface Tool {
   id: ToolId;
@@ -211,19 +215,66 @@ const tools: Tool[] = [
     color: 'bg-orange-500',
     category: 'utilities',
   },
-  // Test Tool
+  // PDF Tools
   {
-    id: 'test-tool',
-    name: '🧪 Test Tool',
-    description: 'Tool untuk testing routing - klik ini untuk test apakah navigasi bekerja',
+    id: 'pdf-to-image',
+    name: 'PDF to Image',
+    description: 'Konversi halaman PDF ke format gambar (PNG/JPG)',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
-    color: 'bg-green-500',
-    category: 'utilities',
-    popular: true,
+    color: 'bg-cyan-500',
+    category: 'pdf-processing',
+  },
+  {
+    id: 'pdf-watermark',
+    name: 'PDF Watermark',
+    description: 'Tambahkan watermark teks ke setiap halaman PDF',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+      </svg>
+    ),
+    color: 'bg-violet-500',
+    category: 'pdf-processing',
+  },
+  {
+    id: 'pdf-page-organizer',
+    name: 'PDF Page Organizer',
+    description: 'Atur ulang urutan halaman PDF dengan drag & drop',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+    ),
+    color: 'bg-amber-500',
+    category: 'pdf-processing',
+  },
+  {
+    id: 'pdf-metadata-editor',
+    name: 'PDF Metadata Editor',
+    description: 'Edit metadata PDF (title, author, subject, dll)',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-pink-500',
+    category: 'pdf-processing',
+  },
+  {
+    id: 'pdf-page-numberer',
+    name: 'PDF Page Numberer',
+    description: 'Tambahkan nomor halaman ke PDF dengan berbagai format',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+      </svg>
+    ),
+    color: 'bg-teal-500',
+    category: 'pdf-processing',
   },
 ];
 
@@ -268,7 +319,11 @@ export default function ToolHub() {
     'barcode-generator': BarcodeGenerator,
     'delivery-order-generator': DeliveryOrderGenerator,
     'pdf-processor': PDFProcessor,
-    'test-tool': TestTool,
+    'pdf-to-image': PdfToImage,
+    'pdf-watermark': PdfWatermark,
+    'pdf-page-organizer': PdfPageOrganizer,
+    'pdf-metadata-editor': PdfMetadataEditor,
+    'pdf-page-numberer': PdfPageNumberer,
   }), []);
 
   // NOW we can have conditional logic after all hooks
@@ -354,7 +409,7 @@ export default function ToolHub() {
             PERADA Productivity Suite
           </h2>
           <p className={`text-lg ${textSecondary} max-w-2xl mx-auto`}>
-            10 tools profesional untuk mempercepat operasional logistik dan administrasi dokumen
+            15 tools profesional untuk mempercepat operasional logistik dan administrasi dokumen
           </p>
         </div>
 
