@@ -220,8 +220,12 @@ export default function ToolHub() {
 
   // Tool routing - simplified for debugging
   if (activeTool !== 'hub') {
+    console.log('Rendering tool:', activeTool);
     const toolProps = {
-      onBack: () => setActiveTool('hub'),
+      onBack: () => {
+        console.log('Going back to hub');
+        setActiveTool('hub');
+      },
       darkMode,
       setDarkMode
     };
@@ -248,7 +252,8 @@ export default function ToolHub() {
       case 'pdf-processor':
         return <PDFProcessor {...toolProps} />;
       default:
-        return <div>Tool not found</div>;
+        console.error('Tool not found:', activeTool);
+        return <div className="p-8 text-center">Tool not found: {activeTool}</div>;
     }
   }
 
@@ -282,6 +287,24 @@ export default function ToolHub() {
     });
     return groups;
   }, [filteredTools]);
+
+  // Helper function to safely render tool icon
+  const renderToolIcon = (tool: Tool) => {
+    return (
+      <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
+        {tool.icon}
+      </div>
+    );
+  };
+
+  // Helper function to safely render category icon
+  const renderCategoryIcon = (category: Category) => {
+    return (
+      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-white shadow-lg`}>
+        {category.icon}
+      </div>
+    );
+  };
 
   return (
     <div className={`min-h-screen ${bg} ${textPrimary}`}>
@@ -413,7 +436,11 @@ export default function ToolHub() {
                     {categoryTools.map(tool => (
                       <button
                         key={tool.id}
-                        onClick={() => setActiveTool(tool.id)}
+                        onClick={() => {
+                          console.log('Card clicked:', tool.id);
+                          setActiveTool(tool.id);
+                          console.log('State updated to:', tool.id);
+                        }}
                         className={`group relative text-left p-5 rounded-xl border transition-all hover:scale-[1.02] hover:shadow-xl ${
                           darkMode
                             ? 'bg-[#161b22] border-[#30363d] hover:border-[#484f58]'
