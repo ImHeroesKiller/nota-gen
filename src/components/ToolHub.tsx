@@ -218,36 +218,38 @@ export default function ToolHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Tool routing
-  if (activeTool === 'nota-to-pdf') {
-    return <NotaToPdf onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'batch-renamer') {
-    return <BatchRenamer onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'pdf-splitter') {
-    return <PdfSplitter onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'label-generator') {
-    return <LabelGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'document-registry') {
-    return <DocumentRegistry onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'invoice-generator') {
-    return <InvoiceGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'client-database') {
-    return <ClientDatabase onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'barcode-generator') {
-    return <BarcodeGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'delivery-order-generator') {
-    return <DeliveryOrderGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-  }
-  if (activeTool === 'pdf-processor') {
-    return <PDFProcessor onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  // Tool routing - simplified for debugging
+  if (activeTool !== 'hub') {
+    const toolProps = {
+      onBack: () => setActiveTool('hub'),
+      darkMode,
+      setDarkMode
+    };
+
+    switch (activeTool) {
+      case 'nota-to-pdf':
+        return <NotaToPdf {...toolProps} />;
+      case 'batch-renamer':
+        return <BatchRenamer {...toolProps} />;
+      case 'pdf-splitter':
+        return <PdfSplitter {...toolProps} />;
+      case 'label-generator':
+        return <LabelGenerator {...toolProps} />;
+      case 'document-registry':
+        return <DocumentRegistry {...toolProps} />;
+      case 'invoice-generator':
+        return <InvoiceGenerator {...toolProps} />;
+      case 'client-database':
+        return <ClientDatabase {...toolProps} />;
+      case 'barcode-generator':
+        return <BarcodeGenerator {...toolProps} />;
+      case 'delivery-order-generator':
+        return <DeliveryOrderGenerator {...toolProps} />;
+      case 'pdf-processor':
+        return <PDFProcessor {...toolProps} />;
+      default:
+        return <div>Tool not found</div>;
+    }
   }
 
   // Theme
@@ -399,9 +401,7 @@ export default function ToolHub() {
                 <div key={category.id}>
                   {/* Category Header */}
                   <div className="flex items-center gap-3 mb-6">
-                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-white shadow-lg`}>
-                      {category.icon}
-                    </div>
+                    {renderCategoryIcon(category)}
                     <div>
                       <h3 className="text-xl font-bold">{category.name}</h3>
                       <p className={`text-sm ${textSecondary}`}>{category.description}</p>
@@ -428,9 +428,7 @@ export default function ToolHub() {
                           </div>
                         )}
                         <div className="flex items-start gap-4">
-                          <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
-                            {tool.icon}
-                          </div>
+                          {renderToolIcon(tool)}
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-base mb-1 truncate">{tool.name}</h4>
                             <p className={`text-sm ${textSecondary} leading-relaxed line-clamp-2`}>{tool.description}</p>
