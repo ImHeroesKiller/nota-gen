@@ -9,8 +9,9 @@ import ClientDatabase from './ClientDatabase';
 import BarcodeGenerator from './BarcodeGenerator';
 import DeliveryOrderGenerator from './DeliveryOrderGenerator';
 import PDFProcessor from './PDFProcessor';
+import TestTool from './TestTool';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'test-tool';
 
 interface Tool {
   id: ToolId;
@@ -210,6 +211,20 @@ const tools: Tool[] = [
     color: 'bg-orange-500',
     category: 'utilities',
   },
+  // Test Tool
+  {
+    id: 'test-tool',
+    name: '🧪 Test Tool',
+    description: 'Tool untuk testing routing - klik ini untuk test apakah navigasi bekerja',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-green-500',
+    category: 'utilities',
+    popular: true,
+  },
 ];
 
 export default function ToolHub() {
@@ -251,6 +266,8 @@ export default function ToolHub() {
         return <DeliveryOrderGenerator {...toolProps} />;
       case 'pdf-processor':
         return <PDFProcessor {...toolProps} />;
+      case 'test-tool':
+        return <TestTool {...toolProps} />;
       default:
         console.error('Tool not found:', activeTool);
         return <div className="p-8 text-center">Tool not found: {activeTool}</div>;
