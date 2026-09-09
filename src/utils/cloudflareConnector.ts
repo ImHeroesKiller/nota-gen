@@ -62,12 +62,13 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, X-File-Name, Accept',
+      'Access-Control-Max-Age': '86400',
     };
 
-    // Handle CORS preflight
+    // Handle CORS preflight - HARUS return 200 OK
     if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders });
+      return new Response(null, { status: 200, headers: corsHeaders });
     }
 
     const url = new URL(request.url);
@@ -333,9 +334,9 @@ class CloudflareConnector {
 
     let response: Response;
     try {
-      response = await fetch(url, options);
+      response = await fetch(url, { ...options, mode: 'cors' });
     } catch (err) {
-      throw new Error(`Gagal terhubung ke Cloudflare Worker: ${err instanceof Error ? err.message : 'Unknown error'}.\nURL: ${url}\nPastikan URL Worker benar dan Worker aktif.`);
+      throw new Error(`Gagal terhubung ke Cloudflare Worker: ${err instanceof Error ? err.message : 'Unknown error'}.\nURL: ${url}\n\nKemungkinan penyebab:\n1. CORS error - Worker perlu di-deploy ulang dengan kode terbaru\n2. Worker URL salah\n3. Worker belum aktif\n\nSolusi: Copy ulang kode Worker dari tombol "Kode Worker" dan deploy ulang.`);
     }
 
     const responseText = await response.text();
@@ -402,6 +403,7 @@ class CloudflareConnector {
     const url = `${this.config.workerUrl.replace(/\/+$/, '')}/upload/${id}`;
     const response = await fetch(url, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
         'X-API-Key': this.config.apiKey,
