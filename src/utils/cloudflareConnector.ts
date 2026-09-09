@@ -125,7 +125,22 @@ export default {
 
       // POST /setup - Initialize database
       if (path === '/setup' && request.method === 'POST') {
-        await env.DB.exec(\`${D1_SCHEMA}\`);
+        const schema = [
+          'CREATE TABLE IF NOT EXISTS documents (',
+          '  id INTEGER PRIMARY KEY AUTOINCREMENT,',
+          '  doc_number TEXT UNIQUE NOT NULL,',
+          '  doc_type TEXT NOT NULL,',
+          '  title TEXT NOT NULL,',
+          "  description TEXT DEFAULT '',",
+          "  reference TEXT DEFAULT '',",
+          '  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,',
+          '  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP',
+          ');',
+          'CREATE INDEX IF NOT EXISTS idx_doc_number ON documents(doc_number);',
+          'CREATE INDEX IF NOT EXISTS idx_doc_type ON documents(doc_type);',
+          'CREATE INDEX IF NOT EXISTS idx_created_at ON documents(created_at);'
+        ].join(' ');
+        await env.DB.exec(schema);
         return Response.json({ success: true, message: 'Database initialized' }, { headers: corsHeaders });
       }
 
