@@ -24,8 +24,18 @@ import DataAnalyticsDashboard from './DataAnalyticsDashboard';
 import DocumentWorkflowManager from './DocumentWorkflowManager';
 import ImportExportDataManager from './ImportExportDataManager';
 import BusinessIntelligenceReports from './BusinessIntelligenceReports';
+import TimeTracker from './TimeTracker';
+import TaskManager from './TaskManager';
+import UnitConverter from './UnitConverter';
+import FileConverter from './FileConverter';
+import LogisticsCalculator from './LogisticsCalculator';
+import FreightRateCalculator from './FreightRateCalculator';
+import HsCodeEstimator from './HsCodeEstimator';
+import CbmCalculator from './CbmCalculator';
+import IncotermsVisualizer from './IncotermsVisualizer';
+import SlaScorecard from './SlaScorecard';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard';
 
 interface Tool {
   id: ToolId;
@@ -90,6 +100,17 @@ const categories: Category[] = [
       </svg>
     ),
     color: 'from-orange-500 to-red-500',
+  },
+  {
+    id: 'logistics-customs',
+    name: 'Logistics & Customs',
+    description: 'Tools khusus untuk freight forwarding dan kepabeanan',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'from-indigo-500 to-purple-500',
   },
 ];
 
@@ -412,6 +433,130 @@ const tools: Tool[] = [
     color: 'bg-red-600',
     category: 'data-management',
   },
+
+  // Utilities - New Tools
+  {
+    id: 'time-tracker',
+    name: 'Time Tracker',
+    description: 'Track waktu kerja dan produktivitas harian',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-indigo-600',
+    category: 'utilities',
+  },
+  {
+    id: 'task-manager',
+    name: 'Task Manager',
+    description: 'Kelola tugas dan proyek dengan mudah',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    color: 'bg-pink-600',
+    category: 'utilities',
+  },
+  {
+    id: 'unit-converter',
+    name: 'Unit Converter',
+    description: 'Konversi berbagai unit pengukuran',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+    color: 'bg-cyan-600',
+    category: 'utilities',
+  },
+  {
+    id: 'file-converter',
+    name: 'File Converter',
+    description: 'Konversi format file gambar',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-amber-600',
+    category: 'utilities',
+  },
+  {
+    id: 'logistics-calculator',
+    name: 'Logistics Calculator',
+    description: 'Kalkulator untuk perhitungan logistik',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-violet-600',
+    category: 'utilities',
+  },
+
+  // Logistics & Customs - New Tools
+  {
+    id: 'freight-rate-calculator',
+    name: 'Freight Rate Calculator',
+    description: 'Kalkulator interaktif untuk menghitung total biaya pengiriman dengan surcharges dan profit margin',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-blue-700',
+    category: 'logistics-customs',
+  },
+  {
+    id: 'hs-code-estimator',
+    name: 'HS Code Estimator',
+    description: 'Pencarian HS Code dengan kalkulator estimasi pajak kepabeanan dan landed cost',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    color: 'bg-green-700',
+    category: 'logistics-customs',
+  },
+  {
+    id: 'cbm-calculator',
+    name: 'CBM Calculator',
+    description: 'Kalkulator Container Load & CBM dengan rekomendasi kontainer (LCL, 20ft, 40ft, 40HC)',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'bg-purple-700',
+    category: 'logistics-customs',
+  },
+  {
+    id: 'incoterms-visualizer',
+    name: 'Incoterms Visualizer',
+    description: 'Panduan visual interaktif Incoterms 2020 dengan pembagian tanggung jawab biaya & risiko',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+    color: 'bg-orange-700',
+    category: 'logistics-customs',
+  },
+  {
+    id: 'sla-scorecard',
+    name: 'SLA Scorecard',
+    description: 'Dashboard Client SLA & Performance Scorecard dengan metrik KPI logistik',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    color: 'bg-red-700',
+    category: 'logistics-customs',
+  },
 ];
 
 export default function ToolHub() {
@@ -470,6 +615,16 @@ export default function ToolHub() {
     'document-workflow-manager': DocumentWorkflowManager,
     'import-export-data-manager': ImportExportDataManager,
     'business-intelligence-reports': BusinessIntelligenceReports,
+    'time-tracker': TimeTracker,
+    'task-manager': TaskManager,
+    'unit-converter': UnitConverter,
+    'file-converter': FileConverter,
+    'logistics-calculator': LogisticsCalculator,
+    'freight-rate-calculator': FreightRateCalculator,
+    'hs-code-estimator': HsCodeEstimator,
+    'cbm-calculator': CbmCalculator,
+    'incoterms-visualizer': IncotermsVisualizer,
+    'sla-scorecard': SlaScorecard,
   }), []);
 
   // NOW we can have conditional logic after all hooks
