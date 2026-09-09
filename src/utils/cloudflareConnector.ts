@@ -62,7 +62,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, X-File-Name, Accept',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
       'Access-Control-Max-Age': '86400',
     };
 
@@ -167,11 +167,12 @@ export default {
         return Response.json({ success: true, message: 'Deleted' }, { headers: corsHeaders });
       }
 
-      // POST /upload/:id - Upload file to R2
-      if (path.match(/^\\/upload\\/\\d+$/) && request.method === 'POST') {
-        const id = path.split('/').pop();
+      // POST /upload/:id/:filename - Upload file to R2 (filename in URL to avoid CORS issues)
+      if (path.match(/^\\/upload\\/\\d+\\/.+$/) && request.method === 'POST') {
+        const parts = path.split('/');
+        const id = parts[2];
+        const fileName = decodeURIComponent(parts.slice(3).join('/')) || 'document.pdf';
         const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
-        const fileName = request.headers.get('X-File-Name') || 'document.pdf';
         
         // Read file from request body
         const fileBuffer = await request.arrayBuffer();
@@ -400,14 +401,15 @@ class CloudflareConnector {
       throw new Error('Cloudflare belum dikonfigurasi');
     }
 
-    const url = `${this.config.workerUrl.replace(/\/+$/, '')}/upload/${id}`;
+    // Include filename in URL path to avoid CORS header issues
+    const fileName = encodeURIComponent(file.name);
+    const url = `${this.config.workerUrl.replace(/\/+$/, '')}/upload/${id}/${fileName}`;
     const response = await fetch(url, {
       method: 'POST',
       mode: 'cors',
       headers: {
         'Content-Type': file.type || 'application/octet-stream',
         'X-API-Key': this.config.apiKey,
-        'X-File-Name': file.name,
       },
       body: file,
     });
