@@ -124,6 +124,33 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     }
   };
 
+  const handleMigrate = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await cloudflareConnector.migrate();
+      const messages = ['✓ Database migration berhasil!'];
+      if (result.results) {
+        result.results.forEach((r: any) => {
+          if (r.status === 'success') {
+            messages.push(`✓ Kolom baru ditambahkan`);
+          } else if (r.status === 'already_exists') {
+            messages.push(`✓ Kolom sudah ada (OK)`);
+          } else {
+            messages.push(`✗ Error: ${r.error}`);
+          }
+        });
+      }
+      setSuccessMsg(messages.join('\n'));
+      setTimeout(() => setSuccessMsg(null), 5000);
+      loadDocuments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal migrate database');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleTestConnection = async () => {
     setIsLoading(true);
     setError(null);
@@ -547,6 +574,15 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                       <li>Pastikan bucket R2 sudah dibuat sebelumnya</li>
                     </ul>
                   </div>
+
+                  <div>
+                    <p className="font-medium text-red-400">Error "no such column: file_key":</p>
+                    <ul className="list-disc list-inside ml-2 text-[10px] space-y-0.5">
+                      <li>Database sudah ada tapi belum punya kolom baru (file_key, file_name, dll)</li>
+                      <li>Klik tombol <strong className="text-purple-400">🔄 Migrate DB</strong> untuk menambahkan kolom yang missing</li>
+                      <li>Atau deploy ulang Worker dengan kode terbaru lalu klik "Init Database"</li>
+                    </ul>
+                  </div>
                 </div>
 
                 <div className="pt-2 border-t border-[#30363d]">
@@ -617,6 +653,11 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                   <button onClick={handleSetup} disabled={isLoading}
                     className="flex-1 py-2 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">
                     {isLoading ? 'Setting up...' : 'Init Database'}
+                  </button>
+                  <button onClick={handleMigrate} disabled={isLoading}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border border-purple-500/30 text-purple-500 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                    title="Tambahkan kolom yang missing ke database (file_key, file_name, dll)">
+                    {isLoading ? 'Migrating...' : '🔄 Migrate DB'}
                   </button>
                 </>
               )}

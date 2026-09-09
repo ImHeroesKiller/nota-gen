@@ -283,6 +283,37 @@ export default {
         });
       }
 
+      // POST /migrate - Add missing columns to existing database
+      if (path === '/migrate' && request.method === 'POST') {
+        const migrations = [
+          "ALTER TABLE documents ADD COLUMN file_key TEXT DEFAULT ''",
+          "ALTER TABLE documents ADD COLUMN file_name TEXT DEFAULT ''",
+          'ALTER TABLE documents ADD COLUMN file_size INTEGER DEFAULT 0',
+          "ALTER TABLE documents ADD COLUMN file_type TEXT DEFAULT ''",
+        ];
+        
+        const results = [];
+        for (const migration of migrations) {
+          try {
+            await env.DB.exec(migration);
+            results.push({ sql: migration, status: 'success' });
+          } catch (e) {
+            // Column might already exist, which is OK
+            if (e.message && e.message.includes('duplicate column')) {
+              results.push({ sql: migration, status: 'already_exists' });
+            } else {
+              results.push({ sql: migration, status: 'error', error: e.message });
+            }
+          }
+        }
+        
+        return Response.json({ 
+          success: true, 
+          message: 'Migration completed',
+          results: results
+        }, { headers: corsHeaders });
+      }
+
       // POST /setup - Initialize database
       if (path === '/setup' && request.method === 'POST') {
         const schema = [
@@ -426,6 +457,11 @@ class CloudflareConnector {
   // Setup database
   async setup(): Promise<DocumentRegistryResponse> {
     return this.request('/setup', 'POST');
+  }
+
+  // Migrate database (add missing columns)
+  async migrate(): Promise<any> {
+    return this.request('/migrate', 'POST');
   }
 
   // Get all documents
