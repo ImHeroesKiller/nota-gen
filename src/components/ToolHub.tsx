@@ -39,8 +39,13 @@ import TimesheetRekap from './TimesheetRekap';
 import PkwtContractBuilder from './PkwtContractBuilder';
 import TurnoverDashboard from './TurnoverDashboard';
 import DeploymentPlanner from './DeploymentPlanner';
+import VisitorManagement from './VisitorManagement';
+import AssetTracker from './AssetTracker';
+import EventRundown from './EventRundown';
+import VendorDatabase from './VendorDatabase';
+import PettyCashForm from './PettyCashForm';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form';
 
 interface Tool {
   id: ToolId;
@@ -127,6 +132,17 @@ const categories: Category[] = [
       </svg>
     ),
     color: 'from-pink-500 to-rose-500',
+  },
+  {
+    id: 'business-support',
+    name: 'Business Support & Facility',
+    description: 'Tools untuk dukungan operasional dan fasilitas perusahaan',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    ),
+    color: 'from-teal-500 to-cyan-500',
   },
 ];
 
@@ -635,6 +651,68 @@ const tools: Tool[] = [
     color: 'bg-teal-500',
     category: 'human-capital',
   },
+
+  // Business Support & Facility
+  {
+    id: 'visitor-management',
+    name: 'Visitor Management',
+    description: 'Sistem buku tamu digital dengan form nama, instansi, tujuan, PIC, waktu masuk/keluar',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-teal-600',
+    category: 'business-support',
+  },
+  {
+    id: 'asset-tracker',
+    name: 'Asset Tracker',
+    description: 'Sistem pencatatan peminjaman & pengembalian aset perusahaan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'bg-cyan-600',
+    category: 'business-support',
+  },
+  {
+    id: 'event-rundown',
+    name: 'Event Rundown',
+    description: 'Tabel rundown acara dinamis dengan auto-calculate waktu berdasarkan durasi',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-indigo-600',
+    category: 'business-support',
+  },
+  {
+    id: 'vendor-database',
+    name: 'Vendor Database',
+    description: 'Tabel daftar vendor/supplier dengan filter kategori dan status active/blacklisted',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-violet-600',
+    category: 'business-support',
+  },
+  {
+    id: 'petty-cash-form',
+    name: 'Petty Cash Form',
+    description: 'Form pengajuan petty cash dengan tabel rincian biaya dan total otomatis',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-purple-600',
+    category: 'business-support',
+  },
 ];
 
 export default function ToolHub() {
@@ -708,6 +786,11 @@ export default function ToolHub() {
     'pkwt-contract-builder': PkwtContractBuilder,
     'turnover-dashboard': TurnoverDashboard,
     'deployment-planner': DeploymentPlanner,
+    'visitor-management': VisitorManagement,
+    'asset-tracker': AssetTracker,
+    'event-rundown': EventRundown,
+    'vendor-database': VendorDatabase,
+    'petty-cash-form': PettyCashForm,
   }), []);
 
   // NOW we can have conditional logic after all hooks
