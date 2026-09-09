@@ -13,6 +13,10 @@ export interface DocumentRecord {
   title: string;
   description: string;
   reference: string;
+  file_key?: string; // R2 storage key
+  file_name?: string;
+  file_size?: number;
+  file_type?: string;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +37,10 @@ CREATE TABLE IF NOT EXISTS documents (
   title TEXT NOT NULL,
   description TEXT DEFAULT '',
   reference TEXT DEFAULT '',
+  file_key TEXT DEFAULT '',
+  file_name TEXT DEFAULT '',
+  file_size INTEGER DEFAULT 0,
+  file_type TEXT DEFAULT '',
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -45,7 +53,9 @@ CREATE INDEX IF NOT EXISTS idx_created_at ON documents(created_at);
 // Cloudflare Worker code template (untuk di-deploy user)
 export const WORKER_CODE_TEMPLATE = `
 // === Cloudflare Worker Code ===
-// Deploy ini ke Cloudflare Workers dengan binding D1 database bernama "DB"
+// Deploy ini ke Cloudflare Workers dengan binding:
+// - D1 database bernama "DB"
+// - R2 bucket bernama "DOCS"
 
 export default {
   async fetch(request, env) {
@@ -70,6 +80,7 @@ export default {
         message: 'Worker is running!',
         timestamp: new Date().toISOString(),
         hasDB: !!env.DB,
+        hasR2: !!env.DOCS,
         hasAPIKey: !!env.API_KEY
       }, { headers: corsHeaders });
     }
@@ -101,8 +112,18 @@ export default {
       if (path === '/documents' && request.method === 'POST') {
         const body = await request.json();
         const result = await env.DB.prepare(
-          'INSERT INTO documents (doc_number, doc_type, title, description, reference) VALUES (?, ?, ?, ?, ?)'
-        ).bind(body.doc_number, body.doc_type, body.title, body.description || '', body.reference || '').run();
+          'INSERT INTO documents (doc_number, doc_type, title, description, reference, file_key, file_name, file_size, file_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ).bind(
+          body.doc_number, 
+          body.doc_type, 
+          body.title, 
+          body.description || '', 
+          body.reference || '',
+          body.file_key || '',
+          body.file_name || '',
+          body.file_size || 0,
+          body.file_type || ''
+        ).run();
         return Response.json({ success: true, data: { id: result.meta.last_row_id }, message: 'Created' }, { headers: corsHeaders });
       }
 
@@ -111,16 +132,107 @@ export default {
         const id = path.split('/').pop();
         const body = await request.json();
         await env.DB.prepare(
-          'UPDATE documents SET doc_number=?, doc_type=?, title=?, description=?, reference=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
-        ).bind(body.doc_number, body.doc_type, body.title, body.description || '', body.reference || '', id).run();
+          'UPDATE documents SET doc_number=?, doc_type=?, title=?, description=?, reference=?, file_key=?, file_name=?, file_size=?, file_type=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+        ).bind(
+          body.doc_number, 
+          body.doc_type, 
+          body.title, 
+          body.description || '', 
+          body.reference || '',
+          body.file_key || '',
+          body.file_name || '',
+          body.file_size || 0,
+          body.file_type || '',
+          id
+        ).run();
         return Response.json({ success: true, message: 'Updated' }, { headers: corsHeaders });
       }
 
       // DELETE /documents/:id
       if (path.match(/^\\/documents\\/\\d+$/) && request.method === 'DELETE') {
         const id = path.split('/').pop();
+        
+        // Get document to delete file from R2
+        const doc = await env.DB.prepare('SELECT file_key FROM documents WHERE id = ?').bind(id).first();
+        if (doc && doc.file_key && env.DOCS) {
+          try {
+            await env.DOCS.delete(doc.file_key);
+          } catch (e) {
+            console.error('Failed to delete file from R2:', e);
+          }
+        }
+        
         await env.DB.prepare('DELETE FROM documents WHERE id = ?').bind(id).run();
         return Response.json({ success: true, message: 'Deleted' }, { headers: corsHeaders });
+      }
+
+      // POST /upload/:id - Upload file to R2
+      if (path.match(/^\\/upload\\/\\d+$/) && request.method === 'POST') {
+        const id = path.split('/').pop();
+        const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
+        const fileName = request.headers.get('X-File-Name') || 'document.pdf';
+        
+        // Read file from request body
+        const fileBuffer = await request.arrayBuffer();
+        
+        // Generate unique key
+        const timestamp = Date.now();
+        const fileKey = 'docs/' + id + '/' + timestamp + '.pdf';
+        
+        // Upload to R2
+        if (!env.DOCS) {
+          return Response.json({ success: false, error: 'R2 bucket not configured' }, { status: 500, headers: corsHeaders });
+        }
+        
+        await env.DOCS.put(fileKey, fileBuffer, {
+          httpMetadata: { contentType: contentType }
+        });
+        
+        // Update document with file info
+        await env.DB.prepare(
+          'UPDATE documents SET file_key=?, file_name=?, file_size=?, file_type=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+        ).bind(
+          fileKey,
+          fileName,
+          fileBuffer.byteLength,
+          contentType,
+          id
+        ).run();
+        
+        return Response.json({ 
+          success: true, 
+          message: 'File uploaded',
+          data: { fileKey: fileKey, size: fileBuffer.byteLength }
+        }, { headers: corsHeaders });
+      }
+
+      // GET /download/:id - Download file from R2
+      if (path.match(/^\\/download\\/\\d+$/) && request.method === 'GET') {
+        const id = path.split('/').pop();
+        
+        const doc = await env.DB.prepare('SELECT file_key, file_name, file_type FROM documents WHERE id = ?').bind(id).first();
+        
+        if (!doc || !doc.file_key) {
+          return Response.json({ success: false, error: 'File not found' }, { status: 404, headers: corsHeaders });
+        }
+        
+        if (!env.DOCS) {
+          return Response.json({ success: false, error: 'R2 bucket not configured' }, { status: 500, headers: corsHeaders });
+        }
+        
+        const object = await env.DOCS.get(doc.file_key);
+        
+        if (!object) {
+          return Response.json({ success: false, error: 'File not found in storage' }, { status: 404, headers: corsHeaders });
+        }
+        
+        return new Response(object.body, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': doc.file_type || 'application/pdf',
+            'Content-Disposition': 'inline; filename="' + doc.file_name + '"',
+          }
+        });
       }
 
       // POST /setup - Initialize database
@@ -133,6 +245,10 @@ export default {
           '  title TEXT NOT NULL,',
           "  description TEXT DEFAULT '',",
           "  reference TEXT DEFAULT '',",
+          "  file_key TEXT DEFAULT '',",
+          "  file_name TEXT DEFAULT '',",
+          '  file_size INTEGER DEFAULT 0,',
+          "  file_type TEXT DEFAULT '',",
           '  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,',
           '  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP',
           ');',
@@ -275,6 +391,46 @@ class CloudflareConnector {
   // Delete document
   async deleteDocument(id: number): Promise<void> {
     await this.request(`/documents/${id}`, 'DELETE');
+  }
+
+  // Upload file to R2
+  async uploadFile(id: number, file: File): Promise<{ fileKey: string; size: number }> {
+    if (!this.config) {
+      throw new Error('Cloudflare belum dikonfigurasi');
+    }
+
+    const url = `${this.config.workerUrl.replace(/\/+$/, '')}/upload/${id}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-API-Key': this.config.apiKey,
+        'X-File-Name': file.name,
+      },
+      body: file,
+    });
+
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(`Response tidak valid: ${responseText.substring(0, 100)}`);
+    }
+
+    if (!data.success) {
+      throw new Error(data.error || 'Upload gagal');
+    }
+
+    return data.data;
+  }
+
+  // Get download URL
+  getDownloadUrl(id: number): string {
+    if (!this.config) {
+      throw new Error('Cloudflare belum dikonfigurasi');
+    }
+    return `${this.config.workerUrl.replace(/\/+$/, '')}/download/${id}`;
   }
 
   // Generate next document number
