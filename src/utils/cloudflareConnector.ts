@@ -390,7 +390,22 @@ class CloudflareConnector {
     console.log('Cloudflare Response:', { status: response.status, text: responseText.substring(0, 200) });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}\n\nURL: ${url}`);
+      // Try to parse error details from response
+      let errorDetail = '';
+      try {
+        const errorJson = JSON.parse(responseText);
+        if (errorJson.error) {
+          errorDetail = `\n\nError Detail: ${errorJson.error}`;
+          if (errorJson.details) {
+            errorDetail += `\nDetails: ${errorJson.details}`;
+          }
+        }
+      } catch {
+        // Response is not JSON, use raw text
+        errorDetail = `\n\nResponse: ${responseText.substring(0, 300)}`;
+      }
+      
+      throw new Error(`HTTP ${response.status}${errorDetail}\n\nURL: ${url}\n\n💡 Solusi: Deploy ulang Worker dengan kode terbaru dari tombol "Kode Worker"`);
     }
 
     let data: DocumentRegistryResponse;

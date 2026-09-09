@@ -336,7 +336,8 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
         if (updated) setViewingDoc(updated);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal upload file');
+      const errorMsg = err instanceof Error ? err.message : 'Gagal upload file';
+      setError(errorMsg + '\n\n💡 Solusi: Pastikan Worker sudah di-deploy ulang dengan kode terbaru dari tombol "Kode Worker"');
     } finally {
       setUploadingFile(false);
     }
