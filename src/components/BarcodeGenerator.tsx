@@ -121,7 +121,7 @@ export default function BarcodeGenerator({ onBack, darkMode, setDarkMode }: any)
     if (text && barcodeType === 'qrcode') {
       generateQR();
     }
-  }, [text, size]);
+  }, [text, size, barcodeType]); // Tambahkan barcodeType ke dependencies
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${bg} ${textPrimary}`}>
