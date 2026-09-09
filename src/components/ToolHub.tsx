@@ -233,45 +233,42 @@ export default function ToolHub() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Tool routing - simplified for debugging
-  if (activeTool !== 'hub') {
-    console.log('Rendering tool:', activeTool);
+  // Tool routing - use function to avoid render issues
+  const renderTool = () => {
+    if (activeTool === 'hub') return null;
+    
     const toolProps = {
-      onBack: () => {
-        console.log('Going back to hub');
-        setActiveTool('hub');
-      },
+      onBack: () => setActiveTool('hub'),
       darkMode,
       setDarkMode
     };
 
-    switch (activeTool) {
-      case 'nota-to-pdf':
-        return <NotaToPdf {...toolProps} />;
-      case 'batch-renamer':
-        return <BatchRenamer {...toolProps} />;
-      case 'pdf-splitter':
-        return <PdfSplitter {...toolProps} />;
-      case 'label-generator':
-        return <LabelGenerator {...toolProps} />;
-      case 'document-registry':
-        return <DocumentRegistry {...toolProps} />;
-      case 'invoice-generator':
-        return <InvoiceGenerator {...toolProps} />;
-      case 'client-database':
-        return <ClientDatabase {...toolProps} />;
-      case 'barcode-generator':
-        return <BarcodeGenerator {...toolProps} />;
-      case 'delivery-order-generator':
-        return <DeliveryOrderGenerator {...toolProps} />;
-      case 'pdf-processor':
-        return <PDFProcessor {...toolProps} />;
-      case 'test-tool':
-        return <TestTool {...toolProps} />;
-      default:
-        console.error('Tool not found:', activeTool);
-        return <div className="p-8 text-center">Tool not found: {activeTool}</div>;
+    const toolMap: Record<ToolId, React.ComponentType<any>> = {
+      'nota-to-pdf': NotaToPdf,
+      'batch-renamer': BatchRenamer,
+      'pdf-splitter': PdfSplitter,
+      'label-generator': LabelGenerator,
+      'document-registry': DocumentRegistry,
+      'invoice-generator': InvoiceGenerator,
+      'client-database': ClientDatabase,
+      'barcode-generator': BarcodeGenerator,
+      'delivery-order-generator': DeliveryOrderGenerator,
+      'pdf-processor': PDFProcessor,
+      'test-tool': TestTool,
+    };
+
+    const ToolComponent = toolMap[activeTool as ToolId];
+    if (!ToolComponent) {
+      return <div className="p-8 text-center text-red-500">Tool not found: {activeTool}</div>;
     }
+
+    return <ToolComponent {...toolProps} />;
+  };
+
+  // If tool is selected, render it
+  const toolView = renderTool();
+  if (toolView) {
+    return <>{toolView}</>;
   }
 
   // Theme
