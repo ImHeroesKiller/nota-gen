@@ -24,8 +24,13 @@ import DataAnalyticsDashboard from './DataAnalyticsDashboard';
 import DocumentWorkflowManager from './DocumentWorkflowManager';
 import ImportExportDataManager from './ImportExportDataManager';
 import BusinessIntelligenceReports from './BusinessIntelligenceReports';
+import TimeTracker from './TimeTracker';
+import TaskManager from './TaskManager';
+import UnitConverter from './UnitConverter';
+import FileConverter from './FileConverter';
+import LogisticsCalculator from './LogisticsCalculator';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator';
 
 interface Tool {
   id: ToolId;
@@ -412,6 +417,68 @@ const tools: Tool[] = [
     color: 'bg-red-600',
     category: 'data-management',
   },
+
+  // Utilities - New Tools
+  {
+    id: 'time-tracker',
+    name: 'Time Tracker',
+    description: 'Track waktu kerja dan produktivitas harian',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-indigo-600',
+    category: 'utilities',
+  },
+  {
+    id: 'task-manager',
+    name: 'Task Manager',
+    description: 'Kelola tugas dan proyek dengan mudah',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    color: 'bg-pink-600',
+    category: 'utilities',
+  },
+  {
+    id: 'unit-converter',
+    name: 'Unit Converter',
+    description: 'Konversi berbagai unit pengukuran',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+    color: 'bg-cyan-600',
+    category: 'utilities',
+  },
+  {
+    id: 'file-converter',
+    name: 'File Converter',
+    description: 'Konversi format file gambar',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-amber-600',
+    category: 'utilities',
+  },
+  {
+    id: 'logistics-calculator',
+    name: 'Logistics Calculator',
+    description: 'Kalkulator untuk perhitungan logistik',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-violet-600',
+    category: 'utilities',
+  },
 ];
 
 export default function ToolHub() {
@@ -470,6 +537,11 @@ export default function ToolHub() {
     'document-workflow-manager': DocumentWorkflowManager,
     'import-export-data-manager': ImportExportDataManager,
     'business-intelligence-reports': BusinessIntelligenceReports,
+    'time-tracker': TimeTracker,
+    'task-manager': TaskManager,
+    'unit-converter': UnitConverter,
+    'file-converter': FileConverter,
+    'logistics-calculator': LogisticsCalculator,
   }), []);
 
   // NOW we can have conditional logic after all hooks
