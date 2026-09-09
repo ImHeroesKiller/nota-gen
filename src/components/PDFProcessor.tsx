@@ -38,6 +38,7 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
 
     setPdfFiles(fileArray);
     setError(null);
+    setSuccessMsg(null);
 
     // Get PDF info
     const info = await Promise.all(
@@ -57,9 +58,14 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
     );
     setPdfInfo(info);
 
+    // Reset states
+    setSelectedPages(new Set());
+    
     // Initialize page order for reorder operation
     if (info.length > 0 && info[0].pages > 0) {
       setPageOrder(Array.from({ length: info[0].pages }, (_, i) => i + 1));
+    } else {
+      setPageOrder([]);
     }
   };
 
@@ -78,9 +84,11 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
       const copiedPages = await compressedPdf.copyPages(pdf, pdf.getPageIndices());
       copiedPages.forEach(page => compressedPdf.addPage(page));
 
+      // Use object streams for better compression
       const pdfBytes = await compressedPdf.save({
         useObjectStreams: true,
         addDefaultPage: false,
+        objectsPerTick: 50,
       });
 
       downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
@@ -88,7 +96,9 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
       
       const originalSize = (file.size / 1024 / 1024).toFixed(2);
       const compressedSize = (pdfBytes.length / 1024 / 1024).toFixed(2);
-      setSuccessMsg(`PDF berhasil dikompres!\nUkuran asli: ${originalSize} MB\nUkuran baru: ${compressedSize} MB`);
+      const reduction = (((file.size - pdfBytes.length) / file.size) * 100).toFixed(1);
+      
+      setSuccessMsg(`PDF berhasil dikompres!\nUkuran asli: ${originalSize} MB\nUkuran baru: ${compressedSize} MB\nPengurangan: ${reduction}%`);
       setTimeout(() => setSuccessMsg(null), 5000);
     } catch (err) {
       setError(`Gagal mengompres PDF: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -375,6 +385,10 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
                     onClick={() => {
                       setOperation(op.key as PDFOperation);
                       setSelectedPages(new Set());
+                      // Reset pageOrder when changing operation
+                      if (pdfInfo.length > 0 && pdfInfo[0].pages > 0) {
+                        setPageOrder(Array.from({ length: pdfInfo[0].pages }, (_, i) => i + 1));
+                      }
                     }}
                     className={`w-full text-left p-2.5 rounded-lg border transition-all ${
                       operation === op.key
