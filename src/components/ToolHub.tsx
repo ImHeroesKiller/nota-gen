@@ -219,31 +219,35 @@ export default function ToolHub() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Tool routing
-  if (activeTool !== 'hub') {
-    switch (activeTool) {
-      case 'nota-to-pdf':
-        return <NotaToPdf onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'batch-renamer':
-        return <BatchRenamer onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'pdf-splitter':
-        return <PdfSplitter onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'label-generator':
-        return <LabelGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'document-registry':
-        return <DocumentRegistry onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'invoice-generator':
-        return <InvoiceGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'client-database':
-        return <ClientDatabase onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'barcode-generator':
-        return <BarcodeGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'delivery-order-generator':
-        return <DeliveryOrderGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      case 'pdf-processor':
-        return <PDFProcessor onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
-      default:
-        return null;
-    }
+  if (activeTool === 'nota-to-pdf') {
+    return <NotaToPdf onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'batch-renamer') {
+    return <BatchRenamer onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'pdf-splitter') {
+    return <PdfSplitter onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'label-generator') {
+    return <LabelGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'document-registry') {
+    return <DocumentRegistry onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'invoice-generator') {
+    return <InvoiceGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'client-database') {
+    return <ClientDatabase onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'barcode-generator') {
+    return <BarcodeGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'delivery-order-generator') {
+    return <DeliveryOrderGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'pdf-processor') {
+    return <PDFProcessor onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
   }
 
   // Theme
@@ -364,7 +368,7 @@ export default function ToolHub() {
                       : `${cardBg} ${textSecondary} ${hoverBg}`
                   }`}
                 >
-                  <span className="w-5 h-5 flex items-center justify-center">{cat.icon}</span>
+                  {cat.icon}
                   <span>{cat.name}</span>
                   <span className="text-xs opacity-70">({count})</span>
                 </button>
@@ -396,7 +400,7 @@ export default function ToolHub() {
                   {/* Category Header */}
                   <div className="flex items-center gap-3 mb-6">
                     <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center text-white shadow-lg`}>
-                      <span className="w-5 h-5 flex items-center justify-center">{category.icon}</span>
+                      {category.icon}
                     </div>
                     <div>
                       <h3 className="text-xl font-bold">{category.name}</h3>
@@ -425,7 +429,7 @@ export default function ToolHub() {
                         )}
                         <div className="flex items-start gap-4">
                           <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform shadow-lg`}>
-                            <span className="w-6 h-6 flex items-center justify-center">{tool.icon}</span>
+                            {tool.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-semibold text-base mb-1 truncate">{tool.name}</h4>
