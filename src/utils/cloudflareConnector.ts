@@ -86,6 +86,43 @@ export default {
       }, { headers: corsHeaders });
     }
 
+    // Debug endpoint - test R2 and DB operations
+    if (path === '/debug' && request.method === 'GET') {
+      const results = {
+        timestamp: new Date().toISOString(),
+        hasDB: !!env.DB,
+        hasR2: !!env.DOCS,
+        hasAPIKey: !!env.API_KEY,
+        dbTest: null,
+        r2Test: null,
+      };
+      
+      // Test DB
+      if (env.DB) {
+        try {
+          const test = await env.DB.prepare('SELECT 1 as test').first();
+          results.dbTest = { success: true, result: test };
+        } catch (e) {
+          results.dbTest = { success: false, error: e.message };
+        }
+      }
+      
+      // Test R2
+      if (env.DOCS) {
+        try {
+          const testKey = 'debug/test.txt';
+          await env.DOCS.put(testKey, 'test', { httpMetadata: { contentType: 'text/plain' } });
+          const obj = await env.DOCS.get(testKey);
+          await env.DOCS.delete(testKey);
+          results.r2Test = { success: true, message: 'R2 read/write OK' };
+        } catch (e) {
+          results.r2Test = { success: false, error: e.message };
+        }
+      }
+      
+      return Response.json({ success: true, data: results }, { headers: corsHeaders });
+    }
+
     // API Key check for all other endpoints
     const apiKey = request.headers.get('X-API-Key');
     if (!apiKey || apiKey !== env.API_KEY) {
@@ -169,43 +206,52 @@ export default {
 
       // POST /upload/:id/:filename - Upload file to R2 (filename in URL to avoid CORS issues)
       if (path.match(/^\\/upload\\/\\d+\\/.+$/) && request.method === 'POST') {
-        const parts = path.split('/');
-        const id = parts[2];
-        const fileName = decodeURIComponent(parts.slice(3).join('/')) || 'document.pdf';
-        const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
-        
-        // Read file from request body
-        const fileBuffer = await request.arrayBuffer();
-        
-        // Generate unique key
-        const timestamp = Date.now();
-        const fileKey = 'docs/' + id + '/' + timestamp + '.pdf';
-        
-        // Upload to R2
-        if (!env.DOCS) {
-          return Response.json({ success: false, error: 'R2 bucket not configured' }, { status: 500, headers: corsHeaders });
+        try {
+          const parts = path.split('/');
+          const id = parts[2];
+          const fileName = decodeURIComponent(parts.slice(3).join('/')) || 'document.pdf';
+          const contentType = request.headers.get('Content-Type') || 'application/octet-stream';
+          
+          // Read file from request body
+          const fileBuffer = await request.arrayBuffer();
+          
+          // Generate unique key
+          const timestamp = Date.now();
+          const fileKey = 'docs/' + id + '/' + timestamp + '.pdf';
+          
+          // Upload to R2
+          if (!env.DOCS) {
+            return Response.json({ success: false, error: 'R2 bucket not configured. Please bind R2 bucket with variable name "DOCS"' }, { status: 500, headers: corsHeaders });
+          }
+          
+          await env.DOCS.put(fileKey, fileBuffer, {
+            httpMetadata: { contentType: contentType }
+          });
+          
+          // Update document with file info
+          await env.DB.prepare(
+            'UPDATE documents SET file_key=?, file_name=?, file_size=?, file_type=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
+          ).bind(
+            fileKey,
+            fileName,
+            fileBuffer.byteLength,
+            contentType,
+            id
+          ).run();
+          
+          return Response.json({ 
+            success: true, 
+            message: 'File uploaded successfully',
+            data: { fileKey: fileKey, size: fileBuffer.byteLength, fileName: fileName }
+          }, { headers: corsHeaders });
+        } catch (uploadErr) {
+          console.error('Upload error:', uploadErr);
+          return Response.json({ 
+            success: false, 
+            error: 'Upload failed: ' + (uploadErr.message || 'Unknown error'),
+            details: uploadErr.toString()
+          }, { status: 500, headers: corsHeaders });
         }
-        
-        await env.DOCS.put(fileKey, fileBuffer, {
-          httpMetadata: { contentType: contentType }
-        });
-        
-        // Update document with file info
-        await env.DB.prepare(
-          'UPDATE documents SET file_key=?, file_name=?, file_size=?, file_type=?, updated_at=CURRENT_TIMESTAMP WHERE id=?'
-        ).bind(
-          fileKey,
-          fileName,
-          fileBuffer.byteLength,
-          contentType,
-          id
-        ).run();
-        
-        return Response.json({ 
-          success: true, 
-          message: 'File uploaded',
-          data: { fileKey: fileKey, size: fileBuffer.byteLength }
-        }, { headers: corsHeaders });
       }
 
       // GET /download/:id - Download file from R2
@@ -344,7 +390,22 @@ class CloudflareConnector {
     console.log('Cloudflare Response:', { status: response.status, text: responseText.substring(0, 200) });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 200)}\n\nURL: ${url}`);
+      // Try to parse error details from response
+      let errorDetail = '';
+      try {
+        const errorJson = JSON.parse(responseText);
+        if (errorJson.error) {
+          errorDetail = `\n\nError Detail: ${errorJson.error}`;
+          if (errorJson.details) {
+            errorDetail += `\nDetails: ${errorJson.details}`;
+          }
+        }
+      } catch {
+        // Response is not JSON, use raw text
+        errorDetail = `\n\nResponse: ${responseText.substring(0, 300)}`;
+      }
+      
+      throw new Error(`HTTP ${response.status}${errorDetail}\n\nURL: ${url}\n\n💡 Solusi: Deploy ulang Worker dengan kode terbaru dari tombol "Kode Worker"`);
     }
 
     let data: DocumentRegistryResponse;

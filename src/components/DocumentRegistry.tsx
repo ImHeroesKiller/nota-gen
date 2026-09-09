@@ -186,6 +186,67 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     }
   };
 
+  const handleDebug = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const config = cloudflareConnector.getConfig();
+      if (!config) {
+        throw new Error('Konfigurasi belum disimpan');
+      }
+      
+      const cleanUrl = config.workerUrl.trim().replace(/\/+$/, '');
+      const debugUrl = `${cleanUrl}/debug`;
+      
+      const response = await fetch(debugUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+      
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${responseText.substring(0, 300)}\n\nEndpoint /debug tidak ditemukan. Pastikan Worker sudah di-deploy dengan kode terbaru dari tombol "Kode Worker".`);
+      }
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Response bukan JSON: "${responseText.substring(0, 200)}..."`);
+      }
+      
+      if (!data.success) {
+        throw new Error(`Debug gagal: ${data.error || 'Unknown error'}`);
+      }
+      
+      const debugData = data.data;
+      const messages = [];
+      
+      messages.push(`✓ Timestamp: ${debugData.timestamp}`);
+      messages.push(`${debugData.hasDB ? '✓' : '✗'} Database: ${debugData.hasDB ? 'OK' : 'NOT CONFIGURED'}`);
+      messages.push(`${debugData.hasR2 ? '✓' : '✗'} R2 Storage: ${debugData.hasR2 ? 'OK' : 'NOT CONFIGURED'}`);
+      messages.push(`${debugData.hasAPIKey ? '✓' : '✗'} API Key: ${debugData.hasAPIKey ? 'OK' : 'NOT SET'}`);
+      
+      if (debugData.dbTest) {
+        messages.push(`${debugData.dbTest.success ? '✓' : '✗'} DB Test: ${debugData.dbTest.success ? 'Query OK' : debugData.dbTest.error}`);
+      }
+      
+      if (debugData.r2Test) {
+        messages.push(`${debugData.r2Test.success ? '✓' : '✗'} R2 Test: ${debugData.r2Test.success ? 'Read/Write OK' : debugData.r2Test.error}`);
+      }
+      
+      setSuccessMsg(messages.join('\n'));
+      setTimeout(() => setSuccessMsg(null), 10000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal debug');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGenerateNumber = async () => {
     const typeInfo = DOC_TYPES.find(t => t.value === formData.doc_type);
     if (!typeInfo) return;
@@ -275,7 +336,8 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
         if (updated) setViewingDoc(updated);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal upload file');
+      const errorMsg = err instanceof Error ? err.message : 'Gagal upload file';
+      setError(errorMsg + '\n\n💡 Solusi: Pastikan Worker sudah di-deploy ulang dengan kode terbaru dari tombol "Kode Worker"');
     } finally {
       setUploadingFile(false);
     }
@@ -521,6 +583,10 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                   <button onClick={handleTestConnection} disabled={isLoading}
                     className="flex-1 py-2 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-500 hover:bg-blue-500/10 transition-colors disabled:opacity-50">
                     {isLoading ? 'Testing...' : 'Test Koneksi'}
+                  </button>
+                  <button onClick={handleDebug} disabled={isLoading}
+                    className="flex-1 py-2 rounded-lg text-xs font-medium border border-amber-500/30 text-amber-500 hover:bg-amber-500/10 transition-colors disabled:opacity-50">
+                    {isLoading ? 'Debugging...' : '🔍 Debug'}
                   </button>
                   <button onClick={handleSetup} disabled={isLoading}
                     className="flex-1 py-2 rounded-lg text-xs font-medium border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 transition-colors disabled:opacity-50">
