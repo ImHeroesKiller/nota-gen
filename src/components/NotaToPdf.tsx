@@ -64,8 +64,10 @@ export default function NotaToPdf({ onBack, darkMode, setDarkMode }: NotaToPdfPr
   const totalPages = getPagesCount(images, settings);
 
   useEffect(() => {
-    if (currentPage >= totalPages && totalPages > 0) setCurrentPage(totalPages - 1);
-  }, [totalPages, currentPage]);
+    if (currentPage >= totalPages && totalPages > 0) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [totalPages]); // Hanya depend on totalPages, bukan currentPage
 
   useEffect(() => {
     document.documentElement.className = darkMode ? 'dark' : 'light';

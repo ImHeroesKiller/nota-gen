@@ -254,7 +254,7 @@ export default function LabelGenerator({ onBack, darkMode, setDarkMode }: LabelG
 
   useEffect(() => {
     drawLabelPreview();
-  }, [drawLabelPreview]);
+  }, [labels, activeLabel, labelSize, includeQR, fontSettings]);
 
   const handleExport = useCallback(async () => {
     if (labels.length === 0) {
