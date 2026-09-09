@@ -228,15 +228,36 @@ const tools: Tool[] = [
 ];
 
 export default function ToolHub() {
+  // ALL HOOKS MUST BE AT TOP LEVEL - NO EARLY RETURNS BEFORE THIS
   const [activeTool, setActiveTool] = useState<ToolId | 'hub'>('hub');
   const [darkMode, setDarkMode] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Tool routing - use function to avoid render issues
-  const renderTool = () => {
-    if (activeTool === 'hub') return null;
-    
+  // Filter tools - MUST be called before any early returns
+  const filteredTools = useMemo(() => {
+    return tools.filter(tool => {
+      const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           tool.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || tool.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchQuery, selectedCategory]);
+
+  // Group tools by category - MUST be called before any early returns
+  const groupedTools = useMemo(() => {
+    const groups: Record<string, Tool[]> = {};
+    filteredTools.forEach(tool => {
+      if (!groups[tool.category]) {
+        groups[tool.category] = [];
+      }
+      groups[tool.category].push(tool);
+    });
+    return groups;
+  }, [filteredTools]);
+
+  // NOW we can have conditional logic after all hooks
+  if (activeTool !== 'hub') {
     const toolProps = {
       onBack: () => setActiveTool('hub'),
       darkMode,
@@ -258,20 +279,13 @@ export default function ToolHub() {
     };
 
     const ToolComponent = toolMap[activeTool as ToolId];
-    if (!ToolComponent) {
-      return <div className="p-8 text-center text-red-500">Tool not found: {activeTool}</div>;
+    if (ToolComponent) {
+      return <ToolComponent {...toolProps} />;
     }
-
-    return <ToolComponent {...toolProps} />;
-  };
-
-  // If tool is selected, render it
-  const toolView = renderTool();
-  if (toolView) {
-    return <>{toolView}</>;
+    return <div className="p-8 text-center text-red-500">Tool not found: {activeTool}</div>;
   }
 
-  // Theme
+  // Theme variables - after all hooks and conditional returns
   const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
   const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
   const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
@@ -279,28 +293,6 @@ export default function ToolHub() {
   const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
   const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
   const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
-
-  // Filter tools
-  const filteredTools = useMemo(() => {
-    return tools.filter(tool => {
-      const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           tool.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || tool.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, selectedCategory]);
-
-  // Group tools by category
-  const groupedTools = useMemo(() => {
-    const groups: Record<string, Tool[]> = {};
-    filteredTools.forEach(tool => {
-      if (!groups[tool.category]) {
-        groups[tool.category] = [];
-      }
-      groups[tool.category].push(tool);
-    });
-    return groups;
-  }, [filteredTools]);
 
   // Helper function to safely render tool icon
   const renderToolIcon = (tool: Tool) => {
