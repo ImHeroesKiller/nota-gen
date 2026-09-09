@@ -31,7 +31,6 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentRecord | null>(null);
   const [viewingDoc, setViewingDoc] = useState<DocumentRecord | null>(null);
-  const [uploadingFile, setUploadingFile] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -44,6 +43,8 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     description: '',
     reference: '',
   });
+  const [formFile, setFormFile] = useState<File | null>(null);
+  const [existingDocId, setExistingDocId] = useState<number | null>(null); // Untuk track jika nomor dokumen sudah ada
 
   const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
   const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
@@ -268,16 +269,58 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     setIsLoading(true);
     setError(null);
     try {
-      if (editingDoc) {
-        await cloudflareConnector.updateDocument(editingDoc.id!, formData);
-        setSuccessMsg('Dokumen berhasil diupdate');
+      let docId: number;
+      
+      // Check jika nomor dokumen sudah ada (untuk logic 1 nomor = 1 dokumen)
+      if (!editingDoc) {
+        const existingDoc = documents.find(d => d.doc_number === formData.doc_number);
+        if (existingDoc) {
+          // Nomor sudah ada, akan replace dokumen yang lama
+          setExistingDocId(existingDoc.id!);
+          docId = existingDoc.id!;
+          
+          // Update dokumen yang sudah ada
+          await cloudflareConnector.updateDocument(docId, formData);
+          
+          if (formFile) {
+            // Upload file baru (replace file lama)
+            await cloudflareConnector.uploadFile(docId, formFile);
+            setSuccessMsg('Dokumen berhasil di-replace dengan file baru');
+          } else {
+            setSuccessMsg('Dokumen berhasil diupdate (nomor sudah ada, data di-replace)');
+          }
+        } else {
+          // Nomor belum ada, create baru
+          const newDoc = await cloudflareConnector.createDocument(formData);
+          docId = newDoc.id!;
+          
+          if (formFile) {
+            // Upload file jika ada
+            await cloudflareConnector.uploadFile(docId, formFile);
+            setSuccessMsg('Dokumen berhasil didaftarkan dengan file');
+          } else {
+            setSuccessMsg('Dokumen berhasil didaftarkan');
+          }
+        }
       } else {
-        await cloudflareConnector.createDocument(formData);
-        setSuccessMsg('Dokumen berhasil didaftarkan');
+        // Edit mode
+        docId = editingDoc.id!;
+        await cloudflareConnector.updateDocument(docId, formData);
+        
+        if (formFile) {
+          // Upload file baru (replace file lama)
+          await cloudflareConnector.uploadFile(docId, formFile);
+          setSuccessMsg('Dokumen berhasil diupdate dengan file baru');
+        } else {
+          setSuccessMsg('Dokumen berhasil diupdate');
+        }
       }
+      
       setTimeout(() => setSuccessMsg(null), 3000);
       setShowForm(false);
       setEditingDoc(null);
+      setFormFile(null);
+      setExistingDocId(null);
       setFormData({ doc_number: '', doc_type: 'surat', title: '', description: '', reference: '' });
       loadDocuments();
     } catch (err) {
@@ -296,6 +339,8 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
       description: doc.description,
       reference: doc.reference,
     });
+    setFormFile(null); // Reset file saat edit
+    setExistingDocId(null);
     setShowForm(true);
   };
 
@@ -314,36 +359,7 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
     }
   };
 
-  const handleUpload = async (docId: number, file: File) => {
-    if (file.type !== 'application/pdf') {
-      setError('Hanya file PDF yang didukung');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Ukuran file maksimal 10MB');
-      return;
-    }
-    
-    setUploadingFile(true);
-    setError(null);
-    try {
-      await cloudflareConnector.uploadFile(docId, file);
-      setSuccessMsg('File berhasil diupload');
-      setTimeout(() => setSuccessMsg(null), 3000);
-      loadDocuments();
-      
-      // Update viewing doc if it's the same one
-      if (viewingDoc && viewingDoc.id === docId) {
-        const updated = await cloudflareConnector.getDocument(docId);
-        if (updated) setViewingDoc(updated);
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Gagal upload file';
-      setError(errorMsg + '\n\n💡 Solusi: Pastikan Worker sudah di-deploy ulang dengan kode terbaru dari tombol "Kode Worker"');
-    } finally {
-      setUploadingFile(false);
-    }
-  };
+
 
   const handleDownload = (doc: DocumentRecord) => {
     if (!doc.file_key) {
@@ -787,8 +803,57 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                       placeholder="No. PO, kontrak, dll" />
                   </div>
 
+                  {/* File Upload Section */}
+                  <div className={`p-3 rounded-lg border ${borderColor} ${cardBg}`}>
+                    <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-2`}>
+                      File PDF {editingDoc && editingDoc.file_key && '(Upload untuk replace)'}
+                    </label>
+                    
+                    {editingDoc && editingDoc.file_key && (
+                      <div className={`mb-2 p-2 rounded text-xs ${cardBg}`}>
+                        <p className="font-medium">File saat ini:</p>
+                        <p className={`text-[10px] ${textSecondary}`}>{editingDoc.file_name} • {(editingDoc.file_size! / 1024).toFixed(1)} KB</p>
+                      </div>
+                    )}
+                    
+                    <label className={`w-full py-2.5 rounded-lg text-xs font-medium border-2 border-dashed transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-2 cursor-pointer`}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                      {formFile ? formFile.name : 'Pilih File PDF'}
+                      <input type="file" accept="application/pdf" className="hidden"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.type !== 'application/pdf') {
+                              setError('Hanya file PDF yang didukung');
+                              return;
+                            }
+                            if (file.size > 10 * 1024 * 1024) {
+                              setError('Ukuran file maksimal 10MB');
+                              return;
+                            }
+                            setFormFile(file);
+                          }
+                        }} />
+                    </label>
+                    {formFile && (
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className={`text-[10px] ${textSecondary}`}>{(formFile.size / 1024).toFixed(1)} KB</p>
+                        <button onClick={() => setFormFile(null)} className="text-[10px] text-red-400 hover:text-red-300">
+                          Hapus
+                        </button>
+                      </div>
+                    )}
+                    <p className={`text-[9px] ${textSecondary} mt-1`}>Maksimal 10MB • Format PDF</p>
+                  </div>
+
                   <div className="flex gap-2 pt-2">
-                    <button onClick={() => setShowForm(false)}
+                    <button onClick={() => {
+                      setShowForm(false);
+                      setEditingDoc(null);
+                      setFormFile(null);
+                      setExistingDocId(null);
+                      setFormData({ doc_number: '', doc_type: 'surat', title: '', description: '', reference: '' });
+                    }}
                       className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${borderColor} ${hoverBg} ${textSecondary}`}>
                       Batal
                     </button>
@@ -891,33 +956,20 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             Download
                           </button>
-                          <label className={`flex-1 py-2 rounded-lg text-xs font-medium border transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-1.5 cursor-pointer`}>
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                            {uploadingFile ? 'Uploading...' : 'Ganti'}
-                            <input type="file" accept="application/pdf" className="hidden" disabled={uploadingFile}
-                              onChange={e => {
-                                const file = e.target.files?.[0];
-                                if (file && viewingDoc.id) handleUpload(viewingDoc.id, file);
-                              }} />
-                          </label>
                         </div>
+                        <p className={`text-[10px] ${textSecondary} text-center italic`}>
+                          Untuk mengganti file, gunakan tombol Edit di tabel dokumen
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
                         <div className={`text-center py-4 ${textSecondary}`}>
                           <svg className="w-8 h-8 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" /></svg>
                           <p className="text-xs">Belum ada file yang diupload</p>
+                          <p className={`text-[10px] mt-1 ${textSecondary} italic`}>
+                            Gunakan tombol Edit untuk upload file
+                          </p>
                         </div>
-                        <label className={`w-full py-3 rounded-lg text-xs font-medium border-2 border-dashed transition-colors ${borderColor} ${hoverBg} ${textSecondary} flex items-center justify-center gap-2 cursor-pointer`}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                          {uploadingFile ? 'Uploading...' : 'Upload File PDF'}
-                          <input type="file" accept="application/pdf" className="hidden" disabled={uploadingFile}
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file && viewingDoc.id) handleUpload(viewingDoc.id, file);
-                            }} />
-                        </label>
-                        <p className={`text-[10px] ${textSecondary} text-center`}>Maksimal 10MB • Format PDF</p>
                       </div>
                     )}
                   </div>
