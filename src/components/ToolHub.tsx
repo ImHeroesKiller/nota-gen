@@ -256,31 +256,32 @@ export default function ToolHub() {
     return groups;
   }, [filteredTools]);
 
+  // Tool component map - defined at top level
+  const toolMap: Record<ToolId, React.ComponentType<any>> = useMemo(() => ({
+    'nota-to-pdf': NotaToPdf,
+    'batch-renamer': BatchRenamer,
+    'pdf-splitter': PdfSplitter,
+    'label-generator': LabelGenerator,
+    'document-registry': DocumentRegistry,
+    'invoice-generator': InvoiceGenerator,
+    'client-database': ClientDatabase,
+    'barcode-generator': BarcodeGenerator,
+    'delivery-order-generator': DeliveryOrderGenerator,
+    'pdf-processor': PDFProcessor,
+    'test-tool': TestTool,
+  }), []);
+
   // NOW we can have conditional logic after all hooks
   if (activeTool !== 'hub') {
-    const toolProps = {
-      onBack: () => setActiveTool('hub'),
-      darkMode,
-      setDarkMode
-    };
-
-    const toolMap: Record<ToolId, React.ComponentType<any>> = {
-      'nota-to-pdf': NotaToPdf,
-      'batch-renamer': BatchRenamer,
-      'pdf-splitter': PdfSplitter,
-      'label-generator': LabelGenerator,
-      'document-registry': DocumentRegistry,
-      'invoice-generator': InvoiceGenerator,
-      'client-database': ClientDatabase,
-      'barcode-generator': BarcodeGenerator,
-      'delivery-order-generator': DeliveryOrderGenerator,
-      'pdf-processor': PDFProcessor,
-      'test-tool': TestTool,
-    };
-
     const ToolComponent = toolMap[activeTool as ToolId];
     if (ToolComponent) {
-      return <ToolComponent {...toolProps} />;
+      return (
+        <ToolComponent
+          onBack={() => setActiveTool('hub')}
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+        />
+      );
     }
     return <div className="p-8 text-center text-red-500">Tool not found: {activeTool}</div>;
   }
