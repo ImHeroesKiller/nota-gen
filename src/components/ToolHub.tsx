@@ -14,8 +14,13 @@ import PdfWatermark from './PdfWatermark';
 import PdfPageOrganizer from './PdfPageOrganizer';
 import PdfMetadataEditor from './PdfMetadataEditor';
 import PdfPageNumberer from './PdfPageNumberer';
+import PurchaseOrderGenerator from './PurchaseOrderGenerator';
+import PackingListGenerator from './PackingListGenerator';
+import BillOfLadingGenerator from './BillOfLadingGenerator';
+import CertificateOfOriginGenerator from './CertificateOfOriginGenerator';
+import FreightQuotationGenerator from './FreightQuotationGenerator';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator';
 
 interface Tool {
   id: ToolId;
@@ -215,6 +220,69 @@ const tools: Tool[] = [
     color: 'bg-orange-500',
     category: 'utilities',
   },
+
+  // Document Generation - New Tools
+  {
+    id: 'purchase-order-generator',
+    name: 'Purchase Order Generator',
+    description: 'Buat purchase order profesional untuk pemesanan barang',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+      </svg>
+    ),
+    color: 'bg-blue-600',
+    category: 'document-generation',
+  },
+  {
+    id: 'packing-list-generator',
+    name: 'Packing List Generator',
+    description: 'Buat packing list profesional untuk detail packing barang',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'bg-green-600',
+    category: 'document-generation',
+  },
+  {
+    id: 'bill-of-lading-generator',
+    name: 'Bill of Lading Generator',
+    description: 'Buat Bill of Lading profesional untuk dokumen pengiriman',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+    color: 'bg-purple-600',
+    category: 'document-generation',
+  },
+  {
+    id: 'certificate-of-origin-generator',
+    name: 'Certificate of Origin Generator',
+    description: 'Buat Certificate of Origin untuk sertifikat asal negara',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    ),
+    color: 'bg-amber-600',
+    category: 'document-generation',
+  },
+  {
+    id: 'freight-quotation-generator',
+    name: 'Freight Quotation Generator',
+    description: 'Buat quotation pengiriman profesional dengan tarif lengkap',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    color: 'bg-indigo-600',
+    category: 'document-generation',
+  },
+
   // PDF Tools
   {
     id: 'pdf-to-image',
@@ -324,6 +392,11 @@ export default function ToolHub() {
     'pdf-page-organizer': PdfPageOrganizer,
     'pdf-metadata-editor': PdfMetadataEditor,
     'pdf-page-numberer': PdfPageNumberer,
+    'purchase-order-generator': PurchaseOrderGenerator,
+    'packing-list-generator': PackingListGenerator,
+    'bill-of-lading-generator': BillOfLadingGenerator,
+    'certificate-of-origin-generator': CertificateOfOriginGenerator,
+    'freight-quotation-generator': FreightQuotationGenerator,
   }), []);
 
   // NOW we can have conditional logic after all hooks
@@ -409,7 +482,7 @@ export default function ToolHub() {
             PERADA Productivity Suite
           </h2>
           <p className={`text-lg ${textSecondary} max-w-2xl mx-auto`}>
-            15 tools profesional untuk mempercepat operasional logistik dan administrasi dokumen
+            20 tools profesional untuk mempercepat operasional logistik dan administrasi dokumen
           </p>
         </div>
 
