@@ -34,6 +34,7 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [showWorkerCode, setShowWorkerCode] = useState(false);
+  const [showWorkerCodeModal, setShowWorkerCodeModal] = useState(false);
   const [formData, setFormData] = useState({
     doc_number: '',
     doc_type: 'surat',
@@ -330,6 +331,11 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          <button onClick={() => setShowWorkerCodeModal(true)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${hoverBg} ${textSecondary}`}>
+            <svg className="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+            Kode Worker
+          </button>
           <button onClick={() => setShowSetup(!showSetup)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${hoverBg} ${textSecondary}`}>
             <svg className="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -849,6 +855,59 @@ export default function DocumentRegistry({ onBack, darkMode, setDarkMode }: Docu
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Worker Code Modal */}
+      {showWorkerCodeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowWorkerCodeModal(false)}>
+          <div className={`w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl ${sidebarBg} border ${borderColor} flex flex-col`} onClick={e => e.stopPropagation()}>
+            <div className={`flex items-center justify-between p-5 border-b ${borderColor}`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">Kode Worker Cloudflare</h3>
+                  <p className={`text-[10px] ${textSecondary}`}>Copy kode ini ke Cloudflare Worker Anda</p>
+                </div>
+              </div>
+              <button onClick={() => setShowWorkerCodeModal(false)} className={`w-6 h-6 rounded-lg flex items-center justify-center ${hoverBg}`}>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden p-5">
+              <div className={`rounded-lg overflow-hidden border ${borderColor} h-full flex flex-col`}>
+                <div className={`flex items-center justify-between px-3 py-2 ${cardBg} border-b ${borderColor}`}>
+                  <span className={`text-[10px] font-mono ${textSecondary}`}>worker.js</span>
+                  <button onClick={() => copyToClipboard(WORKER_CODE_TEMPLATE)}
+                    className="px-3 py-1 rounded text-[10px] font-medium bg-blue-500 hover:bg-blue-600 text-white transition-colors flex items-center gap-1.5">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    Copy Semua Kode
+                  </button>
+                </div>
+                <pre className={`p-4 text-[11px] font-mono overflow-auto flex-1 ${cardBg} ${textSecondary} leading-relaxed`}>
+                  {WORKER_CODE_TEMPLATE}
+                </pre>
+              </div>
+            </div>
+
+            <div className={`flex gap-2 p-5 border-t ${borderColor}`}>
+              <div className={`flex-1 p-3 rounded-lg ${cardBg}`}>
+                <p className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} mb-2`}>⚠️ Binding yang Diperlukan:</p>
+                <ul className="text-[10px] space-y-1">
+                  <li>• <code className="bg-black/20 px-1 rounded">DB</code> → D1 Database</li>
+                  <li>• <code className="bg-black/20 px-1 rounded">DOCS</code> → R2 Bucket</li>
+                  <li>• <code className="bg-black/20 px-1 rounded">API_KEY</code> → Secret</li>
+                </ul>
+              </div>
+              <button onClick={() => setShowWorkerCodeModal(false)}
+                className="px-6 py-2 rounded-lg text-xs font-medium bg-[#0A2540] hover:bg-[#1E3A5F] text-white transition-colors">
+                Tutup
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
