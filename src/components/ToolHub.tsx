@@ -19,8 +19,13 @@ import PackingListGenerator from './PackingListGenerator';
 import BillOfLadingGenerator from './BillOfLadingGenerator';
 import CertificateOfOriginGenerator from './CertificateOfOriginGenerator';
 import FreightQuotationGenerator from './FreightQuotationGenerator';
+import ShipmentTracker from './ShipmentTracker';
+import DataAnalyticsDashboard from './DataAnalyticsDashboard';
+import DocumentWorkflowManager from './DocumentWorkflowManager';
+import ImportExportDataManager from './ImportExportDataManager';
+import BusinessIntelligenceReports from './BusinessIntelligenceReports';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports';
 
 interface Tool {
   id: ToolId;
@@ -344,6 +349,69 @@ const tools: Tool[] = [
     color: 'bg-teal-500',
     category: 'pdf-processing',
   },
+
+  // Data Management - New Tools
+  {
+    id: 'shipment-tracker',
+    name: 'Shipment Tracker',
+    description: 'Track dan monitor semua pengiriman secara real-time',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+    color: 'bg-blue-600',
+    category: 'data-management',
+  },
+  {
+    id: 'data-analytics-dashboard',
+    name: 'Data Analytics Dashboard',
+    description: 'Dashboard analitik komprehensif untuk operasi logistik',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    color: 'bg-purple-600',
+    category: 'data-management',
+  },
+  {
+    id: 'document-workflow-manager',
+    name: 'Document Workflow Manager',
+    description: 'Kelola workflow persetujuan dokumen secara otomatis',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+    color: 'bg-green-600',
+    category: 'data-management',
+  },
+  {
+    id: 'import-export-data-manager',
+    name: 'Import/Export Data Manager',
+    description: 'Kelola operasi import dan export data',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+    color: 'bg-orange-600',
+    category: 'data-management',
+  },
+  {
+    id: 'business-intelligence-reports',
+    name: 'Business Intelligence Reports',
+    description: 'Generate dan akses laporan bisnis komprehensif',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    color: 'bg-red-600',
+    category: 'data-management',
+  },
 ];
 
 export default function ToolHub() {
@@ -397,6 +465,11 @@ export default function ToolHub() {
     'bill-of-lading-generator': BillOfLadingGenerator,
     'certificate-of-origin-generator': CertificateOfOriginGenerator,
     'freight-quotation-generator': FreightQuotationGenerator,
+    'shipment-tracker': ShipmentTracker,
+    'data-analytics-dashboard': DataAnalyticsDashboard,
+    'document-workflow-manager': DocumentWorkflowManager,
+    'import-export-data-manager': ImportExportDataManager,
+    'business-intelligence-reports': BusinessIntelligenceReports,
   }), []);
 
   // NOW we can have conditional logic after all hooks
