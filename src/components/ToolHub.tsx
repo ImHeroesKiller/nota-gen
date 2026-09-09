@@ -49,8 +49,13 @@ import VehicleChecklist from './VehicleChecklist';
 import IncidentReport from './IncidentReport';
 import LeaveRequestForm from './LeaveRequestForm';
 import VendorPaymentTracker from './VendorPaymentTracker';
+import SlaKpiDashboard from './SlaKpiDashboard';
+import UniformInventoryManager from './UniformInventoryManager';
+import ClientShiftScheduler from './ClientShiftScheduler';
+import OnboardingComplianceChecklist from './OnboardingComplianceChecklist';
+import IncidentClientFeedbackLog from './IncidentClientFeedbackLog';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker' | 'sla-kpi-dashboard' | 'uniform-inventory-manager' | 'client-shift-scheduler' | 'onboarding-compliance-checklist' | 'incident-client-feedback-log';
 
 interface Tool {
   id: ToolId;
@@ -791,6 +796,66 @@ const tools: Tool[] = [
     color: 'bg-blue-500',
     category: 'operations-hr',
   },
+  {
+    id: 'sla-kpi-dashboard',
+    name: 'SLA & KPI Tracking Dashboard',
+    description: 'Dashboard performa untuk memantau pencapaian KPI dan SLA dari setiap divisi outsourcing',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    color: 'bg-purple-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'uniform-inventory-manager',
+    name: 'Uniform & Inventory Asset Manager',
+    description: 'Sistem untuk melacak inventaris seragam, APD, dan perangkat kerja yang dipinjamkan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+      </svg>
+    ),
+    color: 'bg-indigo-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'client-shift-scheduler',
+    name: 'Client Shift & Scheduling Hub',
+    description: 'Perencana jadwal kerja dan shift bergilir 24/7 dengan deteksi konflik jadwal',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    ),
+    color: 'bg-pink-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'onboarding-compliance-checklist',
+    name: 'Onboarding & Compliance Checklist',
+    description: 'Modul manajemen kepatuhan berkas tenaga kerja baru sebelum diterjunkan ke lokasi klien',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-teal-500',
+    category: 'operations-hr',
+  },
+  {
+    id: 'incident-client-feedback-log',
+    name: 'Incident & Client Feedback Log',
+    description: 'Sistem tiket pencatatan keluhan operasional atau masukan dari manajemen klien',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+      </svg>
+    ),
+    color: 'bg-red-500',
+    category: 'operations-hr',
+  },
 ];
 
 export default function ToolHub() {
@@ -874,6 +939,11 @@ export default function ToolHub() {
     'incident-report': IncidentReport,
     'leave-request-form': LeaveRequestForm,
     'vendor-payment-tracker': VendorPaymentTracker,
+    'sla-kpi-dashboard': SlaKpiDashboard,
+    'uniform-inventory-manager': UniformInventoryManager,
+    'client-shift-scheduler': ClientShiftScheduler,
+    'onboarding-compliance-checklist': OnboardingComplianceChecklist,
+    'incident-client-feedback-log': IncidentClientFeedbackLog,
   }), []);
 
   // NOW we can have conditional logic after all hooks
