@@ -4,8 +4,12 @@ import BatchRenamer from './BatchRenamer';
 import PdfSplitter from './PdfSplitter';
 import LabelGenerator from './LabelGenerator';
 import DocumentRegistry from './DocumentRegistry';
+import InvoiceGenerator from './InvoiceGenerator';
+import ClientDatabase from './ClientDatabase';
+import BarcodeGenerator from './BarcodeGenerator';
+import DeliveryOrderGenerator from './DeliveryOrderGenerator';
 
-type Tool = 'hub' | 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry';
+type Tool = 'hub' | 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator';
 
 interface ToolInfo {
   id: Tool;
@@ -71,6 +75,50 @@ const tools: ToolInfo[] = [
     ),
     color: 'bg-teal-500',
   },
+  {
+    id: 'invoice-generator',
+    name: 'Invoice Generator',
+    description: 'Buat invoice profesional dengan auto-calculate dan export PDF',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+    color: 'bg-green-500',
+  },
+  {
+    id: 'client-database',
+    name: 'Client Database',
+    description: 'Kelola database klien dengan fitur search dan export',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-purple-500',
+  },
+  {
+    id: 'barcode-generator',
+    name: 'Barcode & QR Generator',
+    description: 'Generate barcode dan QR code untuk tracking dan labeling',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+      </svg>
+    ),
+    color: 'bg-indigo-500',
+  },
+  {
+    id: 'delivery-order-generator',
+    name: 'Delivery Order Generator',
+    description: 'Buat dokumen delivery order profesional untuk pengiriman',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    ),
+    color: 'bg-orange-500',
+  },
 ];
 
 export default function ToolHub() {
@@ -91,6 +139,18 @@ export default function ToolHub() {
   }
   if (activeTool === 'document-registry') {
     return <DocumentRegistry onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'invoice-generator') {
+    return <InvoiceGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'client-database') {
+    return <ClientDatabase onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'barcode-generator') {
+    return <BarcodeGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
+  }
+  if (activeTool === 'delivery-order-generator') {
+    return <DeliveryOrderGenerator onBack={() => setActiveTool('hub')} darkMode={darkMode} setDarkMode={setDarkMode} />;
   }
 
   const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
