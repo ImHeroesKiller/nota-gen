@@ -98,6 +98,16 @@ import DailyAttendance from './DailyAttendance';
 import HeavyEquipmentInspection from './HeavyEquipmentInspection';
 import ToolboxMeetingLog from './ToolboxMeetingLog';
 import CampAccommodationManager from './CampAccommodationManager';
+import PayrollSlipGenerator from './PayrollSlipGenerator';
+import SuratJalanMaker from './SuratJalanMaker';
+import UangJalanCalculator from './UangJalanCalculator';
+import TaxBillingCalculator from './TaxBillingCalculator';
+import PoBuilder from './PoBuilder';
+import MedicalCheckupTracker from './MedicalCheckupTracker';
+import BpjsAdminManager from './BpjsAdminManager';
+import TyreMaintenanceLog from './TyreMaintenanceLog';
+import CustomsVault from './CustomsVault';
+import ClientContractManager from './ClientContractManager';
 import FuelConsumptionTracker from './FuelConsumptionTracker';
 
 export const hierarchicalStructure: Suite[] = [
@@ -311,6 +321,61 @@ export const hierarchicalStructure: Suite[] = [
           { id: 'toolbox-meeting-log', name: 'Toolbox Meeting Log', description: 'Safety talk harian', icon: '📋', color: 'bg-red-500', component: ToolboxMeetingLog, workflow: ['safety-incident-log', 'incident-report'] },
           { id: 'vehicle-checklist', name: 'Vehicle Checklist', description: 'Inspeksi kendaraan', icon: '🚗', color: 'bg-red-600', component: VehicleChecklist, workflow: ['heavy-equipment-inspection'] },
           { id: 'incident-report', name: 'Incident Report', description: 'Pelaporan insiden', icon: '⚠️', color: 'bg-red-700', component: IncidentReport, workflow: ['safety-incident-log', 'toolbox-meeting-log'] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'erp-suite',
+    name: 'ERP Suite',
+    description: 'Tools untuk Enterprise Resource Planning dan administrasi bisnis',
+    icon: '🏢',
+    color: 'from-slate-500 to-gray-600',
+    modules: [
+      {
+        id: 'payroll-finance',
+        name: 'Payroll & Finance',
+        description: 'Pengelolaan gaji, pajak, dan keuangan',
+        icon: '💰',
+        color: 'bg-slate-500',
+        tools: [
+          { id: 'payroll-slip-generator', name: 'Payroll Slip Generator', description: 'Generator slip gaji karyawan', icon: '💵', color: 'bg-slate-500', component: PayrollSlipGenerator, workflow: ['bpjs-admin-manager', 'tax-billing-calculator'] },
+          { id: 'tax-billing-calculator', name: 'Tax Billing Calculator', description: 'Kalkulator PPN & PPh 23', icon: '🧾', color: 'bg-gray-500', component: TaxBillingCalculator, workflow: ['payroll-slip-generator', 'client-billing-generator'] },
+          { id: 'uang-jalan-calculator', name: 'Uang Jalan Calculator', description: 'Kalkulator uang jalan driver', icon: '🚛', color: 'bg-slate-600', component: UangJalanCalculator, workflow: ['surat-jalan-maker'] },
+        ],
+      },
+      {
+        id: 'procurement-logistics',
+        name: 'Procurement & Logistics',
+        description: 'Pengadaan barang dan logistik pengiriman',
+        icon: '📦',
+        color: 'bg-gray-500',
+        tools: [
+          { id: 'po-builder', name: 'PO Builder', description: 'Generator Purchase Order', icon: '📋', color: 'bg-gray-500', component: PoBuilder, workflow: ['vendor-database', 'surat-jalan-maker'] },
+          { id: 'surat-jalan-maker', name: 'Surat Jalan Maker', description: 'Generator surat jalan pengiriman', icon: '🚚', color: 'bg-gray-600', component: SuratJalanMaker, workflow: ['po-builder', 'uang-jalan-calculator'] },
+        ],
+      },
+      {
+        id: 'hr-compliance',
+        name: 'HR & Compliance',
+        description: 'Manajemen SDM dan kepatuhan regulasi',
+        icon: '👥',
+        color: 'bg-slate-600',
+        tools: [
+          { id: 'medical-checkup-tracker', name: 'Medical Checkup Tracker', description: 'Pemantauan MCU dan sertifikasi K3', icon: '🏥', color: 'bg-slate-600', component: MedicalCheckupTracker, workflow: ['bpjs-admin-manager'] },
+          { id: 'bpjs-admin-manager', name: 'BPJS Admin Manager', description: 'Rekapitulasi kepesertaan BPJS', icon: '🏛️', color: 'bg-gray-600', component: BpjsAdminManager, workflow: ['payroll-slip-generator', 'medical-checkup-tracker'] },
+        ],
+      },
+      {
+        id: 'asset-customs',
+        name: 'Asset & Customs',
+        description: 'Manajemen aset dan kepabeanan',
+        icon: '🏭',
+        color: 'bg-gray-600',
+        tools: [
+          { id: 'tyre-maintenance-log', name: 'Tyre Maintenance Log', description: 'Log perawatan ban dan sparepart', icon: '🔧', color: 'bg-gray-600', component: TyreMaintenanceLog, workflow: ['heavy-equipment-inspection'] },
+          { id: 'customs-vault', name: 'Customs Vault', description: 'Repository dokumen kepabeanan', icon: '📁', color: 'bg-slate-700', component: CustomsVault, workflow: ['bill-of-lading-generator', 'certificate-of-origin-generator'] },
+          { id: 'client-contract-manager', name: 'Client Contract Manager', description: 'Tracker kontrak B2B dengan pengingat', icon: '📄', color: 'bg-gray-700', component: ClientContractManager, workflow: ['pkwt-contract-builder', 'client-billing-generator'] },
         ],
       },
     ],
