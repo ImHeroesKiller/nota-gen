@@ -711,3 +711,167 @@ export interface GrievanceSummary {
   avg_satisfaction?: number;
   avg_resolution_days?: number;
 }
+
+// ============================================================================
+// MODULE 1.5: DOCUMENT GENERATION FOR OUTSOURCING (HC-DOC)
+// ============================================================================
+
+// APP-HC-DOC-01: sla_documents
+export type SLAStatus = 'draft' | 'sent' | 'accepted' | 'active' | 'expired' | 'terminated';
+
+export interface SLADocument {
+  id: number;
+  sla_number: string;
+  client_id?: number;
+  client_name: string;
+  service_type: string;
+  // Service Details
+  service_description: string;
+  service_period_start: string;
+  service_period_end: string;
+  // SLA Metrics
+  response_time: number; // in minutes
+  resolution_time: number; // in hours
+  availability_percentage: number;
+  // Penalties
+  penalty_clause?: string;
+  penalty_amount: number;
+  // Status
+  status: SLAStatus;
+  signed_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSLADocumentDTO {
+  sla_number: string;
+  client_id?: number;
+  client_name: string;
+  service_type: string;
+  service_description: string;
+  service_period_start: string;
+  service_period_end: string;
+  response_time: number;
+  resolution_time: number;
+  availability_percentage: number;
+  penalty_clause?: string;
+  penalty_amount: number;
+  notes?: string;
+}
+
+export interface UpdateSLADocumentDTO {
+  status?: SLAStatus;
+  signed_date?: Date;
+  notes?: string;
+}
+
+// APP-HC-DOC-02: work_orders
+export type WorkOrderStatus = 'pending' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface WorkOrder {
+  id: number;
+  wo_number: string;
+  client_id?: number;
+  client_name: string;
+  wo_date: string;
+  // Work Details
+  work_title: string;
+  work_description: string;
+  work_type?: string;
+  // Resource Requirements
+  required_manpower: number;
+  required_skills?: string;
+  // Timeline
+  start_date?: string;
+  end_date?: string;
+  estimated_hours?: number;
+  // Cost
+  hourly_rate: number;
+  total_cost: number;
+  // Status
+  status: WorkOrderStatus;
+  approved_date?: string;
+  completed_date?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateWorkOrderDTO {
+  wo_number: string;
+  client_id?: number;
+  client_name: string;
+  wo_date: string;
+  work_title: string;
+  work_description: string;
+  work_type?: string;
+  required_manpower: number;
+  required_skills?: string;
+  start_date?: string;
+  end_date?: string;
+  estimated_hours: number;
+  hourly_rate: number;
+  total_cost: number;
+  notes?: string;
+}
+
+export interface UpdateWorkOrderDTO {
+  status?: WorkOrderStatus;
+  notes?: string;
+}
+
+// APP-HC-DOC-03: client_proposals
+export type ProposalStatus = 'draft' | 'sent' | 'negotiated' | 'accepted' | 'rejected' | 'expired';
+
+export interface ClientProposal {
+  id: number;
+  proposal_number: string;
+  client_id?: number;
+  client_name: string;
+  proposal_date: string;
+  valid_until: string;
+  // Proposal Details
+  proposal_title: string;
+  proposal_description: string;
+  service_type?: string;
+  // Manpower
+  total_manpower: number;
+  // Cost Breakdown
+  manpower_cost: number;
+  operational_cost: number;
+  management_fee: number;
+  total_cost: number;
+  // Status
+  status: ProposalStatus;
+  sent_date?: string;
+  negotiated_date?: string;
+  accepted_date?: string;
+  rejection_reason?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateClientProposalDTO {
+  proposal_number: string;
+  client_id?: number;
+  client_name: string;
+  proposal_date: string;
+  valid_until: string;
+  proposal_title: string;
+  proposal_description: string;
+  service_type?: string;
+  total_manpower: number;
+  manpower_cost: number;
+  operational_cost: number;
+  management_fee: number;
+  total_cost: number;
+  notes?: string;
+}
+
+export interface UpdateClientProposalDTO {
+  status?: ProposalStatus;
+  rejection_reason?: string;
+  notes?: string;
+}

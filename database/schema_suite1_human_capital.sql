@@ -904,5 +904,205 @@ VALUES
     (1, 'TK-123456789', 'KES-987654321', 'active');
 
 -- ============================================================================
+-- MODULE 1.5: DOCUMENT GENERATION FOR OUTSOURCING (HC-DOC)
+-- ============================================================================
+
+-- APP-HC-DOC-01: sla_documents
+-- Tabel untuk dokumen Service Level Agreement dengan klien
+CREATE TABLE IF NOT EXISTS sla_documents (
+    id SERIAL PRIMARY KEY,
+    sla_number VARCHAR(100) NOT NULL UNIQUE,
+    client_id INTEGER,
+    client_name VARCHAR(255) NOT NULL,
+    service_type VARCHAR(255) NOT NULL,
+    -- Service Details
+    service_description TEXT NOT NULL,
+    service_period_start DATE NOT NULL,
+    service_period_end DATE NOT NULL,
+    -- SLA Metrics
+    response_time INTEGER, -- in minutes
+    resolution_time INTEGER, -- in hours
+    availability_percentage DECIMAL(5, 2) DEFAULT 99.00,
+    -- Penalties
+    penalty_clause TEXT,
+    penalty_amount DECIMAL(15, 2),
+    -- Status
+    status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    -- Status values: draft, sent, accepted, active, expired, terminated
+    signed_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT chk_sla_status CHECK (
+        status IN ('draft', 'sent', 'accepted', 'active', 'expired', 'terminated')
+    ),
+    CONSTRAINT chk_sla_dates CHECK (service_period_end > service_period_start),
+    CONSTRAINT chk_sla_metrics CHECK (
+        response_time > 0 AND
+        resolution_time > 0 AND
+        availability_percentage >= 0 AND
+        availability_percentage <= 100
+    )
+);
+
+-- Indexes for sla_documents
+CREATE INDEX IF NOT EXISTS idx_sla_client ON sla_documents(client_id);
+CREATE INDEX IF NOT EXISTS idx_sla_number ON sla_documents(sla_number);
+CREATE INDEX IF NOT EXISTS idx_sla_status ON sla_documents(status);
+CREATE INDEX IF NOT EXISTS idx_sla_dates ON sla_documents(service_period_start, service_period_end);
+
+-- APP-HC-DOC-02: work_orders
+-- Tabel untuk work order dari klien
+CREATE TABLE IF NOT EXISTS work_orders (
+    id SERIAL PRIMARY KEY,
+    wo_number VARCHAR(100) NOT NULL UNIQUE,
+    client_id INTEGER,
+    client_name VARCHAR(255) NOT NULL,
+    wo_date DATE NOT NULL,
+    -- Work Details
+    work_title VARCHAR(255) NOT NULL,
+    work_description TEXT NOT NULL,
+    work_type VARCHAR(100),
+    -- Resource Requirements
+    required_manpower INTEGER DEFAULT 1,
+    required_skills TEXT,
+    -- Timeline
+    start_date DATE,
+    end_date DATE,
+    estimated_hours INTEGER,
+    -- Cost
+    hourly_rate DECIMAL(15, 2),
+    total_cost DECIMAL(15, 2),
+    -- Status
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    -- Status values: pending, approved, in_progress, completed, cancelled
+    approved_date DATE,
+    completed_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT chk_wo_status CHECK (
+        status IN ('pending', 'approved', 'in_progress', 'completed', 'cancelled')
+    ),
+    CONSTRAINT chk_wo_dates CHECK (end_date >= start_date OR end_date IS NULL),
+    CONSTRAINT chk_wo_cost CHECK (total_cost >= 0)
+);
+
+-- Indexes for work_orders
+CREATE INDEX IF NOT EXISTS idx_wo_client ON work_orders(client_id);
+CREATE INDEX IF NOT EXISTS idx_wo_number ON work_orders(wo_number);
+CREATE INDEX IF NOT EXISTS idx_wo_status ON work_orders(status);
+CREATE INDEX IF NOT EXISTS idx_wo_date ON work_orders(wo_date);
+
+-- APP-HC-DOC-03: client_proposals
+-- Tabel untuk proposal ke klien
+CREATE TABLE IF NOT EXISTS client_proposals (
+    id SERIAL PRIMARY KEY,
+    proposal_number VARCHAR(100) NOT NULL UNIQUE,
+    client_id INTEGER,
+    client_name VARCHAR(255) NOT NULL,
+    proposal_date DATE NOT NULL,
+    valid_until DATE NOT NULL,
+    -- Proposal Details
+    proposal_title VARCHAR(255) NOT NULL,
+    proposal_description TEXT NOT NULL,
+    service_type VARCHAR(100),
+    -- Manpower
+    total_manpower INTEGER DEFAULT 1,
+    -- Cost Breakdown
+    manpower_cost DECIMAL(15, 2) DEFAULT 0,
+    operational_cost DECIMAL(15, 2) DEFAULT 0,
+    management_fee DECIMAL(15, 2) DEFAULT 0,
+    total_cost DECIMAL(15, 2) NOT NULL,
+    -- Status
+    status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    -- Status values: draft, sent, negotiated, accepted, rejected, expired
+    sent_date DATE,
+    negotiated_date DATE,
+    accepted_date DATE,
+    rejection_reason TEXT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Constraints
+    CONSTRAINT chk_proposal_status CHECK (
+        status IN ('draft', 'sent', 'negotiated', 'accepted', 'rejected', 'expired')
+    ),
+    CONSTRAINT chk_proposal_dates CHECK (valid_until > proposal_date),
+    CONSTRAINT chk_proposal_cost CHECK (total_cost >= 0)
+);
+
+-- Indexes for client_proposals
+CREATE INDEX IF NOT EXISTS idx_proposal_client ON client_proposals(client_id);
+CREATE INDEX IF NOT EXISTS idx_proposal_number ON client_proposals(proposal_number);
+CREATE INDEX IF NOT EXISTS idx_proposal_status ON client_proposals(status);
+CREATE INDEX IF NOT EXISTS idx_proposal_date ON client_proposals(proposal_date);
+
+-- ============================================================================
+-- TRIGGERS FOR DOCUMENT GENERATION MODULE
+-- ============================================================================
+
+-- Trigger: Auto-update proposal status when accepted
+CREATE OR REPLACE FUNCTION fn_update_proposal_on_accept()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'accepted' AND OLD.status != 'accepted' THEN
+        NEW.accepted_date := CURRENT_TIMESTAMP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_proposal_on_accept
+BEFORE UPDATE ON client_proposals
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_proposal_on_accept();
+
+-- Trigger: Auto-update work order status
+CREATE OR REPLACE FUNCTION fn_update_wo_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.status = 'approved' AND OLD.status != 'approved' THEN
+        NEW.approved_date := CURRENT_TIMESTAMP;
+    ELSIF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+        NEW.completed_date := CURRENT_TIMESTAMP;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_wo_status
+BEFORE UPDATE ON work_orders
+FOR EACH ROW
+EXECUTE FUNCTION fn_update_wo_status();
+
+-- ============================================================================
+-- SAMPLE DATA FOR DOCUMENT GENERATION (Optional - for testing)
+-- ============================================================================
+
+-- Insert sample SLA data
+INSERT INTO sla_documents (sla_number, client_name, service_type, service_description, service_period_start, service_period_end, response_time, resolution_time, availability_percentage, status)
+VALUES 
+    ('SLA-2026-001', 'PT ABC Manufacturing', 'Security Services', 'Penyediaan jasa security untuk pabrik', '2026-01-01', '2026-12-31', 15, 24, 99.50, 'active'),
+    ('SLA-2026-002', 'PT XYZ Tower', 'Cleaning Services', 'Penyediaan jasa cleaning service untuk gedung perkantoran', '2026-01-01', '2026-12-31', 30, 48, 99.00, 'active');
+
+-- Insert sample work order data
+INSERT INTO work_orders (wo_number, client_name, wo_date, work_title, work_description, work_type, required_manpower, start_date, end_date, estimated_hours, hourly_rate, total_cost, status)
+VALUES 
+    ('WO-2026-001', 'PT ABC Manufacturing', '2026-01-05', 'Event Security', 'Penyediaan security untuk event perusahaan', 'event', 10, '2026-01-15', '2026-01-15', 80, 25000, 2000000, 'approved'),
+    ('WO-2026-002', 'PT XYZ Tower', '2026-01-08', 'Deep Cleaning', 'Deep cleaning untuk seluruh lantai', 'cleaning', 5, '2026-01-20', '2026-01-22', 120, 20000, 2400000, 'pending');
+
+-- Insert sample proposal data
+INSERT INTO client_proposals (proposal_number, client_name, proposal_date, valid_until, proposal_title, proposal_description, service_type, total_manpower, manpower_cost, operational_cost, management_fee, total_cost, status)
+VALUES 
+    ('PROP-2026-001', 'PT DEF Corporation', '2026-01-10', '2026-02-10', 'Outsourcing Security Services', 'Proposal penyediaan jasa security untuk 1 tahun', 'security', 20, 1200000000, 120000000, 120000000, 1440000000, 'sent'),
+    ('PROP-2026-002', 'PT GHI Building', '2026-01-12', '2026-02-12', 'Outsourcing Cleaning Services', 'Proposal penyediaan jasa cleaning service untuk 1 tahun', 'cleaning', 15, 900000000, 90000000, 90000000, 1080000000, 'draft');
+
+-- ============================================================================
 -- END OF SCHEMA
 -- ============================================================================
