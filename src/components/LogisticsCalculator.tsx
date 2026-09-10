@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 type CalculatorMode = 'volume' | 'weight' | 'cost' | 'distance' | 'fuel';
 
