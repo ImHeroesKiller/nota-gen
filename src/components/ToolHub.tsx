@@ -59,8 +59,13 @@ import SafetyIncidentLog from './SafetyIncidentLog';
 import RecruitmentPipeline from './RecruitmentPipeline';
 import ClientBillingGenerator from './ClientBillingGenerator';
 import EmployeeGrievancePortal from './EmployeeGrievancePortal';
+import DailyAttendance from './DailyAttendance';
+import HeavyEquipmentInspection from './HeavyEquipmentInspection';
+import ToolboxMeetingLog from './ToolboxMeetingLog';
+import CampAccommodationManager from './CampAccommodationManager';
+import FuelConsumptionTracker from './FuelConsumptionTracker';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker' | 'sla-kpi-dashboard' | 'uniform-inventory-manager' | 'client-shift-scheduler' | 'onboarding-compliance-checklist' | 'incident-client-feedback-log' | 'performance-appraisal' | 'safety-incident-log' | 'recruitment-pipeline' | 'client-billing-generator' | 'employee-grievance-portal';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker' | 'sla-kpi-dashboard' | 'uniform-inventory-manager' | 'client-shift-scheduler' | 'onboarding-compliance-checklist' | 'incident-client-feedback-log' | 'performance-appraisal' | 'safety-incident-log' | 'recruitment-pipeline' | 'client-billing-generator' | 'employee-grievance-portal' | 'daily-attendance' | 'heavy-equipment-inspection' | 'toolbox-meeting-log' | 'camp-accommodation-manager' | 'fuel-consumption-tracker';
 
 interface Tool {
   id: ToolId;
@@ -180,6 +185,17 @@ const categories: Category[] = [
       </svg>
     ),
     color: 'from-violet-500 to-purple-500',
+  },
+  {
+    id: 'mining-operations',
+    name: 'Mining Operations',
+    description: 'Tools khusus untuk operasional pertambangan dan site management',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    ),
+    color: 'from-amber-500 to-orange-500',
   },
 ];
 
@@ -934,6 +950,68 @@ const tools: Tool[] = [
     color: 'bg-orange-600',
     category: 'outsourcing-management',
   },
+
+  // Mining Operations
+  {
+    id: 'daily-attendance',
+    name: 'Daily Attendance & Rotational Rosters',
+    description: 'Sistem presensi lapangan dengan pencatatan shift kerja berat (rotasi FIFO) terintegrasi kalkulasi lembur otomatis',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-amber-500',
+    category: 'mining-operations',
+  },
+  {
+    id: 'heavy-equipment-inspection',
+    name: 'Heavy Equipment & Fleet Daily Inspection (P2H)',
+    description: 'Lembar periksa harian wajib (Pre-Start Inspection) untuk unit dump truck, excavator, atau bulldozer sebelum beroperasi',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+    color: 'bg-orange-600',
+    category: 'mining-operations',
+  },
+  {
+    id: 'toolbox-meeting-log',
+    name: 'Site Safety & Toolbox Meeting Log',
+    description: 'Dokumentasi digital untuk pelaksanaan Safety Talk / Toolbox Meeting harian dengan daftar hadir dan hazard report',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-red-500',
+    category: 'mining-operations',
+  },
+  {
+    id: 'camp-accommodation-manager',
+    name: 'Camp & Mess Accommodation Manager',
+    description: 'Sistem manajemen pengelolaan kamar mess/camp karyawan di site proyek, memantau ketersediaan dan jadwal kebersihan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    ),
+    color: 'bg-blue-500',
+    category: 'mining-operations',
+  },
+  {
+    id: 'fuel-consumption-tracker',
+    name: 'Fuel & Heavy Oil Consumption Tracker',
+    description: 'Logistik pencatatan pemakaian BBM harian untuk alat berat dan genset guna menghindari kebocoran atau pemborosan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+    color: 'bg-green-600',
+    category: 'mining-operations',
+  },
 ];
 
 export default function ToolHub() {
@@ -1027,6 +1105,11 @@ export default function ToolHub() {
     'recruitment-pipeline': RecruitmentPipeline,
     'client-billing-generator': ClientBillingGenerator,
     'employee-grievance-portal': EmployeeGrievancePortal,
+    'daily-attendance': DailyAttendance,
+    'heavy-equipment-inspection': HeavyEquipmentInspection,
+    'toolbox-meeting-log': ToolboxMeetingLog,
+    'camp-accommodation-manager': CampAccommodationManager,
+    'fuel-consumption-tracker': FuelConsumptionTracker,
   }), []);
 
   // NOW we can have conditional logic after all hooks
