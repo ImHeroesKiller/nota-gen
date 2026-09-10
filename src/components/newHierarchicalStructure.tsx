@@ -73,10 +73,21 @@ import ClientContractManager from './ClientContractManager';
 import OfficialLetterMaker from './OfficialLetterMaker';
 import ReportPdfGenerator from './ReportPdfGenerator';
 import ContractGenerator from './ContractGenerator';
+import DocumentRegistry from './DocumentRegistry';
 
 import DailyAttendance from './DailyAttendance';
 import CampAccommodationManager from './CampAccommodationManager';
 import HeavyEquipmentInspection from './HeavyEquipmentInspection';
+
+// PDF Processing Tools
+import NotaToPdf from './NotaToPdf';
+import PdfSplitter from './PdfSplitter';
+import PDFProcessor from './PDFProcessor';
+import PdfToImage from './PdfToImage';
+import PdfWatermark from './PdfWatermark';
+import PdfPageOrganizer from './PdfPageOrganizer';
+import PdfMetadataEditor from './PdfMetadataEditor';
+import PdfPageNumberer from './PdfPageNumberer';
 import FuelConsumptionTracker from './FuelConsumptionTracker';
 import ToolboxMeetingLog from './ToolboxMeetingLog';
 import SafetyIncidentLog from './SafetyIncidentLog';
@@ -278,6 +289,7 @@ export const hierarchicalStructure: Suite[] = [
         icon: '⚖️',
         color: 'bg-violet-700',
         tools: [
+          { id: 'document-registry', name: 'Document Registry', description: 'Register nomor dokumen & surat', icon: '📋', color: 'bg-violet-700', component: DocumentRegistry, workflow: ['official-letter-maker', 'contract-generator'] },
           { id: 'client-contract-manager', name: 'Client Contract Manager', description: 'Tracker kontrak B2B', icon: '📄', color: 'bg-violet-700', component: ClientContractManager, workflow: ['pkwt-contract-builder'] },
           { id: 'contract-generator', name: 'Contract Generator', description: 'Generator kontrak', icon: '📝', color: 'bg-violet-800', component: ContractGenerator, workflow: ['pkwt-contract-builder'] },
           { id: 'official-letter-maker', name: 'Official Letter Maker', description: 'Generator surat resmi', icon: '✉️', color: 'bg-violet-800', component: OfficialLetterMaker, workflow: [] },
@@ -334,6 +346,50 @@ export const hierarchicalStructure: Suite[] = [
         color: 'bg-amber-800',
         tools: [
           { id: 'sla-kpi-dashboard', name: 'SLA & KPI Dashboard', description: 'Dashboard SLA & KPI', icon: '📊', color: 'bg-amber-800', component: SlaKpiDashboard, workflow: [] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'document-management',
+    name: 'Document Management & PDF Processing',
+    description: 'Manajemen dokumen dan pemrosesan PDF',
+    icon: '📄',
+    color: 'from-[#8B5CF6] to-[#A78BFA]',
+    modules: [
+      {
+        id: 'pdf-processing',
+        name: 'PDF Processing',
+        description: 'Pemrosesan dan manipulasi file PDF',
+        icon: '📑',
+        color: 'bg-purple-500',
+        tools: [
+          { id: 'nota-to-pdf', name: 'Nota ke PDF', description: 'Gabungkan gambar nota ke PDF', icon: '🖼️', color: 'bg-purple-500', component: NotaToPdf, workflow: ['pdf-processor'] },
+          { id: 'pdf-splitter', name: 'PDF Splitter', description: 'Pecah PDF menjadi beberapa file', icon: '✂️', color: 'bg-purple-600', component: PdfSplitter, workflow: ['pdf-processor'] },
+          { id: 'pdf-processor', name: 'PDF Processor', description: 'Compress, merge, rotate PDF', icon: '⚙️', color: 'bg-purple-700', component: PDFProcessor, workflow: ['nota-to-pdf', 'pdf-splitter'] },
+        ],
+      },
+      {
+        id: 'pdf-enhancement',
+        name: 'PDF Enhancement',
+        description: 'Enhancement dan optimasi PDF',
+        icon: '✨',
+        color: 'bg-purple-600',
+        tools: [
+          { id: 'pdf-to-image', name: 'PDF to Image', description: 'Konversi PDF ke gambar', icon: '🖼️', color: 'bg-purple-600', component: PdfToImage, workflow: ['pdf-processor'] },
+          { id: 'pdf-watermark', name: 'PDF Watermark', description: 'Tambahkan watermark ke PDF', icon: '💧', color: 'bg-purple-700', component: PdfWatermark, workflow: ['pdf-processor'] },
+          { id: 'pdf-page-organizer', name: 'PDF Page Organizer', description: 'Atur ulang halaman PDF', icon: '📋', color: 'bg-purple-800', component: PdfPageOrganizer, workflow: ['pdf-processor'] },
+        ],
+      },
+      {
+        id: 'pdf-metadata',
+        name: 'PDF Metadata & Numbering',
+        description: 'Metadata dan penomoran PDF',
+        icon: '🏷️',
+        color: 'bg-purple-700',
+        tools: [
+          { id: 'pdf-metadata-editor', name: 'PDF Metadata Editor', description: 'Edit metadata PDF', icon: '🏷️', color: 'bg-purple-700', component: PdfMetadataEditor, workflow: ['pdf-processor'] },
+          { id: 'pdf-page-numberer', name: 'PDF Page Numberer', description: 'Tambahkan nomor halaman', icon: '🔢', color: 'bg-purple-800', component: PdfPageNumberer, workflow: ['pdf-processor'] },
         ],
       },
     ],
