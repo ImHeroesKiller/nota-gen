@@ -52,27 +52,95 @@ export default function ToolHub() {
     setSearchQuery('');
   };
 
-  // If a tool is selected, render it
-  if (navigation.level === 'tool' && navigation.selectedTool) {
-    const ToolComponent = navigation.selectedTool.component;
+  const renderMainContent = () => {
+    if (navigation.level === 'tool' && navigation.selectedTool) {
+      const ToolComponent = navigation.selectedTool.component;
+      return <ToolComponent onBack={handleBack} darkMode={darkMode} setDarkMode={setDarkMode} />;
+    }
+
+    if (searchQuery) {
+      return (
+        <div className="p-6">
+          <h2 className="text-2xl font-bold mb-4">
+            Hasil Pencarian: {searchResults.length} tools ditemukan
+          </h2>
+          {searchResults.length === 0 ? (
+            <div className="text-center py-12">
+              <p className={textSecondary}>Tidak ada tools yang ditemukan</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {searchResults.map((tool) => (
+                <button
+                  key={tool.id}
+                  onClick={() => handleToolSelect(tool.id)}
+                  className={`text-left p-4 rounded-xl border transition-all hover:shadow-lg ${
+                    darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl shrink-0`}>
+                      {tool.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">{tool.name}</h3>
+                      <p className={`text-sm ${textSecondary}`}>{tool.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
-      <div className={darkMode ? 'dark' : ''}>
-        <div className={`min-h-screen ${bg} ${textPrimary}`}>
-          <ToolComponent onBack={handleBack} darkMode={darkMode} setDarkMode={setDarkMode} />
+      <div className="p-6">
+        <h2 className="text-2xl font-bold mb-6">Semua Suites</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hierarchicalStructure.map((suite) => (
+            <div
+              key={suite.id}
+              className={`p-6 rounded-xl border transition-all hover:shadow-lg ${
+                darkMode ? 'bg-[#161b22] border-[#30363d]' : 'bg-white border-[#E2E8F0] shadow-sm'
+              }`}
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl`}>
+                  {suite.icon}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold mb-2">{suite.name}</h3>
+                  <p className={`text-sm ${textSecondary}`}>{suite.description}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {suite.modules.map((module) => (
+                  <div key={module.id} className="text-sm">
+                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">{module.name}</div>
+                    <div className={`text-xs ${textSecondary} ml-2`}>
+                      {module.tools.length} tools
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
-  }
+  };
 
-  // Dashboard view with sidebar
   return (
     <div className={`flex h-screen ${bg} ${textPrimary}`}>
-      {/* Sidebar */}
+      {/* Sidebar - Always visible */}
       <Sidebar
         collapsed={sidebarCollapsed}
         onToolSelect={handleToolSelect}
         onDashboardClick={handleDashboardClick}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        activeTool={navigation.selectedTool?.id}
       />
 
       {/* Main Content */}
@@ -146,79 +214,8 @@ export default function ToolHub() {
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          {searchQuery ? (
-            // Search Results
-            <div>
-              <h2 className="text-2xl font-bold mb-4">
-                Hasil Pencarian: {searchResults.length} tools ditemukan
-              </h2>
-              {searchResults.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className={textSecondary}>Tidak ada tools yang ditemukan</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {searchResults.map((tool) => (
-                    <button
-                      key={tool.id}
-                      onClick={() => handleToolSelect(tool.id)}
-                      className={`text-left p-4 rounded-xl border transition-all hover:shadow-lg ${
-                        darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl shrink-0`}>
-                          {tool.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold mb-1">{tool.name}</h3>
-                          <p className={`text-sm ${textSecondary}`}>{tool.description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            // Dashboard - Suite Overview
-            <div>
-              <h2 className="text-2xl font-bold mb-6">Semua Suites</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {hierarchicalStructure.map((suite) => {
-                  return (
-                    <div
-                      key={suite.id}
-                      className={`p-6 rounded-xl border transition-all hover:shadow-lg ${
-                        darkMode ? 'bg-[#161b22] border-[#30363d]' : 'bg-white border-[#E2E8F0] shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl`}>
-                          {suite.icon}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-bold mb-2">{suite.name}</h3>
-                          <p className={`text-sm ${textSecondary}`}>{suite.description}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        {suite.modules.map((module) => (
-                          <div key={module.id} className="text-sm">
-                            <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">{module.name}</div>
-                            <div className={`text-xs ${textSecondary} ml-2`}>
-                              {module.tools.length} tools
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        <main className="flex-1 overflow-auto">
+          {renderMainContent()}
         </main>
       </div>
     </div>
