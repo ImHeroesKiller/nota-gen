@@ -88,7 +88,7 @@ export const hierarchicalStructure: Suite[] = [
     name: 'Human Capital & Outsourcing',
     description: 'Manajemen SDM, rekrutmen, payroll, dan outsourcing',
     icon: '👥',
-    color: 'from-pink-500 to-rose-500',
+    color: 'from-[#E31B23] to-[#FF6B6B]',
     modules: [
       {
         id: 'recruitment-onboarding',
@@ -146,7 +146,7 @@ export const hierarchicalStructure: Suite[] = [
     name: 'Logistics, Fleet & Facility',
     description: 'Manajemen logistik, armada, dan fasilitas',
     icon: '🚚',
-    color: 'from-blue-500 to-cyan-500',
+    color: 'from-[#0072CE] to-[#4DA8DA]',
     modules: [
       {
         id: 'fleet-management',
@@ -202,7 +202,7 @@ export const hierarchicalStructure: Suite[] = [
     name: 'Customs, Import & Trade',
     description: 'Kepabeanan, impor, dan perdagangan',
     icon: '🌐',
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-[#E31B23] to-[#0072CE]',
     modules: [
       {
         id: 'customs-documentation',
@@ -244,7 +244,7 @@ export const hierarchicalStructure: Suite[] = [
     name: 'Finance, Billing & Corporate Legal',
     description: 'Keuangan, penagihan, dan legal korporat',
     icon: '💼',
-    color: 'from-violet-500 to-purple-500',
+    color: 'from-[#0072CE] to-[#00A3E0]',
     modules: [
       {
         id: 'billing-invoicing',
@@ -291,7 +291,7 @@ export const hierarchicalStructure: Suite[] = [
     name: 'Field, Mining & Site Operations',
     description: 'Operasional lapangan, tambang, dan site',
     icon: '⛏️',
-    color: 'from-amber-500 to-orange-500',
+    color: 'from-[#E31B23] to-[#FF8C42]',
     modules: [
       {
         id: 'site-operations',

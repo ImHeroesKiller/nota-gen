@@ -12,17 +12,21 @@ interface NavigationState {
 }
 
 export default function ToolHub() {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [navigation, setNavigation] = useState<NavigationState>({ level: 'dashboard' });
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
+  // PERADA Brand Colors
+  const peradaRed = '#E31B23';
+  const peradaBlue = '#0072CE';
+
+  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#F8FAFC]';
   const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
-  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
-  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
+  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#E2E8F0]';
+  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#0F172A]';
+  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#64748B]';
+  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#F1F5F9]';
 
   const totalTools = getTotalToolsCount();
 
@@ -106,11 +110,11 @@ export default function ToolHub() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E31B23] to-[#0072CE] flex items-center justify-center shadow-lg">
                 <span className="text-white text-sm font-bold">PA</span>
               </div>
               <div>
-                <h1 className="text-lg font-bold tracking-tight">PERADA Tools</h1>
+                <h1 className="text-lg font-bold tracking-tight text-[#0F172A] dark:text-[#e6edf3]">PERADA Tools</h1>
                 <p className={`text-xs ${textSecondary}`}>Enterprise Resource Planning Suite</p>
               </div>
             </div>
@@ -144,7 +148,7 @@ export default function ToolHub() {
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={() => setNavigation({ level: 'dashboard' })}
-              className={`${textSecondary} hover:text-[#0A2540] dark:hover:text-[#58a6ff] transition-colors`}
+              className={`${textSecondary} hover:text-[#0072CE] transition-colors`}
             >
               Home
             </button>
@@ -153,7 +157,7 @@ export default function ToolHub() {
                 <span className={textSecondary}>›</span>
                 <button
                   onClick={() => setNavigation({ level: 'suite', selectedSuite: navigation.selectedSuite })}
-                  className={`${textSecondary} hover:text-[#0A2540] dark:hover:text-[#58a6ff] transition-colors`}
+                  className={`${textSecondary} hover:text-[#0072CE] transition-colors`}
                 >
                   {navigation.selectedSuite.name}
                 </button>
@@ -162,7 +166,7 @@ export default function ToolHub() {
             {navigation.selectedModule && (
               <>
                 <span className={textSecondary}>›</span>
-                <span className="font-medium">{navigation.selectedModule.name}</span>
+                <span className="font-medium text-[#0F172A] dark:text-[#e6edf3]">{navigation.selectedModule.name}</span>
               </>
             )}
           </div>
@@ -178,8 +182,8 @@ export default function ToolHub() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full pl-12 pr-4 py-3 rounded-xl border ${
-                darkMode ? 'bg-[#161b22] border-[#30363d] text-[#e6edf3]' : 'bg-white border-[#e2e5e9] text-[#1a1a2e]'
-              } focus:outline-none focus:ring-2 focus:ring-[#0A2540]/30`}
+                darkMode ? 'bg-[#161b22] border-[#30363d] text-[#e6edf3]' : 'bg-white border-[#E2E8F0] text-[#0F172A]'
+              } focus:outline-none focus:ring-2 focus:ring-[#0072CE]/30`}
             />
           </div>
         </div>
@@ -203,7 +207,7 @@ export default function ToolHub() {
                       onClick={() => handleModuleSelect(module.id)}
                       className={`w-full text-left p-3 rounded-lg transition-all ${
                         navigation.selectedModule?.id === module.id
-                          ? 'bg-[#0A2540] text-white'
+                          ? 'bg-[#0072CE] text-white'
                           : hoverBg
                       }`}
                     >
@@ -258,7 +262,7 @@ export default function ToolHub() {
                       key={tool.id}
                       onClick={() => handleToolSelect(tool)}
                       className={`text-left p-4 rounded-xl border transition-all hover:shadow-lg ${
-                        darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#484f58]' : 'bg-white border-[#e2e5e9] hover:border-[#0A2540]/30'
+                        darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -294,7 +298,7 @@ export default function ToolHub() {
                     key={module.id}
                     onClick={() => handleModuleSelect(module.id)}
                     className={`text-left p-6 rounded-2xl border transition-all hover:shadow-xl ${
-                      darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#484f58]' : 'bg-white border-[#e2e5e9] hover:border-[#0A2540]/30'
+                      darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
                     }`}
                   >
                     <div className="flex items-start gap-4 mb-4">
@@ -308,7 +312,7 @@ export default function ToolHub() {
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-[#21262d] dark:border-[#30363d]">
                       <span className={`text-sm ${textSecondary}`}>{module.tools.length} tools tersedia</span>
-                      <span className="text-sm font-semibold text-[#0A2540] dark:text-[#58a6ff]">Buka →</span>
+                      <span className="text-sm font-semibold text-[#0072CE]">Buka →</span>
                     </div>
                   </button>
                 ))}
@@ -333,7 +337,7 @@ export default function ToolHub() {
                     key={tool.id}
                     onClick={() => handleToolSelect(tool)}
                     className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg ${
-                      darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#484f58]' : 'bg-white border-[#e2e5e9] hover:border-[#0A2540]/30'
+                      darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
                     }`}
                   >
                     <div className="flex items-start gap-3">

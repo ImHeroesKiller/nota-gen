@@ -12,28 +12,32 @@ export default function Dashboard({ onSuiteSelect, darkMode }: DashboardProps) {
   const totalTools = getTotalToolsCount();
   const totalModules = hierarchicalStructure.reduce((sum, suite) => sum + suite.modules.length, 0);
 
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
+  // PERADA Brand Colors
+  const peradaRed = '#E31B23';
+  const peradaBlue = '#0072CE';
+
+  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#F8FAFC]';
+  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#0F172A]';
+  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#64748B]';
   const cardBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
 
   return (
     <div className={`min-h-screen ${bg} ${textPrimary}`}>
       {/* Header */}
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? 'border-[#21262d] bg-[#161b22]/80' : 'border-[#e2e5e9] bg-white/80'}`}>
+      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? 'border-[#21262d] bg-[#161b22]/80' : 'border-[#E2E8F0] bg-white/80'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#E31B23] to-[#0072CE] flex items-center justify-center shadow-lg">
                 <span className="text-white text-lg font-bold">PA</span>
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">PERADA Tools</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] dark:text-[#e6edf3]">PERADA Tools</h1>
                 <p className={`text-sm ${textSecondary}`}>Enterprise Resource Planning Suite</p>
               </div>
             </div>
             <div className={`text-sm ${textSecondary}`}>
-              <span className="font-semibold text-[#0A2540] dark:text-[#58a6ff]">{totalTools}</span> Tools • <span className="font-semibold">{totalModules}</span> Modules • <span className="font-semibold">5</span> Suites
+              <span className="font-semibold text-[#E31B23]">{totalTools}</span> Tools • <span className="font-semibold text-[#0072CE]">{totalModules}</span> Modules • <span className="font-semibold">5</span> Suites
             </div>
           </div>
         </div>
