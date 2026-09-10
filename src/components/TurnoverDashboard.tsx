@@ -10,7 +10,13 @@ interface EmployeeMovement {
   reason?: string;
 }
 
-export default function TurnoverDashboard() {
+interface TurnoverDashboardProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function TurnoverDashboard({ onBack, darkMode, setDarkMode }: TurnoverDashboardProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2026');
   const [selectedClient, setSelectedClient] = useState<string>('all');
 

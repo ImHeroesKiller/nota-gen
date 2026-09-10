@@ -21,7 +21,13 @@ interface Distribution {
   status: 'active' | 'returned';
 }
 
-export default function UniformInventoryManager() {
+interface UniformInventoryManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function UniformInventoryManager({ onBack, darkMode, setDarkMode }: UniformInventoryManagerProps) {
   const [inventory] = useState<InventoryItem[]>([
     {
       id: '1',

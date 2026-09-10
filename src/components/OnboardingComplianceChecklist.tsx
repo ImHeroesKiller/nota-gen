@@ -16,7 +16,13 @@ interface OnboardingChecklist {
   completionPercentage: number;
 }
 
-export default function OnboardingComplianceChecklist() {
+interface OnboardingComplianceChecklistProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function OnboardingComplianceChecklist({ onBack, darkMode, setDarkMode }: OnboardingComplianceChecklistProps) {
   const [checklists] = useState<OnboardingChecklist[]>([
     {
       id: '1',

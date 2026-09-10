@@ -18,7 +18,13 @@ interface PettyCashSubmission {
   notes: string;
 }
 
-export default function PettyCashForm() {
+interface PettyCashFormProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function PettyCashForm({ onBack, darkMode, setDarkMode }: PettyCashFormProps) {
   const [submissions, setSubmissions] = useState<PettyCashSubmission[]>([
     {
       id: '1',

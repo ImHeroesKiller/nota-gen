@@ -11,7 +11,13 @@ interface Workflow {
   totalSteps: number;
 }
 
-export default function DocumentWorkflowManager() {
+interface DocumentWorkflowManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function DocumentWorkflowManager({ onBack, darkMode, setDarkMode }: DocumentWorkflowManagerProps) {
   const [workflows, setWorkflows] = useState<Workflow[]>([
     {
       id: '1',

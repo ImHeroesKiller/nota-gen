@@ -42,7 +42,13 @@ interface DailySummary {
   status: 'normal' | 'high' | 'low';
 }
 
-export default function FuelConsumptionTracker() {
+interface FuelConsumptionTrackerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function FuelConsumptionTracker({ onBack, darkMode, setDarkMode }: FuelConsumptionTrackerProps) {
   const [equipment] = useState<Equipment[]>([
     { id: '1', unitNumber: 'DT-001', type: 'Dump Truck', brand: 'Komatsu', model: 'HD785-7', site: 'Site A - Kalimantan', fuelType: 'solar', tankCapacity: 800 },
     { id: '2', unitNumber: 'EX-001', type: 'Excavator', brand: 'CAT', model: '336D', site: 'Site A - Kalimantan', fuelType: 'solar', tankCapacity: 600 },

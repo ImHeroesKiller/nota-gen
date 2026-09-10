@@ -17,7 +17,13 @@ interface Contract {
   autoRenewal: boolean;
 }
 
-export default function ClientContractManager() {
+interface ClientContractManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ClientContractManager({ onBack, darkMode, setDarkMode }: ClientContractManagerProps) {
   const [contracts, setContracts] = useState<Contract[]>([
     {
       id: '1',

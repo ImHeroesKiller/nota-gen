@@ -22,7 +22,13 @@ interface ScheduleConflict {
   severity: 'warning' | 'error';
 }
 
-export default function ClientShiftScheduler() {
+interface ClientShiftSchedulerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ClientShiftScheduler({ onBack, darkMode, setDarkMode }: ClientShiftSchedulerProps) {
   const [shifts] = useState<Shift[]>([
     {
       id: '1',

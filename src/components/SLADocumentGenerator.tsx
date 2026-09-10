@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { SLADocument, CreateSLADocumentDTO } from '../types/suite1-human-capital';
 
-export default function SLADocumentGenerator() {
+interface SLADocumentGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function SLADocumentGenerator({ onBack, darkMode, setDarkMode }: SLADocumentGeneratorProps) {
   const [formData, setFormData] = useState<CreateSLADocumentDTO>({
     sla_number: `SLA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
     client_name: '',

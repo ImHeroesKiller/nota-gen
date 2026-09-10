@@ -16,7 +16,13 @@ interface CustomsDocument {
   filePath: string;
 }
 
-export default function CustomsVault() {
+interface CustomsVaultProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function CustomsVault({ onBack, darkMode, setDarkMode }: CustomsVaultProps) {
   const [documents, setDocuments] = useState<CustomsDocument[]>([
     {
       id: '1',

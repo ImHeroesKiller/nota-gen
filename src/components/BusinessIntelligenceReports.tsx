@@ -11,7 +11,13 @@ interface Report {
   fileSize: string;
 }
 
-export default function BusinessIntelligenceReports() {
+interface BusinessIntelligenceReportsProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function BusinessIntelligenceReports({ onBack, darkMode, setDarkMode }: BusinessIntelligenceReportsProps) {
   const [reports] = useState<Report[]>([
     {
       id: '1',

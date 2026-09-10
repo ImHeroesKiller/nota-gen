@@ -27,7 +27,13 @@ interface POData {
   approvedBy: string;
 }
 
-export default function PoBuilder() {
+interface PoBuilderProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function PoBuilder({ onBack, darkMode, setDarkMode }: PoBuilderProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<POData>({
     poNumber: `PO-${Date.now()}`,

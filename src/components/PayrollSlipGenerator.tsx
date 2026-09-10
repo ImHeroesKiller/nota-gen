@@ -1,5 +1,11 @@
 import { useState, useRef } from 'react';
 
+interface PayrollSlipGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
 interface PayrollData {
   employeeName: string;
   employeeId: string;
@@ -20,7 +26,7 @@ interface PayrollData {
   accountNumber: string;
 }
 
-export default function PayrollSlipGenerator() {
+export default function PayrollSlipGenerator({ onBack, darkMode, setDarkMode }: PayrollSlipGeneratorProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [payrollData, setPayrollData] = useState<PayrollData>({
     employeeName: '',

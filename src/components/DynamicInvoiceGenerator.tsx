@@ -28,7 +28,13 @@ interface InvoiceData {
   accountName: string;
 }
 
-export default function DynamicInvoiceGenerator() {
+interface DynamicInvoiceGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function DynamicInvoiceGenerator({ onBack, darkMode, setDarkMode }: DynamicInvoiceGeneratorProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: `INV-${Date.now()}`,

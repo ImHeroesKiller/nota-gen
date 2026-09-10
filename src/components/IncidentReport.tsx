@@ -16,7 +16,13 @@ interface IncidentReport {
   createdAt: string;
 }
 
-export default function IncidentReport() {
+interface IncidentReportProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function IncidentReport({ onBack, darkMode, setDarkMode }: IncidentReportProps) {
   const [reports, setReports] = useState<IncidentReport[]>([
     {
       id: '1',

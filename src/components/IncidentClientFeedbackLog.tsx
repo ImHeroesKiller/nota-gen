@@ -17,7 +17,13 @@ interface FeedbackTicket {
   resolvedDate?: string;
 }
 
-export default function IncidentClientFeedbackLog() {
+interface IncidentClientFeedbackLogProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function IncidentClientFeedbackLog({ onBack, darkMode, setDarkMode }: IncidentClientFeedbackLogProps) {
   const [tickets] = useState<FeedbackTicket[]>([
     {
       id: '1',

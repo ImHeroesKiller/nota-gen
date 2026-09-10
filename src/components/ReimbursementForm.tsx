@@ -20,7 +20,13 @@ interface ReimbursementSubmission {
   notes: string;
 }
 
-export default function ReimbursementForm() {
+interface ReimbursementFormProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ReimbursementForm({ onBack, darkMode, setDarkMode }: ReimbursementFormProps) {
   const [submissions, setSubmissions] = useState<ReimbursementSubmission[]>([
     {
       id: '1',

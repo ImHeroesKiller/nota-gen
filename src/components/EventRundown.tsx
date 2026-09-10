@@ -11,7 +11,13 @@ interface EventSession {
   notes: string;
 }
 
-export default function EventRundown() {
+interface EventRundownProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function EventRundown({ onBack, darkMode, setDarkMode }: EventRundownProps) {
   const [sessions, setSessions] = useState<EventSession[]>([
     {
       id: '1',
