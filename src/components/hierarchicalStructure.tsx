@@ -35,6 +35,11 @@ import PdfSplitter from './PdfSplitter';
 import LabelGenerator from './LabelGenerator';
 import DocumentRegistry from './DocumentRegistry';
 import InvoiceGenerator from './InvoiceGenerator';
+import DynamicInvoiceGenerator from './DynamicInvoiceGenerator';
+import ContractGenerator from './ContractGenerator';
+import OfficialLetterMaker from './OfficialLetterMaker';
+import ReportPdfGenerator from './ReportPdfGenerator';
+import ShippingDocFormatter from './ShippingDocFormatter';
 import ClientDatabase from './ClientDatabase';
 import BarcodeGenerator from './BarcodeGenerator';
 import DeliveryOrderGenerator from './DeliveryOrderGenerator';
@@ -135,6 +140,11 @@ export const hierarchicalStructure: Suite[] = [
           { id: 'bill-of-lading-generator', name: 'Bill of Lading Generator', description: 'Buat Bill of Lading', icon: '🚢', color: 'bg-emerald-600', component: BillOfLadingGenerator, workflow: ['packing-list-generator', 'certificate-of-origin-generator'] },
           { id: 'certificate-of-origin-generator', name: 'Certificate of Origin', description: 'Buat Certificate of Origin', icon: '📜', color: 'bg-teal-600', component: CertificateOfOriginGenerator, workflow: ['bill-of-lading-generator'] },
           { id: 'freight-quotation-generator', name: 'Freight Quotation', description: 'Buat quotation pengiriman', icon: '💵', color: 'bg-cyan-600', component: FreightQuotationGenerator, workflow: ['freight-rate-calculator'] },
+          { id: 'dynamic-invoice-generator', name: 'Dynamic Invoice Generator', description: 'Generator invoice dinamis dengan format PDF/Print', icon: '💳', color: 'bg-green-500', component: DynamicInvoiceGenerator, workflow: ['invoice-generator', 'client-database'] },
+          { id: 'contract-generator', name: 'Contract Generator', description: 'Generator kontrak PKWT/SPK otomatis', icon: '📄', color: 'bg-emerald-500', component: ContractGenerator, workflow: ['pkwt-contract-builder', 'vendor-database'] },
+          { id: 'official-letter-maker', name: 'Official Letter Maker', description: 'Generator surat resmi dengan kop surat perusahaan', icon: '✉️', color: 'bg-teal-500', component: OfficialLetterMaker, workflow: ['document-registry'] },
+          { id: 'report-pdf-generator', name: 'Report PDF Generator', description: 'Generator laporan formal dari data rekap', icon: '📊', color: 'bg-lime-500', component: ReportPdfGenerator, workflow: ['data-analytics-dashboard'] },
+          { id: 'shipping-doc-formatter', name: 'Shipping Doc Formatter', description: 'Generator Packing List & Commercial Invoice', icon: '🚢', color: 'bg-green-600', component: ShippingDocFormatter, workflow: ['packing-list-generator', 'bill-of-lading-generator'] },
         ],
       },
       {
