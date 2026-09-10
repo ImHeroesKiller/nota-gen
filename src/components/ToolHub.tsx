@@ -54,8 +54,13 @@ import UniformInventoryManager from './UniformInventoryManager';
 import ClientShiftScheduler from './ClientShiftScheduler';
 import OnboardingComplianceChecklist from './OnboardingComplianceChecklist';
 import IncidentClientFeedbackLog from './IncidentClientFeedbackLog';
+import PerformanceAppraisal from './PerformanceAppraisal';
+import SafetyIncidentLog from './SafetyIncidentLog';
+import RecruitmentPipeline from './RecruitmentPipeline';
+import ClientBillingGenerator from './ClientBillingGenerator';
+import EmployeeGrievancePortal from './EmployeeGrievancePortal';
 
-type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker' | 'sla-kpi-dashboard' | 'uniform-inventory-manager' | 'client-shift-scheduler' | 'onboarding-compliance-checklist' | 'incident-client-feedback-log';
+type ToolId = 'nota-to-pdf' | 'batch-renamer' | 'pdf-splitter' | 'label-generator' | 'document-registry' | 'invoice-generator' | 'client-database' | 'barcode-generator' | 'delivery-order-generator' | 'pdf-processor' | 'pdf-to-image' | 'pdf-watermark' | 'pdf-page-organizer' | 'pdf-metadata-editor' | 'pdf-page-numberer' | 'purchase-order-generator' | 'packing-list-generator' | 'bill-of-lading-generator' | 'certificate-of-origin-generator' | 'freight-quotation-generator' | 'shipment-tracker' | 'data-analytics-dashboard' | 'document-workflow-manager' | 'import-export-data-manager' | 'business-intelligence-reports' | 'time-tracker' | 'task-manager' | 'unit-converter' | 'file-converter' | 'logistics-calculator' | 'freight-rate-calculator' | 'hs-code-estimator' | 'cbm-calculator' | 'incoterms-visualizer' | 'sla-scorecard' | 'outsourcing-quotation' | 'timesheet-rekap' | 'pkwt-contract-builder' | 'turnover-dashboard' | 'deployment-planner' | 'visitor-management' | 'asset-tracker' | 'event-rundown' | 'vendor-database' | 'petty-cash-form' | 'reimbursement-form' | 'vehicle-checklist' | 'incident-report' | 'leave-request-form' | 'vendor-payment-tracker' | 'sla-kpi-dashboard' | 'uniform-inventory-manager' | 'client-shift-scheduler' | 'onboarding-compliance-checklist' | 'incident-client-feedback-log' | 'performance-appraisal' | 'safety-incident-log' | 'recruitment-pipeline' | 'client-billing-generator' | 'employee-grievance-portal';
 
 interface Tool {
   id: ToolId;
@@ -164,6 +169,17 @@ const categories: Category[] = [
       </svg>
     ),
     color: 'from-orange-500 to-pink-500',
+  },
+  {
+    id: 'outsourcing-management',
+    name: 'Outsourcing Management',
+    description: 'Tools untuk manajemen operasional outsourcing dan tenaga kerja alih daya',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'from-violet-500 to-purple-500',
   },
 ];
 
@@ -856,6 +872,68 @@ const tools: Tool[] = [
     color: 'bg-red-500',
     category: 'operations-hr',
   },
+
+  // Outsourcing Management
+  {
+    id: 'performance-appraisal',
+    name: 'Performance Appraisal',
+    description: 'Form penilaian kinerja karyawan alih daya dengan kriteria penilaian dan kalkulasi skor akhir',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+    ),
+    color: 'bg-violet-500',
+    category: 'outsourcing-management',
+  },
+  {
+    id: 'safety-incident-log',
+    name: 'Safety Incident Log (K3)',
+    description: 'Sistem pencatatan insiden K3 di area kerja klien dengan level prioritas dan status penanganan',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    ),
+    color: 'bg-red-600',
+    category: 'outsourcing-management',
+  },
+  {
+    id: 'recruitment-pipeline',
+    name: 'Recruitment Pipeline',
+    description: 'Board rekrutmen (Applicant Tracking System) untuk melacak tahapan seleksi calon tenaga kerja',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    color: 'bg-blue-600',
+    category: 'outsourcing-management',
+  },
+  {
+    id: 'client-billing-generator',
+    name: 'Client Billing Generator',
+    description: 'Generator tagihan bulanan berbasis jumlah pekerja aktif, biaya manajemen, dan lembur untuk klien korporat',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+      </svg>
+    ),
+    color: 'bg-green-600',
+    category: 'outsourcing-management',
+  },
+  {
+    id: 'employee-grievance-portal',
+    name: 'Employee Grievance Portal',
+    description: 'Portal tiket pengaduan atau permintaan layanan administrasi bagi karyawan outsourcing',
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+    color: 'bg-orange-600',
+    category: 'outsourcing-management',
+  },
 ];
 
 export default function ToolHub() {
@@ -944,6 +1022,11 @@ export default function ToolHub() {
     'client-shift-scheduler': ClientShiftScheduler,
     'onboarding-compliance-checklist': OnboardingComplianceChecklist,
     'incident-client-feedback-log': IncidentClientFeedbackLog,
+    'performance-appraisal': PerformanceAppraisal,
+    'safety-incident-log': SafetyIncidentLog,
+    'recruitment-pipeline': RecruitmentPipeline,
+    'client-billing-generator': ClientBillingGenerator,
+    'employee-grievance-portal': EmployeeGrievancePortal,
   }), []);
 
   // NOW we can have conditional logic after all hooks
