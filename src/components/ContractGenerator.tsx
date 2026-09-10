@@ -321,7 +321,7 @@ export default function ContractGenerator() {
             <div className="header text-center mb-8 border-b-4 border-double border-[#0A2540] pb-4">
               <div className="text-xl font-bold text-[#0A2540]">PT PERDANA ADI YUDA</div>
               <div className="text-xs text-gray-600 mt-1">
-                Jl. Contoh Alamat No. 123, Jakarta 12345<br />
+                Plaza Summarecon Bekasi Lt. 7, Jl. Boulevard Ahmad Yani, Bekasi 17145<br />
                 Telp: (021) 1234-5678 | Email: info@perada.net
               </div>
             </div>
