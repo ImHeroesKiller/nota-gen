@@ -274,7 +274,7 @@ export default function OfficialLetterMaker() {
             <div className="kop-surat text-center border-b-4 border-double border-[#0A2540] pb-4 mb-6">
               <div className="text-lg font-bold text-[#0A2540]">PT PERDANA ADI YUDA</div>
               <div className="text-xs text-gray-600 mt-1">
-                Jl. Contoh Alamat No. 123, Jakarta 12345<br />
+                Plaza Summarecon Bekasi Lt. 7, Jl. Boulevard Ahmad Yani, Bekasi 17145<br />
                 Telp: (021) 1234-5678 | Email: info@perada.net | Website: www.perada.net
               </div>
             </div>
