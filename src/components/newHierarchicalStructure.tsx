@@ -78,6 +78,9 @@ import DocumentRegistry from './DocumentRegistry';
 import DailyAttendance from './DailyAttendance';
 import CampAccommodationManager from './CampAccommodationManager';
 import HeavyEquipmentInspection from './HeavyEquipmentInspection';
+import SLADocumentGenerator from './SLADocumentGenerator';
+import WorkOrderGenerator from './WorkOrderGenerator';
+import ClientProposalGenerator from './ClientProposalGenerator';
 
 // PDF Processing Tools
 import NotaToPdf from './NotaToPdf';
@@ -390,6 +393,36 @@ export const hierarchicalStructure: Suite[] = [
         tools: [
           { id: 'pdf-metadata-editor', name: 'PDF Metadata Editor', description: 'Edit metadata PDF', icon: '🏷️', color: 'bg-purple-700', component: PdfMetadataEditor, workflow: ['pdf-processor'] },
           { id: 'pdf-page-numberer', name: 'PDF Page Numberer', description: 'Tambahkan nomor halaman', icon: '🔢', color: 'bg-purple-800', component: PdfPageNumberer, workflow: ['pdf-processor'] },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'outsourcing-documents',
+    name: 'Outsourcing Document Generation',
+    description: 'Generator dokumen untuk outsourcing company',
+    icon: '📝',
+    color: 'from-[#10B981] to-[#34D399]',
+    modules: [
+      {
+        id: 'service-agreements',
+        name: 'Service Agreements',
+        description: 'Dokumen perjanjian layanan',
+        icon: '📋',
+        color: 'bg-emerald-500',
+        tools: [
+          { id: 'sla-document-generator', name: 'SLA Document Generator', description: 'Generator dokumen Service Level Agreement', icon: '📋', color: 'bg-emerald-500', component: SLADocumentGenerator, workflow: ['work-order-generator'] },
+          { id: 'work-order-generator', name: 'Work Order Generator', description: 'Generator work order untuk klien', icon: '📝', color: 'bg-emerald-600', component: WorkOrderGenerator, workflow: ['client-proposal-generator'] },
+        ],
+      },
+      {
+        id: 'client-proposals',
+        name: 'Client Proposals',
+        description: 'Proposal untuk klien outsourcing',
+        icon: '💼',
+        color: 'bg-emerald-600',
+        tools: [
+          { id: 'client-proposal-generator', name: 'Client Proposal Generator', description: 'Generator proposal outsourcing', icon: '💼', color: 'bg-emerald-600', component: ClientProposalGenerator, workflow: [] },
         ],
       },
     ],
