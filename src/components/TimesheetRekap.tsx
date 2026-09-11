@@ -1,26 +1,6 @@
 import { useMemo, useState } from 'react';
-
-interface TimesheetEntry {
-  id: string;
-  employeeName: string;
-  employeeId: string;
-  clientName: string;
-  date: string;
-  checkIn: string;
-  checkOut: string;
-  regularHours: number;
-  overtimeHours: number;
-  status: 'present' | 'absent' | 'leave' | 'sick';
-}
-
-const timesheets: TimesheetEntry[] = [
-  { id: '1', employeeName: 'Ahmad Fauzi', employeeId: 'EMP001', clientName: 'PT ABC Manufacturing', date: '2026-01-05', checkIn: '08:00', checkOut: '17:00', regularHours: 8, overtimeHours: 2, status: 'present' },
-  { id: '2', employeeName: 'Siti Nurhaliza', employeeId: 'EMP002', clientName: 'PT ABC Manufacturing', date: '2026-01-05', checkIn: '08:15', checkOut: '17:30', regularHours: 8, overtimeHours: 1.5, status: 'present' },
-  { id: '3', employeeName: 'Budi Santoso', employeeId: 'EMP003', clientName: 'PT XYZ Logistics', date: '2026-01-05', checkIn: '07:45', checkOut: '16:45', regularHours: 8, overtimeHours: 0, status: 'present' },
-  { id: '4', employeeName: 'Dewi Lestari', employeeId: 'EMP004', clientName: 'PT XYZ Logistics', date: '2026-01-05', checkIn: '-', checkOut: '-', regularHours: 0, overtimeHours: 0, status: 'sick' },
-  { id: '5', employeeName: 'Ahmad Fauzi', employeeId: 'EMP001', clientName: 'PT ABC Manufacturing', date: '2026-01-06', checkIn: '08:00', checkOut: '18:00', regularHours: 8, overtimeHours: 3, status: 'present' },
-  { id: '6', employeeName: 'Siti Nurhaliza', employeeId: 'EMP002', clientName: 'PT ABC Manufacturing', date: '2026-01-06', checkIn: '-', checkOut: '-', regularHours: 0, overtimeHours: 0, status: 'leave' },
-];
+import { CalendarDays, Clock3, HardHat, Search, WalletCards } from 'lucide-react';
+import { type AttendanceStatus, useMiningWorkerLifecycle } from '../lib/miningWorkerLifecycle';
 
 interface TimesheetRekapProps {
   onBack?: () => void;
@@ -28,88 +8,96 @@ interface TimesheetRekapProps {
   setDarkMode?: (value: boolean) => void;
 }
 
-const statusClass: Record<TimesheetEntry['status'], string> = {
-  present: 'bg-green-100 text-green-700',
-  absent: 'bg-red-100 text-red-700',
-  leave: 'bg-amber-100 text-amber-700',
-  sick: 'bg-orange-100 text-orange-700',
+const rupiah = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
+const statusMeta: Record<AttendanceStatus, { label: string; tone: string }> = {
+  present: { label: 'Hadir', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' },
+  absent: { label: 'Tidak Hadir', tone: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300' },
+  sick: { label: 'Sakit', tone: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' },
+  leave: { label: 'Izin', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' },
+  'off-duty': { label: 'Roster OFF', tone: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' },
 };
 
 export default function TimesheetRekap(_: TimesheetRekapProps) {
-  const [selectedMonth, setSelectedMonth] = useState('2026-01');
-  const [selectedClient, setSelectedClient] = useState('all');
+  const { store } = useMiningWorkerLifecycle();
+  const [selectedMonth, setSelectedMonth] = useState('2026-09');
+  const [selectedSite, setSelectedSite] = useState('all');
   const [query, setQuery] = useState('');
+  const [view, setView] = useState<'summary' | 'detail'>('summary');
 
-  const clients = useMemo(() => Array.from(new Set(timesheets.map((entry) => entry.clientName))), []);
+  const workers = useMemo(() => store.workers.filter((worker) => worker.stage === 'active'), [store.workers]);
+  const sites = useMemo(() => Array.from(new Set(workers.map((worker) => worker.site))).sort(), [workers]);
 
-  const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return timesheets.filter((entry) => {
-      const monthMatches = !selectedMonth || entry.date.startsWith(selectedMonth);
-      const clientMatches = selectedClient === 'all' || entry.clientName === selectedClient;
-      const queryMatches = !normalizedQuery || `${entry.employeeName} ${entry.employeeId} ${entry.clientName}`.toLowerCase().includes(normalizedQuery);
-      return monthMatches && clientMatches && queryMatches;
+  const filteredRecords = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return store.attendance.filter((record) => {
+      const worker = workers.find((item) => item.id === record.workerId);
+      if (!worker) return false;
+      const monthMatches = !selectedMonth || record.date.startsWith(selectedMonth);
+      const siteMatches = selectedSite === 'all' || worker.site === selectedSite;
+      const queryMatches = !needle || `${worker.name} ${worker.workerCode} ${worker.position} ${worker.site} ${worker.project}`.toLowerCase().includes(needle);
+      return monthMatches && siteMatches && queryMatches;
     });
-  }, [query, selectedClient, selectedMonth]);
+  }, [query, selectedMonth, selectedSite, store.attendance, workers]);
 
-  const summary = useMemo(() => ({
-    entries: filtered.length,
-    present: filtered.filter((entry) => entry.status === 'present').length,
-    regular: filtered.reduce((sum, entry) => sum + entry.regularHours, 0),
-    overtime: filtered.reduce((sum, entry) => sum + entry.overtimeHours, 0),
-  }), [filtered]);
+  const workerSummary = useMemo(() => workers.filter((worker) => {
+    const needle = query.trim().toLowerCase();
+    return (selectedSite === 'all' || worker.site === selectedSite)
+      && (!needle || `${worker.name} ${worker.workerCode} ${worker.position} ${worker.site} ${worker.project}`.toLowerCase().includes(needle));
+  }).map((worker) => {
+    const records = filteredRecords.filter((record) => record.workerId === worker.id);
+    const presentDays = records.filter((record) => record.status === 'present').length;
+    const nonPaidDays = records.filter((record) => ['absent', 'sick', 'leave'].includes(record.status)).length;
+    const offDays = records.filter((record) => record.status === 'off-duty').length;
+    const regularHours = records.reduce((sum, record) => sum + record.regularHours, 0);
+    const overtimeHours = records.reduce((sum, record) => sum + record.overtimeHours, 0);
+    return { worker, records, presentDays, nonPaidDays, offDays, regularHours, overtimeHours, basePay: presentDays * worker.dailyRate };
+  }).filter((item) => item.records.length > 0), [filteredRecords, query, selectedSite, workers]);
 
-  const attendanceRate = summary.entries ? Math.round((summary.present / summary.entries) * 100) : 0;
+  const totals = useMemo(() => workerSummary.reduce((acc, item) => ({
+    presentDays: acc.presentDays + item.presentDays,
+    regularHours: acc.regularHours + item.regularHours,
+    overtimeHours: acc.overtimeHours + item.overtimeHours,
+    basePay: acc.basePay + item.basePay,
+  }), { presentDays: 0, regularHours: 0, overtimeHours: 0, basePay: 0 }), [workerSummary]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
-      <section className="bg-white border rounded-xl p-4">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1.4fr] gap-3">
-          <label>Periode
-            <input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} />
-          </label>
-          <label>Klien
-            <select value={selectedClient} onChange={(event) => setSelectedClient(event.target.value)}>
-              <option value="all">Semua klien</option>{clients.map((client) => <option key={client} value={client}>{client}</option>)}
-            </select>
-          </label>
-          <label>Cari
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nama, employee ID, atau klien" />
-          </label>
+    <div className="mx-auto max-w-[1500px] space-y-5 text-slate-900 dark:text-slate-100">
+      <section className="flex flex-col gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-500/20 dark:bg-blue-500/10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600 text-white"><CalendarDays size={18} /></span><div><p className="text-xs font-bold">Timesheet Rekap — sumber dari Daily Attendance</p><p className="mt-1 text-[11px] leading-5 text-slate-600 dark:text-slate-300">Tidak ada input timesheet terpisah. Rekap otomatis mengambil attendance PHL aktif, jumlah hari hadir, jam kerja, lembur, dan estimasi upah harian.</p></div></div>
+        <span className="rounded-full border border-blue-200 bg-white px-3 py-1.5 text-[10px] font-bold text-blue-700 dark:border-blue-500/20 dark:bg-slate-900 dark:text-blue-300">Single source: Attendance</span>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+        <div className="grid gap-3 lg:grid-cols-[190px_240px_minmax(280px,1fr)_auto]">
+          <label className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Periode<input type="month" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
+          <label className="text-[9px] font-bold uppercase tracking-wide text-slate-500">Site<select value={selectedSite} onChange={(event) => setSelectedSite(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-normal text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-white"><option value="all">Semua Site</option>{sites.map((site) => <option key={site}>{site}</option>)}</select></label>
+          <label className="relative mt-auto"><Search size={16} className="absolute left-3 top-3 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari pekerja, posisi, site, project..." className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-950" /></label>
+          <div className="mt-auto flex h-10 rounded-xl border border-slate-200 p-1 dark:border-slate-700"><button onClick={() => setView('summary')} className={`rounded-lg px-3 text-xs font-bold ${view === 'summary' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Summary</button><button onClick={() => setView('detail')} className={`rounded-lg px-3 text-xs font-bold ${view === 'detail' ? 'bg-blue-600 text-white' : 'text-slate-500'}`}>Detail</button></div>
         </div>
       </section>
 
-      <section className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Entries</p><strong className="block mt-1 text-xl">{summary.entries}</strong></div>
-        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Present</p><strong className="block mt-1 text-xl text-green-600">{summary.present}</strong></div>
-        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Attendance rate</p><strong className="block mt-1 text-xl text-blue-600">{attendanceRate}%</strong></div>
-        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Regular hours</p><strong className="block mt-1 text-xl">{summary.regular}</strong></div>
-        <div className="bg-white border rounded-xl p-4 col-span-2 lg:col-span-1"><p className="text-[10px] uppercase tracking-wide text-gray-500">Overtime</p><strong className="block mt-1 text-xl text-orange-600">{summary.overtime}</strong></div>
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {[
+          ['PHL dengan aktivitas', workerSummary.length, HardHat, 'text-slate-900 dark:text-white'],
+          ['Total Hari Hadir', totals.presentDays, CalendarDays, 'text-emerald-600'],
+          ['Regular / OT', `${totals.regularHours}h / ${totals.overtimeHours}h`, Clock3, 'text-orange-600'],
+          ['Upah Harian Dasar', rupiah(totals.basePay), WalletCards, 'text-blue-600'],
+        ].map(([label, value, Icon, tone]) => { const MetricIcon = Icon as typeof HardHat; return <article key={String(label)} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center justify-between"><div><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500">{String(label)}</p><strong className={`mt-2 block text-xl ${String(tone)}`}>{String(value)}</strong></div><span className="grid h-9 w-9 place-items-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800"><MetricIcon size={17} /></span></div></article>; })}
       </section>
 
-      <section className="bg-white border rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b flex items-center justify-between gap-3">
-          <div><h2 className="text-sm font-semibold">Timesheet Detail</h2><p className="text-[11px] text-gray-500 mt-0.5">Rekap kehadiran dan jam kerja sesuai filter aktif.</p></div>
-          <span className="text-[10px] text-gray-500">{selectedMonth || 'Semua periode'}</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead><tr><th>Tanggal</th><th>Karyawan</th><th>Klien</th><th>Check In</th><th>Check Out</th><th>Regular</th><th>Overtime</th><th>Status</th></tr></thead>
-            <tbody>
-              {filtered.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{new Date(`${entry.date}T00:00:00`).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                  <td><strong>{entry.employeeName}</strong><div className="text-[10px] text-gray-500 mt-0.5">{entry.employeeId}</div></td>
-                  <td>{entry.clientName}</td><td>{entry.checkIn}</td><td>{entry.checkOut}</td>
-                  <td><strong>{entry.regularHours} jam</strong></td><td><strong className="text-orange-600">{entry.overtimeHours} jam</strong></td>
-                  <td><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${statusClass[entry.status]}`}>{entry.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length === 0 && <div className="p-10 text-center text-sm text-gray-500">Tidak ada data timesheet untuk filter yang dipilih.</div>}
-      </section>
+      {view === 'summary' ? (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800"><h2 className="text-sm font-bold">Rekap PHL per Pekerja</h2><p className="mt-0.5 text-[10px] text-slate-500">Basis payroll = hari hadir × rate harian. Komponen lembur dihitung pada Payroll Slip.</p></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[1050px] text-left text-xs"><thead className="bg-slate-50 text-[9px] uppercase tracking-[0.1em] text-slate-500 dark:bg-slate-800/60"><tr><th className="px-4 py-3">Pekerja</th><th className="px-4 py-3">Site / Project</th><th className="px-4 py-3">Roster</th><th className="px-4 py-3">Hari Hadir</th><th className="px-4 py-3">Non-Paid</th><th className="px-4 py-3">Regular</th><th className="px-4 py-3">OT</th><th className="px-4 py-3 text-right">Upah Dasar</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{workerSummary.map(({ worker, presentDays, nonPaidDays, offDays, regularHours, overtimeHours, basePay }) => <tr key={worker.id}><td className="px-4 py-3"><strong>{worker.name}</strong><p className="mt-0.5 text-[10px] text-slate-500">{worker.workerCode} · {worker.position}</p></td><td className="px-4 py-3"><strong className="font-semibold">{worker.site}</strong><p className="mt-0.5 text-[10px] text-slate-500">{worker.project}</p></td><td className="px-4 py-3">{worker.roster}<p className="mt-0.5 text-[10px] text-slate-500">OFF tercatat: {offDays}</p></td><td className="px-4 py-3"><strong className="text-emerald-600">{presentDays} hari</strong><p className="mt-0.5 text-[10px] text-slate-500">{rupiah(worker.dailyRate)}/hari</p></td><td className="px-4 py-3">{nonPaidDays} hari</td><td className="px-4 py-3">{regularHours} jam</td><td className="px-4 py-3 font-semibold text-orange-600">{overtimeHours} jam</td><td className="px-4 py-3 text-right font-bold">{rupiah(basePay)}</td></tr>)}</tbody></table></div>
+        </section>
+      ) : (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800"><h2 className="text-sm font-bold">Detail Attendance → Timesheet</h2><p className="mt-0.5 text-[10px] text-slate-500">Setiap baris berasal langsung dari Daily Attendance.</p></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-xs"><thead className="bg-slate-50 text-[9px] uppercase tracking-[0.1em] text-slate-500 dark:bg-slate-800/60"><tr><th className="px-4 py-3">Tanggal</th><th className="px-4 py-3">Pekerja</th><th className="px-4 py-3">Site</th><th className="px-4 py-3">Shift</th><th className="px-4 py-3">Check</th><th className="px-4 py-3">Regular</th><th className="px-4 py-3">OT</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Rate Hari</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{filteredRecords.map((record) => { const worker = workers.find((item) => item.id === record.workerId); if (!worker) return null; return <tr key={record.id}><td className="px-4 py-3">{new Date(`${record.date}T00:00:00`).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td><td className="px-4 py-3"><strong>{worker.name}</strong><p className="mt-0.5 text-[10px] text-slate-500">{worker.workerCode} · {worker.position}</p></td><td className="px-4 py-3">{worker.site}</td><td className="px-4 py-3">{record.shift === 'day' ? 'Day' : 'Night'}</td><td className="px-4 py-3">{record.checkIn}–{record.checkOut}</td><td className="px-4 py-3">{record.regularHours}h</td><td className="px-4 py-3 font-semibold text-orange-600">{record.overtimeHours}h</td><td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-[9px] font-bold ${statusMeta[record.status].tone}`}>{statusMeta[record.status].label}</span></td><td className="px-4 py-3 text-right font-bold">{record.status === 'present' ? rupiah(worker.dailyRate) : rupiah(0)}</td></tr>; })}</tbody></table></div>
+        </section>
+      )}
+
+      {filteredRecords.length === 0 && <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-500 dark:border-slate-700">Tidak ada data attendance untuk filter periode ini.</div>}
     </div>
   );
 }
