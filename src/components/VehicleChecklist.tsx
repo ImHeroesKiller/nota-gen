@@ -1,4 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Car,
+  CheckCircle,
+  ClipboardCheck,
+  Moon,
+  Plus,
+  Sun,
+  Trash2,
+} from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -26,6 +37,37 @@ interface VehicleChecklistProps {
   darkMode: boolean;
   setDarkMode: (value: boolean) => void;
 }
+
+const defaultChecklistItems = [
+  { component: 'Mesin', category: 'Mesin' },
+  { component: 'Oli Mesin', category: 'Mesin' },
+  { component: 'Air Radiator', category: 'Mesin' },
+  { component: 'Aki', category: 'Mesin' },
+  { component: 'Ban Depan Kiri', category: 'Ban' },
+  { component: 'Ban Depan Kanan', category: 'Ban' },
+  { component: 'Ban Belakang Kiri', category: 'Ban' },
+  { component: 'Ban Belakang Kanan', category: 'Ban' },
+  { component: 'Lampu Depan', category: 'Kelengkapan' },
+  { component: 'Lampu Belakang', category: 'Kelengkapan' },
+  { component: 'Lampu Sein', category: 'Kelengkapan' },
+  { component: 'Klakson', category: 'Kelengkapan' },
+  { component: 'Spion', category: 'Kelengkapan' },
+  { component: 'Wiper', category: 'Kelengkapan' },
+  { component: 'Rem Tangan', category: 'Kelengkapan' },
+];
+
+const makeId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const today = () => new Date().toISOString().split('T')[0];
+
+const emptyForm = () => ({
+  vehiclePlate: '',
+  vehicleType: '',
+  driverName: '',
+  inspectionDate: today(),
+  mileage: 0,
+  inspectorName: '',
+  notes: '',
+});
 
 export default function VehicleChecklist({ onBack, darkMode, setDarkMode }: VehicleChecklistProps) {
   const [inspections, setInspections] = useState<VehicleInspection[]>([
@@ -75,414 +117,351 @@ export default function VehicleChecklist({ onBack, darkMode, setDarkMode }: Vehi
     },
   ]);
 
-  const [formData, setFormData] = useState({
-    vehiclePlate: '',
-    vehicleType: '',
-    driverName: '',
-    inspectionDate: new Date().toISOString().split('T')[0],
-    mileage: 0,
-    inspectorName: '',
-    notes: '',
-  });
-
+  const [formData, setFormData] = useState(emptyForm);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const defaultChecklistItems = [
-    { component: 'Mesin', category: 'Mesin' },
-    { component: 'Oli Mesin', category: 'Mesin' },
-    { component: 'Air Radiator', category: 'Mesin' },
-    { component: 'Aki', category: 'Mesin' },
-    { component: 'Ban Depan Kiri', category: 'Ban' },
-    { component: 'Ban Depan Kanan', category: 'Ban' },
-    { component: 'Ban Belakang Kiri', category: 'Ban' },
-    { component: 'Ban Belakang Kanan', category: 'Ban' },
-    { component: 'Lampu Depan', category: 'Kelengkapan' },
-    { component: 'Lampu Belakang', category: 'Kelengkapan' },
-    { component: 'Lampu Sein', category: 'Kelengkapan' },
-    { component: 'Klakson', category: 'Kelengkapan' },
-    { component: 'Spion', category: 'Kelengkapan' },
-    { component: 'Wiper', category: 'Kelengkapan' },
-    { component: 'Rem Tangan', category: 'Kelengkapan' },
-  ];
+  const bg = darkMode ? 'bg-[#0b1220]' : 'bg-[#f6f8fb]';
+  const surface = darkMode ? 'bg-[#111827]' : 'bg-white';
+  const surfaceMuted = darkMode ? 'bg-[#172033]' : 'bg-[#f8fafc]';
+  const border = darkMode ? 'border-[#273449]' : 'border-[#e5eaf1]';
+  const text = darkMode ? 'text-[#e5edf8]' : 'text-[#0f172a]';
+  const muted = darkMode ? 'text-[#92a3ba]' : 'text-[#64748b]';
+  const input = darkMode
+    ? 'bg-[#0b1220] border-[#334155] text-[#e5edf8]'
+    : 'bg-white border-[#dbe3ee] text-[#0f172a]';
+  const hover = darkMode ? 'hover:bg-[#172033]' : 'hover:bg-[#f8fafc]';
 
-  const handleStartInspection = () => {
-    if (!formData.vehiclePlate || !formData.vehicleType || !formData.driverName) return;
+  const categories = useMemo(() => Array.from(new Set(items.map((item) => item.category))), [items]);
+  const checklistComplete = items.length > 0 && items.every((item) => item.status !== 'na');
+  const failedWithoutNotes = items.some((item) => item.status === 'fail' && !item.notes.trim());
+  const formReady = Boolean(
+    formData.vehiclePlate.trim()
+      && formData.vehicleType.trim()
+      && formData.driverName.trim()
+      && formData.inspectorName.trim()
+      && formData.inspectionDate
+      && Number.isFinite(formData.mileage)
+      && formData.mileage >= 0,
+  );
 
-    const newItems: ChecklistItem[] = defaultChecklistItems.map((item, index) => ({
-      id: Date.now().toString() + index,
-      ...item,
-      status: 'na',
-      notes: '',
-    }));
+  const stats = useMemo(() => ({
+    total: inspections.length,
+    pass: inspections.filter((item) => item.overallStatus === 'pass').length,
+    conditional: inspections.filter((item) => item.overallStatus === 'conditional').length,
+    fail: inspections.filter((item) => item.overallStatus === 'fail').length,
+  }), [inspections]);
 
-    setItems(newItems);
-  };
-
-  const handleUpdateItem = (id: string, field: 'status' | 'notes', value: string) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
-  };
-
-  const handleSubmit = () => {
-    const passCount = items.filter(item => item.status === 'pass').length;
-    const failCount = items.filter(item => item.status === 'fail').length;
-
-    let overallStatus: 'pass' | 'fail' | 'conditional' = 'pass';
-    if (failCount > 0) {
-      overallStatus = failCount >= 3 ? 'fail' : 'conditional';
-    }
-
-    const newInspection: VehicleInspection = {
-      id: Date.now().toString(),
-      ...formData,
-      items,
-      overallStatus,
-    };
-
-    setInspections([newInspection, ...inspections]);
-    setFormData({
-      vehiclePlate: '',
-      vehicleType: '',
-      driverName: '',
-      inspectionDate: new Date().toISOString().split('T')[0],
-      mileage: 0,
-      inspectorName: '',
-      notes: '',
-    });
+  const resetForm = () => {
+    setFormData(emptyForm());
     setItems([]);
+    setError(null);
     setShowForm(false);
   };
 
+  const handleStartInspection = () => {
+    setError(null);
+    if (!formReady) {
+      setError('Lengkapi data kendaraan, driver, inspector, tanggal, dan kilometer sebelum memulai inspeksi.');
+      return;
+    }
+
+    setItems(defaultChecklistItems.map((item) => ({
+      id: makeId(),
+      ...item,
+      status: 'na',
+      notes: '',
+    })));
+  };
+
+  const handleUpdateItem = (id: string, field: 'status' | 'notes', value: ChecklistItem['status'] | string) => {
+    setItems((previous) => previous.map((item) => {
+      if (item.id !== id) return item;
+      if (field === 'status') return { ...item, status: value as ChecklistItem['status'] };
+      return { ...item, notes: String(value) };
+    }));
+    setError(null);
+  };
+
+  const handleSubmit = () => {
+    setError(null);
+    if (!formReady) {
+      setError('Data inspeksi belum lengkap.');
+      return;
+    }
+    if (!checklistComplete) {
+      setError('Semua item checklist harus diberi status Pass atau Fail sebelum disubmit.');
+      return;
+    }
+    if (failedWithoutNotes) {
+      setError('Setiap item Fail wajib memiliki catatan temuan.');
+      return;
+    }
+
+    const failCount = items.filter((item) => item.status === 'fail').length;
+    const overallStatus: VehicleInspection['overallStatus'] = failCount === 0
+      ? 'pass'
+      : failCount >= 3
+        ? 'fail'
+        : 'conditional';
+
+    const newInspection: VehicleInspection = {
+      id: makeId(),
+      ...formData,
+      vehiclePlate: formData.vehiclePlate.trim().toUpperCase(),
+      vehicleType: formData.vehicleType.trim(),
+      driverName: formData.driverName.trim(),
+      inspectorName: formData.inspectorName.trim(),
+      notes: formData.notes.trim(),
+      items: items.map((item) => ({ ...item, notes: item.notes.trim() })),
+      overallStatus,
+    };
+
+    setInspections((previous) => [newInspection, ...previous]);
+    resetForm();
+  };
+
   const handleDelete = (id: string) => {
-    setInspections(inspections.filter(i => i.id !== id));
+    const inspection = inspections.find((item) => item.id === id);
+    if (!inspection) return;
+    if (!window.confirm(`Hapus inspeksi ${inspection.vehiclePlate} tanggal ${formatDate(inspection.inspectionDate)}?`)) return;
+    setInspections((previous) => previous.filter((item) => item.id !== id));
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+    const date = new Date(`${dateStr}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      pass: 'bg-green-100 text-green-800',
-      fail: 'bg-red-100 text-red-800',
-      conditional: 'bg-yellow-100 text-yellow-800',
-      na: 'bg-gray-100 text-gray-800',
-    };
-    return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+  const statusLabel = (status: VehicleInspection['overallStatus']) => {
+    if (status === 'pass') return 'Lulus';
+    if (status === 'fail') return 'Gagal';
+    return 'Kondisional';
   };
 
-  const getItemStatusBadge = (status: string) => {
-    const styles = {
-      pass: 'bg-green-500 text-white',
-      fail: 'bg-red-500 text-white',
-      na: 'bg-gray-300 text-gray-700',
-    };
-    return styles[status as keyof typeof styles] || 'bg-gray-300 text-gray-700';
+  const statusClass = (status: VehicleInspection['overallStatus']) => {
+    if (status === 'pass') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300';
+    if (status === 'fail') return 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300';
+    return 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300';
   };
-
-  const passCount = inspections.filter(i => i.overallStatus === 'pass').length;
-  const failCount = inspections.filter(i => i.overallStatus === 'fail').length;
-  const conditionalCount = inspections.filter(i => i.overallStatus === 'conditional').length;
-
-  const categories = Array.from(new Set(items.map(item => item.category)));
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">PA</span>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Vehicle Checklist</h1>
-            <p className="text-sm text-gray-600">PT Perdana Adi Yuda - Form Inspeksi Kendaraan Harian</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Total Inspeksi</div>
-          <div className="text-3xl font-bold text-blue-600">{inspections.length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Lulus (Pass)</div>
-          <div className="text-3xl font-bold text-green-600">{passCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Kondisional</div>
-          <div className="text-3xl font-bold text-yellow-600">{conditionalCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Gagal (Fail)</div>
-          <div className="text-3xl font-bold text-red-600">{failCount}</div>
-        </div>
-      </div>
-
-      {/* Action Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-        >
-          {showForm ? 'Batal' : '+ Inspeksi Baru'}
-        </button>
-      </div>
-
-      {/* Form */}
-      {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Form Inspeksi Kendaraan</h2>
-          
-          {/* Vehicle Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Plat Nomor *</label>
-              <input
-                type="text"
-                value={formData.vehiclePlate}
-                onChange={(e) => setFormData({ ...formData, vehiclePlate: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="B 1234 ABC"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Jenis Kendaraan *</label>
-              <input
-                type="text"
-                value={formData.vehicleType}
-                onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Toyota Avanza"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Nama Driver *</label>
-              <input
-                type="text"
-                value={formData.driverName}
-                onChange={(e) => setFormData({ ...formData, driverName: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Nama driver"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Tanggal Inspeksi</label>
-              <input
-                type="date"
-                value={formData.inspectionDate}
-                onChange={(e) => setFormData({ ...formData, inspectionDate: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Kilometer</label>
-              <input
-                type="number"
-                value={formData.mileage}
-                onChange={(e) => setFormData({ ...formData, mileage: Number(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Nama Inspector</label>
-              <input
-                type="text"
-                value={formData.inspectorName}
-                onChange={(e) => setFormData({ ...formData, inspectorName: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Nama inspector"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Catatan Umum</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={2}
-                placeholder="Catatan tambahan"
-              />
-            </div>
-          </div>
-
-          <button
-            onClick={handleStartInspection}
-            disabled={!formData.vehiclePlate || !formData.vehicleType || !formData.driverName}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            Mulai Inspeksi
+    <div className={`min-h-full ${bg} ${text}`}>
+      <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b ${surface} ${border}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <button type="button" onClick={onBack} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Kembali">
+            <ArrowLeft size={18} />
           </button>
-
-          {/* Checklist */}
-          {items.length > 0 && (
-            <div className="mt-6 border-t pt-4">
-              <h3 className="text-lg font-bold mb-4">Checklist Inspeksi</h3>
-              
-              {categories.map(category => (
-                <div key={category} className="mb-6">
-                  <h4 className="text-md font-semibold mb-2 text-blue-600">{category}</h4>
-                  <div className="space-y-2">
-                    {items.filter(item => item.category === category).map(item => (
-                      <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium">{item.component}</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleUpdateItem(item.id, 'status', 'pass')}
-                            className={`px-4 py-1 rounded-lg text-sm font-medium ${
-                              item.status === 'pass' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100'
-                            }`}
-                          >
-                            Pass
-                          </button>
-                          <button
-                            onClick={() => handleUpdateItem(item.id, 'status', 'fail')}
-                            className={`px-4 py-1 rounded-lg text-sm font-medium ${
-                              item.status === 'fail' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-red-100'
-                            }`}
-                          >
-                            Fail
-                          </button>
-                        </div>
-                        <input
-                          type="text"
-                          value={item.notes}
-                          onChange={(e) => handleUpdateItem(item.id, 'notes', e.target.value)}
-                          className="flex-1 px-3 py-1 border rounded-lg text-sm"
-                          placeholder="Catatan"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {/* Submit Button */}
-              <div className="mt-6 flex gap-2">
-                <button
-                  onClick={handleSubmit}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Submit Inspeksi
-                </button>
-                <button
-                  onClick={() => {
-                    setShowForm(false);
-                    setItems([]);
-                    setFormData({
-                      vehiclePlate: '',
-                      vehicleType: '',
-                      driverName: '',
-                      inspectionDate: new Date().toISOString().split('T')[0],
-                      mileage: 0,
-                      inspectorName: '',
-                      notes: '',
-                    });
-                  }}
-                  className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                >
-                  Batal
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="w-9 h-9 rounded-lg bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center shrink-0">
+            <Car size={20} />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold truncate">Vehicle Checklist</h1>
+            <p className={`text-[11px] ${muted} truncate`}>Inspeksi kendaraan harian dengan validasi checklist lengkap</p>
+          </div>
         </div>
-      )}
+        <button type="button" onClick={() => setDarkMode(!darkMode)} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Ubah tema">
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </header>
 
-      {/* Inspections List */}
-      <div className="space-y-4">
-        {inspections.map((inspection) => (
-          <div key={inspection.id} className="bg-white rounded-lg shadow-lg p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <div className="text-lg font-bold">{inspection.vehiclePlate} - {inspection.vehicleType}</div>
-                <div className="text-sm text-gray-600">
-                  Driver: {inspection.driverName} • {formatDate(inspection.inspectionDate)} • {inspection.mileage.toLocaleString()} km
+      <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+        <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>Fleet Management</p>
+            <h2 className="text-2xl font-semibold mt-1">Inspeksi Kendaraan</h2>
+            <p className={`text-sm mt-1 ${muted}`}>Checklist wajib lengkap sebelum hasil inspeksi dapat disimpan.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (showForm) resetForm();
+              else {
+                setShowForm(true);
+                setError(null);
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+          >
+            <Plus size={16} /> {showForm ? 'Batal Inspeksi' : 'Inspeksi Baru'}
+          </button>
+        </section>
+
+        <section className={`grid grid-cols-2 lg:grid-cols-4 gap-2 rounded-xl border p-3 ${surface} ${border}`}>
+          {[
+            ['Total', stats.total, 'text-[#2563eb]'],
+            ['Lulus', stats.pass, 'text-emerald-600'],
+            ['Kondisional', stats.conditional, 'text-amber-600'],
+            ['Gagal', stats.fail, 'text-red-600'],
+          ].map(([label, value, valueClass]) => (
+            <div key={String(label)} className={`rounded-lg px-3 py-2.5 ${surfaceMuted}`}>
+              <p className={`text-[10px] uppercase tracking-wide ${muted}`}>{label}</p>
+              <p className={`text-lg font-semibold mt-0.5 ${valueClass}`}>{value}</p>
+            </div>
+          ))}
+        </section>
+
+        {showForm && (
+          <section className={`rounded-2xl border ${surface} ${border} overflow-hidden`}>
+            <div className={`px-4 md:px-5 py-4 border-b ${border}`}>
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-lg bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center"><ClipboardCheck size={18} /></span>
+                <div>
+                  <h3 className="text-sm font-semibold">Form Inspeksi</h3>
+                  <p className={`text-[11px] ${muted}`}>Isi identitas kendaraan lalu mulai checklist.</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadge(inspection.overallStatus)}`}>
-                  {inspection.overallStatus === 'pass' ? 'Lulus' : inspection.overallStatus === 'fail' ? 'Gagal' : 'Kondisional'}
-                </span>
               </div>
             </div>
 
-            {/* Items Summary */}
-            <div className="border-t pt-4 mb-4">
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">
-                    {inspection.items.filter(i => i.status === 'pass').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Pass</div>
-                </div>
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <div className="text-2xl font-bold text-red-600">
-                    {inspection.items.filter(i => i.status === 'fail').length}
-                  </div>
-                  <div className="text-sm text-gray-600">Fail</div>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-600">
-                    {inspection.items.filter(i => i.status === 'na').length}
-                  </div>
-                  <div className="text-sm text-gray-600">N/A</div>
-                </div>
+            <div className="p-4 md:p-5 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <label className="text-xs font-medium">Plat Nomor *
+                  <input value={formData.vehiclePlate} onChange={(e) => setFormData({ ...formData, vehiclePlate: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="B 1234 ABC" />
+                </label>
+                <label className="text-xs font-medium">Jenis Kendaraan *
+                  <input value={formData.vehicleType} onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Toyota Avanza" />
+                </label>
+                <label className="text-xs font-medium">Nama Driver *
+                  <input value={formData.driverName} onChange={(e) => setFormData({ ...formData, driverName: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Nama driver" />
+                </label>
+                <label className="text-xs font-medium">Tanggal Inspeksi *
+                  <input type="date" value={formData.inspectionDate} onChange={(e) => setFormData({ ...formData, inspectionDate: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} />
+                </label>
+                <label className="text-xs font-medium">Kilometer *
+                  <input type="number" min={0} value={formData.mileage} onChange={(e) => setFormData({ ...formData, mileage: Math.max(0, Number(e.target.value) || 0) })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} />
+                </label>
+                <label className="text-xs font-medium">Nama Inspector *
+                  <input value={formData.inspectorName} onChange={(e) => setFormData({ ...formData, inspectorName: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Nama inspector" />
+                </label>
+                <label className="text-xs font-medium md:col-span-2 lg:col-span-3">Catatan Umum
+                  <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm resize-y ${input}`} placeholder="Catatan tambahan" />
+                </label>
               </div>
 
-              {/* Failed Items */}
-              {inspection.items.filter(i => i.status === 'fail').length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-semibold text-red-600 mb-2">Item yang Gagal:</h4>
-                  <div className="space-y-1">
-                    {inspection.items.filter(i => i.status === 'fail').map(item => (
-                      <div key={item.id} className="flex items-center gap-2 text-sm">
-                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        <span className="font-medium">{item.component}:</span>
-                        <span className="text-gray-600">{item.notes || 'No notes'}</span>
+              {items.length === 0 ? (
+                <button type="button" onClick={handleStartInspection} disabled={!formReady} className="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                  Mulai Checklist
+                </button>
+              ) : (
+                <div className="space-y-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold">Checklist Inspeksi</h4>
+                      <p className={`text-[11px] mt-0.5 ${muted}`}>{items.filter((item) => item.status !== 'na').length}/{items.length} item sudah diperiksa.</p>
+                    </div>
+                    <div className="h-2 w-40 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                      <div className="h-full bg-[#2563eb] transition-all" style={{ width: `${(items.filter((item) => item.status !== 'na').length / items.length) * 100}%` }} />
+                    </div>
+                  </div>
+
+                  {categories.map((category) => (
+                    <div key={category}>
+                      <p className="text-xs font-semibold text-[#2563eb] mb-2">{category}</p>
+                      <div className="space-y-2">
+                        {items.filter((item) => item.category === category).map((item) => (
+                          <div key={item.id} className={`grid grid-cols-1 lg:grid-cols-[minmax(160px,1fr)_180px_minmax(180px,1.3fr)] gap-3 items-center rounded-xl border p-3 ${border} ${surfaceMuted}`}>
+                            <div>
+                              <p className="text-xs font-semibold">{item.component}</p>
+                              <p className={`text-[10px] mt-0.5 ${muted}`}>{item.status === 'na' ? 'Belum diperiksa' : item.status === 'pass' ? 'Kondisi sesuai' : 'Perlu tindak lanjut'}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              <button type="button" onClick={() => handleUpdateItem(item.id, 'status', 'pass')} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${item.status === 'pass' ? 'border-emerald-600 bg-emerald-600 text-white' : `${border} ${surface}`}`}>Pass</button>
+                              <button type="button" onClick={() => handleUpdateItem(item.id, 'status', 'fail')} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${item.status === 'fail' ? 'border-red-600 bg-red-600 text-white' : `${border} ${surface}`}`}>Fail</button>
+                            </div>
+                            <input value={item.notes} onChange={(e) => handleUpdateItem(item.id, 'notes', e.target.value)} className={`w-full rounded-lg border px-3 py-2 text-xs ${input} ${item.status === 'fail' && !item.notes.trim() ? 'border-red-400' : ''}`} placeholder={item.status === 'fail' ? 'Catatan wajib untuk item Fail' : 'Catatan opsional'} />
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  ))}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button type="button" onClick={handleSubmit} disabled={!checklistComplete || failedWithoutNotes} className="rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40 disabled:cursor-not-allowed">
+                      Submit Inspeksi
+                    </button>
+                    <span className={`text-[11px] ${muted}`}>
+                      {!checklistComplete ? 'Lengkapi semua status checklist.' : failedWithoutNotes ? 'Tambahkan catatan pada seluruh item Fail.' : 'Checklist siap disimpan.'}
+                    </span>
                   </div>
                 </div>
               )}
+
+              {error && (
+                <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                  <AlertTriangle size={17} className="shrink-0 mt-0.5" />
+                  <p className="text-xs leading-5">{error}</p>
+                </div>
+              )}
             </div>
+          </section>
+        )}
 
-            {inspection.notes && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <div className="text-xs text-gray-600 mb-1">Catatan Inspector:</div>
-                <div className="text-sm text-gray-900">{inspection.notes}</div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleDelete(inspection.id)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
-              >
-                Delete
-              </button>
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Riwayat Inspeksi</h3>
+              <p className={`text-[11px] mt-0.5 ${muted}`}>Hasil inspeksi tersimpan di sesi aplikasi saat ini.</p>
             </div>
           </div>
-        ))}
-      </div>
 
-      {inspections.length === 0 && (
-        <div className="bg-white rounded-lg shadow-lg p-12 text-center">
-          <p className="text-gray-500">Belum ada inspeksi kendaraan</p>
-        </div>
-      )}
+          {inspections.length === 0 ? (
+            <div className={`rounded-xl border border-dashed p-10 text-center ${surface} ${border}`}>
+              <Car size={28} className={`mx-auto ${muted}`} />
+              <p className="text-sm font-semibold mt-3">Belum ada inspeksi kendaraan</p>
+            </div>
+          ) : inspections.map((inspection) => {
+            const passItems = inspection.items.filter((item) => item.status === 'pass').length;
+            const failItems = inspection.items.filter((item) => item.status === 'fail').length;
+            const pendingItems = inspection.items.filter((item) => item.status === 'na').length;
+            return (
+              <article key={inspection.id} className={`rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="text-base font-semibold">{inspection.vehiclePlate} · {inspection.vehicleType}</h4>
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${statusClass(inspection.overallStatus)}`}>{statusLabel(inspection.overallStatus)}</span>
+                    </div>
+                    <p className={`text-xs mt-1 ${muted}`}>Driver {inspection.driverName} · {formatDate(inspection.inspectionDate)} · {inspection.mileage.toLocaleString('id-ID')} km</p>
+                    <p className={`text-[11px] mt-1 ${muted}`}>Inspector: {inspection.inspectorName || '-'}</p>
+                  </div>
+                  <button type="button" onClick={() => handleDelete(inspection.id)} className="w-9 h-9 rounded-lg inline-flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" aria-label="Hapus inspeksi"><Trash2 size={16} /></button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  <div className={`rounded-lg px-3 py-2 ${surfaceMuted}`}><p className={`text-[10px] ${muted}`}>Pass</p><p className="text-sm font-semibold text-emerald-600 mt-0.5">{passItems}</p></div>
+                  <div className={`rounded-lg px-3 py-2 ${surfaceMuted}`}><p className={`text-[10px] ${muted}`}>Fail</p><p className="text-sm font-semibold text-red-600 mt-0.5">{failItems}</p></div>
+                  <div className={`rounded-lg px-3 py-2 ${surfaceMuted}`}><p className={`text-[10px] ${muted}`}>Belum Dinilai</p><p className="text-sm font-semibold mt-0.5">{pendingItems}</p></div>
+                </div>
+
+                {failItems > 0 && (
+                  <div className="mt-4 space-y-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-red-600">Temuan</p>
+                    {inspection.items.filter((item) => item.status === 'fail').map((item) => (
+                      <div key={item.id} className={`flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${surfaceMuted}`}>
+                        <AlertTriangle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                        <span><strong>{item.component}:</strong> {item.notes || 'Tidak ada catatan'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {inspection.notes && (
+                  <div className={`mt-4 rounded-lg px-3 py-2.5 ${surfaceMuted}`}>
+                    <p className={`text-[10px] uppercase tracking-wide ${muted}`}>Catatan Inspector</p>
+                    <p className="text-xs mt-1">{inspection.notes}</p>
+                  </div>
+                )}
+
+                {inspection.overallStatus === 'pass' && (
+                  <div className="mt-4 flex items-center gap-2 text-xs text-emerald-600"><CheckCircle size={15} /> Kendaraan dinyatakan lulus inspeksi.</div>
+                )}
+              </article>
+            );
+          })}
+        </section>
+      </main>
     </div>
   );
 }
