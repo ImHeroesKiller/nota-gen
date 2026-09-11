@@ -14,6 +14,8 @@ Numbering is derived from array order at runtime and starts at `00`.
 - `05` Daily Attendance
 - `06` Timesheet & Validation
 - `07` Payroll & Settlement
+- `08` Invoice & Billing
+- `09` Monitoring AR
 
 Prev/Next navigation is suite-scoped and must never leave `phl-mining-lifecycle`.
 
@@ -25,4 +27,27 @@ Format:
 
 `PHL-LC/####/PAY/MM/YYYY`
 
-The register is currently stored with the existing client-side lifecycle persistence model. No database migration is introduced by this change.
+## Invoice register
+
+Invoice numbers are generated automatically when a PHL invoice is saved or issued.
+
+Format:
+
+`PHL-INV/####/PAY/MM/YYYY`
+
+The Invoice & Billing tool takes its baseline from paid attendance days multiplied by the worker daily rate, grouped by period, project, and site. Management fee, reimbursable charges, other charges, effective tax rate, and payment terms remain configurable before issue.
+
+An invoice can be saved as draft or issued. Only issued invoices enter the active AR population.
+
+## Accounts Receivable monitoring
+
+Monitoring AR tracks:
+
+- total billed, collected, outstanding, and overdue,
+- aging buckets: Current, 1–30, 31–60, 61–90, and >90 days,
+- invoices due within seven days,
+- partial and full payments,
+- payment references and payment ledger,
+- automatic invoice status transitions based on collections.
+
+The lifecycle register, invoice register, and AR state currently follow the existing client-side persistence model. No server database migration is introduced by this change.
