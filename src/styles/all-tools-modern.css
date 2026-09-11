@@ -1,0 +1,308 @@
+/* PERADA Tools — completion layer for every tool workspace.
+   Loaded after the existing ERP styles so legacy tools inherit the same shell. */
+
+.erp-tool-stage {
+  --tool-primary: var(--erp-primary, #2563eb);
+  --tool-bg: var(--erp-bg, #f7f9fc);
+  --tool-surface: var(--erp-surface, #ffffff);
+  --tool-muted: var(--erp-surface-muted, #f8fafc);
+  --tool-border: var(--erp-border, #e5eaf1);
+  --tool-text: var(--erp-text, #0f172a);
+  --tool-subtle: var(--erp-text-secondary, #64748b);
+  background: var(--tool-bg) !important;
+}
+
+/* Make all legacy tool pages use one consistent workspace width and rhythm. */
+.erp-tool-stage > div,
+.erp-tool-stage > section,
+.erp-tool-stage > main {
+  color: var(--tool-text);
+}
+
+.erp-tool-stage > div[class*="max-w-"],
+.erp-tool-stage > main[class*="max-w-"] {
+  width: min(100%, 1440px) !important;
+  max-width: 1440px !important;
+  margin-inline: auto !important;
+  padding: 20px 24px 32px !important;
+}
+
+.erp-tool-stage > div[class~="p-6"][class*="max-w-"] {
+  padding: 20px 24px 32px !important;
+}
+
+/* Legacy title blocks become compact ERP tool headers instead of marketing headers. */
+.erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1),
+.erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1),
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(> h1),
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) {
+  margin: 0 0 18px !important;
+  padding: 15px 16px !important;
+  border: 1px solid var(--tool-border) !important;
+  border-radius: 12px !important;
+  background: var(--tool-surface) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .035) !important;
+}
+
+.erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1) h1,
+.erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1) h1,
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) h1 {
+  font-size: 20px !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  letter-spacing: -.025em !important;
+}
+
+.erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1) p,
+.erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1) p,
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) p {
+  margin-top: 3px !important;
+  color: var(--tool-subtle) !important;
+  font-size: 12px !important;
+}
+
+/* Normalize the old PA gradient mark in tool headers. */
+.erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1) [class*="bg-gradient"],
+.erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1) [class*="bg-gradient"],
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) [class*="bg-gradient"] {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 9px !important;
+  background: color-mix(in srgb, var(--tool-primary) 10%, var(--tool-surface)) !important;
+  box-shadow: none !important;
+}
+
+.erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1) [class*="bg-gradient"] .text-white,
+.erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1) [class*="bg-gradient"] .text-white,
+.erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) [class*="bg-gradient"] .text-white {
+  color: var(--tool-primary) !important;
+}
+
+/* Cards and working panels. */
+.erp-tool-stage [class~="bg-white"][class*="rounded"][class*="p-"],
+.erp-tool-stage [class~="bg-white"][class*="rounded"][class*="shadow"],
+.erp-tool-stage section[class*="rounded"][class*="border"] {
+  border: 1px solid var(--tool-border) !important;
+  background: var(--tool-surface) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .035) !important;
+}
+
+.erp-tool-stage [class~="shadow-lg"],
+.erp-tool-stage [class~="shadow-xl"],
+.erp-tool-stage [class~="shadow-2xl"] {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04) !important;
+}
+
+.erp-tool-stage [class~="rounded-lg"] { border-radius: 10px !important; }
+.erp-tool-stage [class~="rounded-xl"] { border-radius: 12px !important; }
+.erp-tool-stage [class~="rounded-2xl"] { border-radius: 14px !important; }
+
+/* Reduce oversized dashboard-style KPI cards inside tools. */
+.erp-tool-stage .grid > [class~="bg-white"][class*="shadow"][class*="p-6"] {
+  padding: 16px !important;
+  min-height: 0 !important;
+}
+.erp-tool-stage .grid > [class~="bg-white"][class*="shadow"] [class~="text-3xl"] {
+  font-size: 1.5rem !important;
+  line-height: 1.1 !important;
+}
+
+/* Form sections. */
+.erp-tool-stage label {
+  color: var(--tool-text) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+.erp-tool-stage input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]),
+.erp-tool-stage textarea,
+.erp-tool-stage select {
+  min-height: 38px;
+  padding: 8px 11px !important;
+  border: 1px solid var(--tool-border) !important;
+  border-radius: 9px !important;
+  background: var(--tool-surface) !important;
+  color: var(--tool-text) !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+
+.erp-tool-stage textarea { min-height: 76px; }
+.erp-tool-stage input:focus,
+.erp-tool-stage textarea:focus,
+.erp-tool-stage select:focus {
+  border-color: color-mix(in srgb, var(--tool-primary) 58%, var(--tool-border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tool-primary) 10%, transparent) !important;
+  outline: none !important;
+}
+
+/* Main actions use one ERP action language; destructive/status actions keep semantics. */
+.erp-tool-stage button[class*="bg-blue-"],
+.erp-tool-stage button[class*="bg-indigo-"],
+.erp-tool-stage button[class*="bg-purple-"] {
+  background: var(--tool-primary) !important;
+  border-color: var(--tool-primary) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.erp-tool-stage button[class*="px-6"][class*="py-3"],
+.erp-tool-stage button[class*="px-6"][class*="py-2"] {
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.erp-tool-stage button:hover:not(:disabled) {
+  filter: brightness(.985);
+}
+
+/* Data tables */
+.erp-tool-stage table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border: 1px solid var(--tool-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tool-surface);
+}
+.erp-tool-stage thead { background: var(--tool-muted) !important; }
+.erp-tool-stage th {
+  padding: 10px 12px !important;
+  color: var(--tool-subtle) !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+}
+.erp-tool-stage td {
+  padding: 10px 12px !important;
+  color: var(--tool-text) !important;
+  font-size: 12px !important;
+  border-color: var(--tool-border) !important;
+}
+.erp-tool-stage tbody tr:hover { background: color-mix(in srgb, var(--tool-primary) 3%, var(--tool-surface)) !important; }
+
+/* Tabs, option pills, and selectors. */
+.erp-tool-stage [role="tablist"],
+.erp-tool-stage .flex[class*="bg-gray-100"][class*="rounded"] {
+  padding: 3px !important;
+  border: 1px solid var(--tool-border) !important;
+  background: var(--tool-muted) !important;
+  border-radius: 10px !important;
+}
+
+/* Upload / drop zones. */
+.erp-tool-stage [class*="border-dashed"] {
+  border: 1px dashed color-mix(in srgb, var(--tool-subtle) 40%, var(--tool-border)) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--tool-muted) 88%, transparent) !important;
+}
+.erp-tool-stage [class*="border-dashed"]:hover {
+  border-color: color-mix(in srgb, var(--tool-primary) 55%, var(--tool-border)) !important;
+  background: color-mix(in srgb, var(--tool-primary) 3%, var(--tool-muted)) !important;
+}
+
+/* Modals / overlays. */
+.erp-tool-stage [class~="fixed"][class~="inset-0"] {
+  background: rgba(15, 23, 42, .42) !important;
+  backdrop-filter: blur(5px);
+}
+.erp-tool-stage [class~="fixed"][class~="inset-0"] > [class*="rounded"] {
+  border: 1px solid var(--tool-border) !important;
+  background: var(--tool-surface) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .18) !important;
+}
+
+/* Keep genuine document/PDF previews paper-white. */
+.erp-tool-stage .preview-scroll,
+.erp-tool-stage .a4-page,
+.erp-tool-stage [class*="print:shadow-none"],
+.erp-tool-stage [style*="aspect-ratio"][class~="bg-white"] {
+  background: #fff !important;
+  color: #0f172a !important;
+}
+.erp-tool-stage .preview-scroll *,
+.erp-tool-stage .a4-page *,
+.erp-tool-stage [class*="print:shadow-none"] * {
+  color-scheme: light;
+}
+
+/* Replace loud info/summary backgrounds with softer enterprise surfaces. */
+.erp-tool-stage [class~="bg-blue-50"],
+.erp-tool-stage [class~="bg-indigo-50"],
+.erp-tool-stage [class~="bg-purple-50"] {
+  background: color-mix(in srgb, var(--tool-primary) 6%, var(--tool-surface)) !important;
+}
+.erp-tool-stage [class~="bg-gray-50"],
+.erp-tool-stage [class~="bg-gray-100"] {
+  background: var(--tool-muted) !important;
+}
+
+/* Dark mode completion for untouched tools. */
+.erp-shell.is-dark .erp-tool-stage [class~="bg-white"]:not(.preview-scroll):not(.a4-page):not([style*="aspect-ratio"]),
+.erp-shell.is-dark .erp-tool-stage [class~="bg-white"][class*="rounded"] {
+  background: var(--tool-surface) !important;
+  color: var(--tool-text) !important;
+}
+.erp-shell.is-dark .erp-tool-stage .text-gray-900,
+.erp-shell.is-dark .erp-tool-stage .text-gray-800,
+.erp-shell.is-dark .erp-tool-stage .text-gray-700 { color: var(--tool-text) !important; }
+.erp-shell.is-dark .erp-tool-stage .text-gray-600,
+.erp-shell.is-dark .erp-tool-stage .text-gray-500,
+.erp-shell.is-dark .erp-tool-stage .text-gray-400 { color: var(--tool-subtle) !important; }
+.erp-shell.is-dark .erp-tool-stage .border-gray-100,
+.erp-shell.is-dark .erp-tool-stage .border-gray-200,
+.erp-shell.is-dark .erp-tool-stage .border-gray-300 { border-color: var(--tool-border) !important; }
+
+/* Responsive completion for old fixed-column tools. */
+@media (max-width: 900px) {
+  .erp-tool-stage > div[class*="max-w-"],
+  .erp-tool-stage > main[class*="max-w-"] {
+    padding: 16px !important;
+  }
+  .erp-tool-stage .grid.grid-cols-6,
+  .erp-tool-stage .grid.grid-cols-5,
+  .erp-tool-stage .grid.grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .erp-tool-stage [class~="w-80"],
+  .erp-tool-stage [class~="w-72"],
+  .erp-tool-stage [class~="w-64"] {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .erp-tool-stage > div[class*="max-w-"],
+  .erp-tool-stage > main[class*="max-w-"] { padding: 12px !important; }
+  .erp-tool-stage > div[class*="max-w-"] > .mb-6:has(h1),
+  .erp-tool-stage > div[class*="max-w-"] > .mb-8:has(h1),
+  .erp-tool-stage > div[class*="max-w-"] > div:first-child:has(h1) { padding: 12px !important; }
+  .erp-tool-stage .grid.grid-cols-6,
+  .erp-tool-stage .grid.grid-cols-5,
+  .erp-tool-stage .grid.grid-cols-4,
+  .erp-tool-stage .grid.grid-cols-3,
+  .erp-tool-stage .grid.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .erp-tool-stage .flex.justify-between,
+  .erp-tool-stage .flex.items-center.justify-between {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .erp-tool-stage table { min-width: 640px; }
+  .erp-tool-stage table { display: table; }
+  .erp-tool-stage .overflow-x-auto { scrollbar-width: thin; }
+}
+
+@media print {
+  .erp-sidebar,
+  .erp-topbar { display: none !important; }
+  .erp-workspace,
+  .erp-main-content,
+  .erp-tool-stage { width: 100% !important; height: auto !important; overflow: visible !important; background: #fff !important; }
+  .erp-tool-stage > div[class*="max-w-"] { max-width: none !important; padding: 0 !important; }
+}
