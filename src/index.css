@@ -1,61 +1,44 @@
 @import "tailwindcss";
-
-/* Import Global CSS */
-@import './styles/global.css';
-@import './styles/erp-modern.css';
-@import './styles/tool-workspace.css';
+@import './styles/perada-erp.css';
 
 :root {
-  /* PERADA Brand Colors */
-  --perada-red: #E31B23;
-  --perada-blue: #0072CE;
-  
-  /* Light Mode (Default) */
-  --bg-primary: #F8FAFC;
-  --bg-card: #FFFFFF;
-  --border-color: #E2E8F0;
-  --text-primary: #0F172A;
-  --text-secondary: #64748B;
-  
-  /* Dark Mode */
-  --bg-primary-dark: #0f1419;
-  --bg-card-dark: #161b22;
-  --border-color-dark: #21262d;
-  --text-primary-dark: #e6edf3;
-  --text-secondary-dark: #8b949e;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+html,
+body {
+  background: #f6f8fb;
+  color: #0f172a;
+}
+
+html.dark,
+html.dark body {
+  background: #0b1220;
+  color: #e5edf8;
 }
 
 * {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: inherit;
 }
 
-/* Default Light Mode */
-html, body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
+/* Explicit utilities only. No global control/card overrides. */
+.scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+html.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; }
 
-html.dark, html.dark body {
-  background-color: var(--bg-primary-dark);
-  color: var(--text-primary-dark);
-}
-
-/* Scrollbar */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-}
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #30363d;
-  border-radius: 4px;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #484f58;
-}
-
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -68,7 +51,7 @@ html.dark, html.dark body {
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  50% { opacity: .45; }
 }
 
 @keyframes progressBar {
@@ -76,94 +59,22 @@ html.dark, html.dark body {
   to { background-position: 20px 0; }
 }
 
-.fade-in {
-  animation: fadeIn 0.2s ease-out;
-}
-
-.slide-up {
-  animation: slideUp 0.3s ease-out;
-}
-
-.pulse-dot {
-  animation: pulse 1.2s ease-in-out infinite;
-  color: #ffffff;
-}
-
+.fade-in { animation: fadeIn .2s ease-out; }
+.slide-up { animation: slideUp .25s ease-out; }
+.pulse-dot { animation: pulse 1.2s ease-in-out infinite; }
 .progress-bar {
-  background-image: linear-gradient(
-    45deg,
-    rgba(255,255,255,0.1) 25%,
-    transparent 25%,
-    transparent 50%,
-    rgba(255,255,255,0.1) 50%,
-    rgba(255,255,255,0.1) 75%,
-    transparent 75%,
-    transparent
-  );
+  background-image: linear-gradient(45deg, rgba(255,255,255,.1) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.1) 50%, rgba(255,255,255,.1) 75%, transparent 75%, transparent);
   background-size: 20px 20px;
-  animation: progressBar 0.5s linear infinite;
+  animation: progressBar .5s linear infinite;
 }
 
-/* Preview scroll */
 .preview-scroll {
-  background-image: radial-gradient(circle, #30363d 1px, transparent 1px);
+  background-color: #f8fafc;
+  background-image: radial-gradient(circle, #d8e0ea 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
-html.light .preview-scroll {
-  background-image: radial-gradient(circle, #d0d7de 1px, transparent 1px);
-}
-
-/* Range input styling */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  outline: none;
-}
-
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #0A2540;
-  cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #0A2540;
-  cursor: pointer;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-/* Select styling */
-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  padding-right: 24px;
-}
-
-/* Color input */
-input[type="color"] {
-  -webkit-appearance: none;
-  appearance: none;
-  border: none;
-  padding: 0;
-}
-input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 6px;
+html.dark .preview-scroll {
+  background-color: #111827;
+  background-image: radial-gradient(circle, #334155 1px, transparent 1px);
 }
