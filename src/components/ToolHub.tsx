@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   ArrowLeft,
+  ArrowRight,
   Bell,
   ChevronRight,
   Command,
@@ -27,6 +28,13 @@ import { Icons } from './IconLibrary';
 type ViewLevel = 'dashboard' | 'suites' | 'suite' | 'modules' | 'module' | 'tools' | 'tool';
 type DirectoryView = 'dashboard' | 'suites' | 'modules' | 'tools';
 type SuiteViewMode = 'grid' | 'list';
+
+type SuiteRuntimeMeta = Suite & {
+  navigationMode?: 'modules' | 'direct-tools';
+  workflowScope?: 'global' | 'suite';
+  sequenceStart?: number;
+  registerPrefix?: string;
+};
 
 interface NavigationState {
   level: ViewLevel;
@@ -57,6 +65,7 @@ interface SearchResult {
 }
 
 const suiteAccents: Record<string, string> = {
+  'phl-mining-lifecycle': '#2563EB',
   'human-capital': '#2563EB',
   'logistics-fleet': '#10B981',
   'customs-trade': '#7C3AED',
@@ -70,6 +79,15 @@ const getSuiteStyle = (suiteId?: string): CSSProperties => ({
   '--suite-accent': suiteAccents[suiteId || ''] || '#2563EB',
 } as CSSProperties);
 
+const suiteMeta = (suite?: Suite) => suite as SuiteRuntimeMeta | undefined;
+const isDirectToolsSuite = (suite?: Suite) => suiteMeta(suite)?.navigationMode === 'direct-tools';
+const getSuiteTools = (suite: Suite) => suite.modules.flatMap((module) => module.tools);
+const getSequenceStart = (suite: Suite) => suiteMeta(suite)?.sequenceStart ?? 1;
+const getToolSequenceLabel = (suite: Suite, toolId: string) => {
+  const index = getSuiteTools(suite).findIndex((tool) => tool.id === toolId);
+  return index < 0 ? '' : String(getSequenceStart(suite) + index).padStart(2, '0');
+};
+
 export default function ToolHub() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,14 +99,19 @@ export default function ToolHub() {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
 
-  const modules = useMemo<ModuleContext[]>(
+  const allModules = useMemo<ModuleContext[]>(
     () => hierarchicalStructure.flatMap((suite) => suite.modules.map((module) => ({ suite, module }))),
     []
   );
 
+  const modules = useMemo<ModuleContext[]>(
+    () => allModules.filter(({ suite }) => !isDirectToolsSuite(suite)),
+    [allModules]
+  );
+
   const tools = useMemo<ToolContext[]>(
-    () => modules.flatMap(({ suite, module }) => module.tools.map((tool) => ({ suite, module, tool }))),
-    [modules]
+    () => allModules.flatMap(({ suite, module }) => module.tools.map((tool) => ({ suite, module, tool }))),
+    [allModules]
   );
 
   const selectedSuite = navigation.selectedSuiteId
@@ -96,7 +119,7 @@ export default function ToolHub() {
     : undefined;
 
   const selectedModuleContext = navigation.selectedModuleId
-    ? modules.find(({ module }) => module.id === navigation.selectedModuleId)
+    ? allModules.find(({ module }) => module.id === navigation.selectedModuleId)
     : undefined;
 
   const selectedToolContext = navigation.selectedTool
@@ -138,7 +161,7 @@ export default function ToolHub() {
         type: 'Tool',
         title: tool.name,
         description: tool.description,
-        context: `${suite.name} / ${module.name}`,
+        context: isDirectToolsSuite(suite) ? suite.name : `${suite.name} / ${module.name}`,
         iconName: iconMap[tool.id] || 'Document',
         suiteId: suite.id,
         moduleId: module.id,
@@ -192,6 +215,15 @@ export default function ToolHub() {
   };
 
   const handleBackFromTool = () => {
+    const suite = navigation.selectedSuiteId
+      ? hierarchicalStructure.find((item) => item.id === navigation.selectedSuiteId)
+      : undefined;
+
+    if (suite && isDirectToolsSuite(suite)) {
+      setNavigation({ level: 'suite', selectedSuiteId: suite.id });
+      return;
+    }
+
     if (navigation.selectedSuiteId && navigation.selectedModuleId) {
       setNavigation({
         level: 'module',
@@ -209,8 +241,30 @@ export default function ToolHub() {
     if (result.suiteId) handleSuiteSelect(result.suiteId);
   };
 
+  const DirectToolRow = ({ suite, tool, index, compact = false }: { suite: Suite; tool: Tool; index: number; compact?: boolean }) => {
+    const number = String(getSequenceStart(suite) + index).padStart(2, '0');
+    return (
+      <button
+        type="button"
+        className={compact ? 'erp-module-row' : 'erp-search-result'}
+        onClick={() => handleToolSelect(tool.id)}
+      >
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-blue-200 bg-blue-50 text-[10px] font-extrabold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">{number}</span>
+        <span className={compact ? 'erp-module-row-icon' : 'erp-search-result-icon'}>{getIconComponent(iconMap[tool.id] || 'Document', compact ? 16 : 20)}</span>
+        <span className={compact ? 'min-w-0 flex-1 text-left' : 'erp-search-result-copy'}>
+          {!compact && <span className="erp-result-type">Tool {number}</span>}
+          <strong className={compact ? 'block truncate text-xs' : ''}>{tool.name}</strong>
+          {!compact && <small>{tool.description}</small>}
+        </span>
+        <ChevronRight size={16} className="erp-chevron" />
+      </button>
+    );
+  };
+
   const SuiteCard = ({ suite }: { suite: Suite }) => {
-    const toolCount = suite.modules.reduce((total, module) => total + module.tools.length, 0);
+    const suiteTools = getSuiteTools(suite);
+    const toolCount = suiteTools.length;
+    const direct = isDirectToolsSuite(suite);
 
     if (suiteViewMode === 'list') {
       return (
@@ -222,9 +276,27 @@ export default function ToolHub() {
               <small>{suite.description}</small>
             </span>
           </button>
-          <span className="erp-list-meta">{suite.modules.length} modul</span>
+          <span className="erp-list-meta">{direct ? 'Direct tools' : `${suite.modules.length} modul`}</span>
           <span className="erp-list-meta">{toolCount} tools</span>
           <ChevronRight size={18} className="erp-chevron" />
+        </article>
+      );
+    }
+
+    if (direct) {
+      return (
+        <article className="erp-suite-card" style={{ ...getSuiteStyle(suite.id), gridColumn: '1 / -1' }}>
+          <button type="button" className="erp-suite-card-header" onClick={() => handleSuiteSelect(suite.id)}>
+            <span className="erp-suite-icon">{getIconComponent(iconMap[suite.id] || 'Dashboard', 26)}</span>
+            <span className="erp-suite-heading">
+              <strong>{suite.name}</strong>
+              <small>{suite.description}</small>
+            </span>
+            <span className="erp-suite-tool-total">{toolCount} ordered tools</span>
+          </button>
+          <div className="grid gap-2 border-t border-slate-200 p-3 sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-800">
+            {suiteTools.map((tool, index) => <DirectToolRow key={tool.id} suite={suite} tool={tool} index={index} compact />)}
+          </div>
         </article>
       );
     }
@@ -258,22 +330,27 @@ export default function ToolHub() {
     );
   };
 
-  const ToolCard = ({ context }: { context: ToolContext }) => (
-    <button
-      type="button"
-      className="erp-tool-card"
-      style={getSuiteStyle(context.suite.id)}
-      onClick={() => handleToolSelect(context.tool.id)}
-    >
-      <span className="erp-tool-icon">{getIconComponent(iconMap[context.tool.id] || 'Document', 20)}</span>
-      <span className="erp-tool-card-copy">
-        <strong>{context.tool.name}</strong>
-        <small>{context.tool.description}</small>
-        <em>{context.suite.name} / {context.module.name}</em>
-      </span>
-      <ChevronRight size={17} className="erp-chevron" />
-    </button>
-  );
+  const ToolCard = ({ context }: { context: ToolContext }) => {
+    const direct = isDirectToolsSuite(context.suite);
+    const sequence = direct ? getToolSequenceLabel(context.suite, context.tool.id) : '';
+    return (
+      <button
+        type="button"
+        className="erp-tool-card"
+        style={getSuiteStyle(context.suite.id)}
+        onClick={() => handleToolSelect(context.tool.id)}
+      >
+        {direct && <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-blue-50 text-[10px] font-extrabold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{sequence}</span>}
+        <span className="erp-tool-icon">{getIconComponent(iconMap[context.tool.id] || 'Document', 20)}</span>
+        <span className="erp-tool-card-copy">
+          <strong>{context.tool.name}</strong>
+          <small>{context.tool.description}</small>
+          <em>{direct ? context.suite.name : `${context.suite.name} / ${context.module.name}`}</em>
+        </span>
+        <ChevronRight size={17} className="erp-chevron" />
+      </button>
+    );
+  };
 
   const SuiteSection = () => (
     <section className="erp-section">
@@ -340,7 +417,7 @@ export default function ToolHub() {
 
   const renderModulesDirectory = () => (
     <div className="erp-page">
-      <div className="erp-page-heading"><div><span className="erp-eyebrow">ERP Directory</span><h1>Semua Modul</h1><p>Temukan modul lintas suite dan buka tools di dalamnya.</p></div></div>
+      <div className="erp-page-heading"><div><span className="erp-eyebrow">ERP Directory</span><h1>Semua Modul</h1><p>Temukan modul lintas suite. Custom direct-tool suite tidak ditampilkan sebagai modul.</p></div></div>
       <div className="erp-module-grid">
         {modules.map(({ suite, module }) => (
           <button type="button" key={module.id} className="erp-module-card" style={getSuiteStyle(suite.id)} onClick={() => handleModuleSelect(suite.id, module.id)}>
@@ -359,6 +436,10 @@ export default function ToolHub() {
 
   const renderSuiteDetail = () => {
     if (!selectedSuite) return renderSuitesDirectory();
+    const direct = isDirectToolsSuite(selectedSuite);
+    const directTools = direct ? getSuiteTools(selectedSuite) : [];
+    const registerPrefix = suiteMeta(selectedSuite)?.registerPrefix;
+
     return (
       <div className="erp-page">
         <button type="button" className="erp-back-link" onClick={() => handleNavigate('suites')}><ArrowLeft size={16} /> Semua Suites</button>
@@ -366,15 +447,28 @@ export default function ToolHub() {
           <span className="erp-suite-icon erp-detail-icon">{getIconComponent(iconMap[selectedSuite.id] || 'Dashboard', 28)}</span>
           <div><span className="erp-eyebrow">Suite</span><h1>{selectedSuite.name}</h1><p>{selectedSuite.description}</p></div>
         </section>
-        <div className="erp-module-grid">
-          {selectedSuite.modules.map((module) => (
-            <button type="button" key={module.id} className="erp-module-card" style={getSuiteStyle(selectedSuite.id)} onClick={() => handleModuleSelect(selectedSuite.id, module.id)}>
-              <span className="erp-module-card-icon">{getIconComponent(iconMap[module.id] || 'Document', 21)}</span>
-              <span className="erp-module-card-copy"><strong>{module.name}</strong><small>{module.description}</small><span>{module.tools.length} tools</span></span>
-              <ChevronRight size={17} className="erp-chevron" />
-            </button>
-          ))}
-        </div>
+
+        {direct ? (
+          <>
+            <div className="erp-section-head erp-tools-heading">
+              <div><h2>Ordered Lifecycle Tools</h2><p>Tools tampil langsung tanpa layer modul. Prev/Next dibatasi hanya di suite ini.</p></div>
+              {registerPrefix && <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">Register: {registerPrefix}</span>}
+            </div>
+            <div className="erp-search-results">
+              {directTools.map((tool, index) => <DirectToolRow key={tool.id} suite={selectedSuite} tool={tool} index={index} />)}
+            </div>
+          </>
+        ) : (
+          <div className="erp-module-grid">
+            {selectedSuite.modules.map((module) => (
+              <button type="button" key={module.id} className="erp-module-card" style={getSuiteStyle(selectedSuite.id)} onClick={() => handleModuleSelect(selectedSuite.id, module.id)}>
+                <span className="erp-module-card-icon">{getIconComponent(iconMap[module.id] || 'Document', 21)}</span>
+                <span className="erp-module-card-copy"><strong>{module.name}</strong><small>{module.description}</small><span>{module.tools.length} tools</span></span>
+                <ChevronRight size={17} className="erp-chevron" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -382,6 +476,7 @@ export default function ToolHub() {
   const renderModuleDetail = () => {
     if (!selectedModuleContext) return renderModulesDirectory();
     const { suite, module } = selectedModuleContext;
+    if (isDirectToolsSuite(suite)) return renderSuiteDetail();
     const moduleTools = module.tools.map((tool) => ({ suite, module, tool }));
     return (
       <div className="erp-page">
@@ -400,31 +495,53 @@ export default function ToolHub() {
     if (!navigation.selectedTool || !selectedToolContext) return renderToolsDirectory();
     const ToolComponent = navigation.selectedTool.component;
     const { suite, module, tool } = selectedToolContext;
+    const direct = isDirectToolsSuite(suite);
+    const orderedTools = direct ? getSuiteTools(suite) : [];
+    const toolIndex = direct ? orderedTools.findIndex((item) => item.id === tool.id) : -1;
+    const previousTool = direct && toolIndex > 0 ? orderedTools[toolIndex - 1] : undefined;
+    const nextTool = direct && toolIndex >= 0 && toolIndex < orderedTools.length - 1 ? orderedTools[toolIndex + 1] : undefined;
+    const sequence = direct ? getToolSequenceLabel(suite, tool.id) : '';
+    const sequenceEnd = direct ? String(getSequenceStart(suite) + orderedTools.length - 1).padStart(2, '0') : '';
 
     return (
       <div className="erp-tool-workspace-frame" style={getSuiteStyle(suite.id)} data-tool-id={tool.id}>
         <header className="erp-tool-shellbar">
           <div className="erp-tool-shellbar-main">
-            <button type="button" className="erp-tool-shell-back" onClick={handleBackFromTool} aria-label="Kembali ke modul"><ArrowLeft size={18} /></button>
+            <button type="button" className="erp-tool-shell-back" onClick={handleBackFromTool} aria-label="Kembali"><ArrowLeft size={18} /></button>
             <span className="erp-tool-shell-icon">{getIconComponent(iconMap[tool.id] || 'Document', 22)}</span>
             <div className="erp-tool-shell-copy">
               <div className="erp-tool-shell-breadcrumbs">
-                <button type="button" onClick={() => handleSuiteSelect(suite.id)}>{suite.name}</button><ChevronRight size={12} />
-                <button type="button" onClick={() => handleModuleSelect(suite.id, module.id)}>{module.name}</button>
+                <button type="button" onClick={() => handleSuiteSelect(suite.id)}>{suite.name}</button>
+                {!direct && <><ChevronRight size={12} /><button type="button" onClick={() => handleModuleSelect(suite.id, module.id)}>{module.name}</button></>}
               </div>
-              <h1>{tool.name}</h1>
+              <h1>{direct ? `${sequence} · ${tool.name}` : tool.name}</h1>
               <p>{tool.description}</p>
             </div>
           </div>
           <div className="erp-tool-shell-actions">
-            <span className="erp-tool-shell-module">{module.name}</span>
+            {direct ? (
+              <>
+                <span className="erp-tool-shell-module">{sequence} / {sequenceEnd}</span>
+                <button type="button" className="erp-icon-button" disabled={!previousTool} onClick={() => previousTool && handleToolSelect(previousTool.id)} aria-label="Tool sebelumnya" title={previousTool?.name || 'Tidak ada tool sebelumnya'} style={{ opacity: previousTool ? 1 : 0.35 }}><ArrowLeft size={17} /></button>
+                <button type="button" className="erp-icon-button" disabled={!nextTool} onClick={() => nextTool && handleToolSelect(nextTool.id)} aria-label="Tool berikutnya" title={nextTool?.name || 'Tahap terakhir'} style={{ opacity: nextTool ? 1 : 0.35 }}><ArrowRight size={17} /></button>
+              </>
+            ) : (
+              <span className="erp-tool-shell-module">{module.name}</span>
+            )}
             <button type="button" className="erp-tool-shell-theme" onClick={() => setDarkMode((value) => !value)} aria-label="Ubah tema">{darkMode ? <Sun size={17} /> : <Moon size={17} />}</button>
           </div>
         </header>
 
         <div className="erp-tool-body">
           <div className="erp-tool-stage">
-            <ToolComponent onBack={handleBackFromTool} darkMode={darkMode} setDarkMode={setDarkMode} />
+            <ToolComponent
+              onBack={handleBackFromTool}
+              darkMode={darkMode}
+              setDarkMode={setDarkMode}
+              suiteId={suite.id}
+              toolSequence={sequence}
+              registerPrefix={suiteMeta(suite)?.registerPrefix}
+            />
           </div>
         </div>
       </div>

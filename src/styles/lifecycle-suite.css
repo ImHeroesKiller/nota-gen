@@ -1,0 +1,26 @@
+/* Custom direct-tool suite layout. Scoped to rows/cards that start with a sequence badge. */
+.erp-module-row:has(> .grid:first-child) {
+  grid-template-columns: 32px 20px minmax(0, 1fr) 16px;
+}
+
+.erp-search-result:has(> .grid:first-child) {
+  grid-template-columns: 32px 38px minmax(0, 1fr) 18px;
+}
+
+.erp-tool-card:has(> .grid:first-child) {
+  grid-template-columns: 32px 38px minmax(0, 1fr) 18px;
+}
+
+.erp-icon-button:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .erp-search-result:has(> .grid:first-child) {
+    grid-template-columns: 32px minmax(0, 1fr) 18px;
+  }
+
+  .erp-search-result:has(> .grid:first-child) > .erp-search-result-icon {
+    display: none;
+  }
+}
