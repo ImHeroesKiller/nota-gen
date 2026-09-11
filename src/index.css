@@ -3,6 +3,7 @@
 /* Import Global CSS */
 @import './styles/global.css';
 @import './styles/erp-modern.css';
+@import './styles/tool-workspace.css';
 
 :root {
   /* PERADA Brand Colors */
