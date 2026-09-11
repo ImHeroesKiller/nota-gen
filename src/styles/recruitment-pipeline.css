@@ -1,0 +1,318 @@
+/* Recruitment Pipeline — isolated ATS workspace corrections.
+   Loaded after the legacy V4 compatibility layer so modern component
+   utilities are not distorted by broad fallback selectors. */
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] {
+  --ats-gap: 14px;
+  --ats-radius: 12px;
+  --ats-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 14px rgba(15, 23, 42, 0.025);
+}
+
+/* The global top bar already owns theme switching. Avoid a duplicate control. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-shell-theme {
+  display: none !important;
+}
+
+/* Restore the spacing intentionally defined by the ATS page. The V4 legacy
+   wrapper otherwise strips padding from every direct max-w container. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] {
+  width: 100% !important;
+  max-width: 1600px !important;
+  margin: 0 auto !important;
+  padding: 20px 24px 32px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+/* KPI + primary action */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: stretch !important;
+  gap: 14px !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > div:first-child {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > div:first-child > div {
+  min-height: 78px !important;
+  padding: 13px 14px !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--ats-radius) !important;
+  background: var(--erp-surface) !important;
+  box-shadow: var(--ats-card-shadow) !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > button {
+  align-self: center;
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 0 16px !important;
+  border-radius: 10px !important;
+  white-space: nowrap;
+  font-size: 12px !important;
+}
+
+/* Filter toolbar. The legacy layer sets every label to display:block and every
+   input to a full bordered field, which broke the search control composition. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) {
+  margin: 0 !important;
+  padding: 12px !important;
+  border-radius: var(--ats-radius) !important;
+  box-shadow: var(--ats-card-shadow) !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) 170px 180px 150px 116px !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100%;
+  height: 40px;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 11px !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: 9px !important;
+  background: var(--erp-surface-muted) !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  box-sizing: border-box;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) label:focus-within {
+  border-color: color-mix(in srgb, #2563eb 52%, var(--erp-border)) !important;
+  background: var(--erp-surface) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08) !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) label input {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--erp-text) !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 34px 0 11px !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+  box-sizing: border-box;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div > div:last-child {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  width: 116px;
+  height: 40px !important;
+  min-width: 116px;
+  padding: 3px !important;
+  gap: 2px !important;
+  box-sizing: border-box;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div > div:last-child button {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 32px !important;
+  margin: 0 !important;
+  padding: 0 7px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+  box-shadow: none !important;
+  white-space: nowrap;
+}
+
+/* Board — five clean columns on desktop, horizontal scroll only when the
+   available workspace is genuinely too narrow. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section.overflow-x-auto {
+  width: 100%;
+  margin: 0 !important;
+  padding: 2px 2px 8px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  border-radius: 0 !important;
+  scrollbar-gutter: stable;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section.overflow-x-auto > div {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(238px, 1fr)) !important;
+  gap: 12px !important;
+  width: 100%;
+  min-width: 1238px !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section.overflow-x-auto > div > div {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 12px !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: 12px !important;
+  background: var(--erp-surface-muted) !important;
+  box-sizing: border-box;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section.overflow-x-auto h3 {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+
+/* Candidate cards */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage article {
+  padding: 12px !important;
+  border-radius: 11px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035) !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage article:hover {
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.065) !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage article h4 {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage article p {
+  line-height: 1.45 !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage article [class~="rounded-full"] {
+  padding: 4px 8px !important;
+  font-size: 9px !important;
+}
+
+/* Undo broad legacy button defaults for compact/icon controls. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage button[aria-label^="Beri rating"] {
+  width: 20px !important;
+  height: 20px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 2px !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage button[aria-label^="Aksi untuk"] {
+  width: 30px !important;
+  height: 30px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Modal controls should use their authored sizes rather than the legacy
+   minimum button dimensions. */
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage .fixed.inset-0 button {
+  min-height: 0 !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage .fixed.inset-0 label {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 650 !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage .fixed.inset-0 :is(input, textarea) {
+  min-height: 40px !important;
+  padding: 9px 11px !important;
+  font-size: 12px !important;
+}
+
+.erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage .fixed.inset-0 textarea {
+  min-height: 86px !important;
+}
+
+@media (max-width: 1280px) {
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div {
+    grid-template-columns: minmax(240px, 1fr) 150px 160px 140px 116px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] {
+    padding: 16px !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child {
+    grid-template-columns: 1fr !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > button {
+    justify-self: start;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div {
+    grid-template-columns: minmax(0, 1fr) 1fr 1fr !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div > div:last-child {
+    width: 116px;
+    min-width: 116px;
+  }
+}
+
+@media (max-width: 700px) {
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] {
+    gap: 12px;
+    padding: 12px !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > div:first-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:first-child > button {
+    width: 100%;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div {
+    grid-template-columns: 1fr !important;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section:nth-child(2) > div > div:last-child {
+    width: 100%;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="recruitment-pipeline"] .erp-tool-stage > div[class*="max-w-"] > section.overflow-x-auto > div {
+    grid-template-columns: repeat(5, 268px) !important;
+    min-width: max-content !important;
+  }
+}
