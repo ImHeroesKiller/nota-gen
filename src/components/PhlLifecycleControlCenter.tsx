@@ -7,7 +7,9 @@ import {
   ClipboardList,
   FileCheck2,
   Hash,
+  ReceiptText,
   Shield,
+  TrendingUp,
   Truck,
   Users,
 } from 'lucide-react';
@@ -18,6 +20,7 @@ import {
   type WorkerStage,
 } from '../lib/miningWorkerLifecycle';
 import { useLifecycleNumberRegistry } from '../lib/lifecycleNumberRegistry';
+import { usePhlBillingAr } from '../lib/phlBillingAr';
 
 const stageLabels: Record<WorkerStage, string> = {
   registration: 'Registrasi',
@@ -45,6 +48,8 @@ const flow = [
   { title: 'Attendance', detail: 'Hari kerja aktual', Icon: Calendar },
   { title: 'Timesheet', detail: 'Rekap hari & lembur', Icon: ClipboardList },
   { title: 'Payroll', detail: 'Hari hadir × rate harian', Icon: Banknote },
+  { title: 'Invoice', detail: 'Payroll base → client billing', Icon: ReceiptText },
+  { title: 'AR', detail: 'Outstanding, aging & collection', Icon: TrendingUp },
 ];
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('id-ID', {
@@ -58,6 +63,7 @@ const formatDate = (value: string) => new Date(value).toLocaleDateString('id-ID'
 export default function PhlLifecycleControlCenter() {
   const { store } = useMiningWorkerLifecycle();
   const { records, byWorkerId } = useLifecycleNumberRegistry(store.workers);
+  const { balances } = usePhlBillingAr();
 
   const summary = useMemo(() => {
     const active = store.workers.filter((worker) => worker.stage === 'active').length;
@@ -70,6 +76,14 @@ export default function PhlLifecycleControlCenter() {
     }, 0);
     return { active, mobilization, compliance, attendanceDays, payrollExposure };
   }, [store]);
+
+  const arSummary = useMemo(() => {
+    const open = balances.filter(({ invoice, outstanding }) => !['draft', 'cancelled'].includes(invoice.status) && outstanding > 0);
+    return {
+      outstanding: open.reduce((sum, balance) => sum + balance.outstanding, 0),
+      overdue: open.filter((balance) => balance.effectiveStatus === 'overdue').length,
+    };
+  }, [balances]);
 
   const attention = useMemo(() => store.workers.filter((worker) => {
     const compliance = calculateComplianceReadiness(worker).percentage;
@@ -89,7 +103,7 @@ export default function PhlLifecycleControlCenter() {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">PHL Mining Workforce</p>
             <h2 className="mt-1 text-xl font-bold tracking-tight">End-to-End Lifecycle Control Center</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Satu alur operasional dari kandidat sampai pembayaran pekerja harian tambang.</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Satu alur operasional dari kandidat, payroll, invoice, sampai collection.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
@@ -98,11 +112,14 @@ export default function PhlLifecycleControlCenter() {
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
               <strong>{summary.active}</strong> pekerja aktif PHL · <strong>{summary.attendanceDays}</strong> paid attendance days
             </div>
+            <div className={`rounded-xl border px-4 py-2.5 text-xs ${arSummary.overdue > 0 ? 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+              AR <strong>{formatCurrency(arSummary.outstanding)}</strong>{arSummary.overdue > 0 ? ` · ${arSummary.overdue} overdue` : ''}
+            </div>
           </div>
         </div>
 
         <div className="mt-5 overflow-x-auto pb-1">
-          <div className="grid min-w-[980px] grid-cols-7 gap-2">
+          <div className="grid min-w-[1260px] grid-cols-9 gap-2">
             {flow.map(({ title, detail, Icon }, index) => {
               const no = String(index + 1).padStart(2, '0');
               return (
