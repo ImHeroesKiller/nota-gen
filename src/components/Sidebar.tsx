@@ -1,7 +1,7 @@
 import {
   Boxes,
-  CircleHelp,
-  Grid2X2,
+  Grid,
+  HelpCircle,
   Home,
   Layers3,
   Menu,
@@ -24,7 +24,7 @@ const navItems: Array<{
   icon: typeof Home;
 }> = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'suites', label: 'Semua Suites', icon: Grid2X2 },
+  { id: 'suites', label: 'Semua Suites', icon: Grid },
   { id: 'modules', label: 'Modul', icon: Layers3 },
   { id: 'tools', label: 'Tools', icon: Wrench },
 ];
@@ -91,7 +91,7 @@ export function Sidebar({
           <span>Pengaturan</span>
         </button>
         <button type="button" className="erp-nav-item erp-nav-muted" title={collapsed ? 'Bantuan & Dukungan' : undefined}>
-          <CircleHelp size={19} />
+          <HelpCircle size={19} />
           <span>Bantuan & Dukungan</span>
         </button>
 
