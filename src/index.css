@@ -39,6 +39,9 @@ html.dark body {
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
 html.dark .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; }
 
+/* Theme switching belongs to the global topbar only. */
+.erp-tool-shell-theme { display: none !important; }
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
