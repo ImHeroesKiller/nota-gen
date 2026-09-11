@@ -13,7 +13,13 @@ interface Payment {
   notes: string;
 }
 
-export default function VendorPaymentTracker() {
+interface VendorPaymentTrackerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function VendorPaymentTracker({ onBack, darkMode, setDarkMode }: VendorPaymentTrackerProps) {
   const [payments, setPayments] = useState<Payment[]>([
     {
       id: '1',

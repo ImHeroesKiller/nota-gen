@@ -20,7 +20,13 @@ interface Meeting {
   status: 'scheduled' | 'completed' | 'cancelled';
 }
 
-export default function ToolboxMeetingLog() {
+interface ToolboxMeetingLogProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ToolboxMeetingLog({ onBack, darkMode, setDarkMode }: ToolboxMeetingLogProps) {
   const [meetings, setMeetings] = useState<Meeting[]>([
     {
       id: '1',

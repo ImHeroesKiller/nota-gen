@@ -13,7 +13,13 @@ interface TimesheetEntry {
   status: 'present' | 'absent' | 'leave' | 'sick';
 }
 
-export default function TimesheetRekap() {
+interface TimesheetRekapProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function TimesheetRekap({ onBack, darkMode, setDarkMode }: TimesheetRekapProps) {
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-01');
   const [selectedClient, setSelectedClient] = useState<string>('all');
 

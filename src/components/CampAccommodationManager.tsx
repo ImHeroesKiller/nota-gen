@@ -39,7 +39,13 @@ interface CleaningSchedule {
   notes: string;
 }
 
-export default function CampAccommodationManager() {
+interface CampAccommodationManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function CampAccommodationManager({ onBack, darkMode, setDarkMode }: CampAccommodationManagerProps) {
   const [rooms] = useState<Room[]>([
     {
       id: '1',

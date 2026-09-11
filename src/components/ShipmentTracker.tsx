@@ -12,7 +12,13 @@ interface Shipment {
   carrier: string;
 }
 
-export default function ShipmentTracker() {
+interface ShipmentTrackerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ShipmentTracker({ onBack, darkMode, setDarkMode }: ShipmentTrackerProps) {
   const [shipments, setShipments] = useState<Shipment[]>([
     {
       id: '1',

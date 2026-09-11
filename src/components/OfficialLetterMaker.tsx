@@ -17,7 +17,13 @@ interface LetterData {
   cc: string;
 }
 
-export default function OfficialLetterMaker() {
+interface OfficialLetterMakerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function OfficialLetterMaker({ onBack, darkMode, setDarkMode }: OfficialLetterMakerProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [letterData, setLetterData] = useState<LetterData>({
     letterNumber: `LTR-${Date.now()}`,

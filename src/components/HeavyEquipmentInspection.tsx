@@ -37,7 +37,13 @@ interface InspectionRecord {
   notes: string;
 }
 
-export default function HeavyEquipmentInspection() {
+interface HeavyEquipmentInspectionProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function HeavyEquipmentInspection({ onBack, darkMode, setDarkMode }: HeavyEquipmentInspectionProps) {
   const [equipment] = useState<Equipment[]>([
     { id: '1', unitNumber: 'DT-001', type: 'Dump Truck', brand: 'Komatsu', model: 'HD785-7', site: 'Site A - Kalimantan', status: 'operational' },
     { id: '2', unitNumber: 'EX-001', type: 'Excavator', brand: 'CAT', model: '336D', site: 'Site A - Kalimantan', status: 'operational' },

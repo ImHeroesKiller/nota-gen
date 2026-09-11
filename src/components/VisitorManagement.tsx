@@ -10,7 +10,13 @@ interface Visitor {
   checkOut: string;
 }
 
-export default function VisitorManagement() {
+interface VisitorManagementProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function VisitorManagement({ onBack, darkMode, setDarkMode }: VisitorManagementProps) {
   const [visitors, setVisitors] = useState<Visitor[]>([
     {
       id: '1',

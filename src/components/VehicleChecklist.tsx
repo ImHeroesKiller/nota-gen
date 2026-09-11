@@ -21,7 +21,13 @@ interface VehicleInspection {
   notes: string;
 }
 
-export default function VehicleChecklist() {
+interface VehicleChecklistProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function VehicleChecklist({ onBack, darkMode, setDarkMode }: VehicleChecklistProps) {
   const [inspections, setInspections] = useState<VehicleInspection[]>([
     {
       id: '1',

@@ -13,7 +13,13 @@ interface Vendor {
   notes: string;
 }
 
-export default function VendorDatabase() {
+interface VendorDatabaseProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function VendorDatabase({ onBack, darkMode, setDarkMode }: VendorDatabaseProps) {
   const [vendors, setVendors] = useState<Vendor[]>([
     {
       id: '1',

@@ -24,7 +24,13 @@ interface SlaMetric {
   status: 'compliant' | 'warning' | 'breach';
 }
 
-export default function SlaKpiDashboard() {
+interface SlaKpiDashboardProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function SlaKpiDashboard({ onBack, darkMode, setDarkMode }: SlaKpiDashboardProps) {
   const [kpiMetrics] = useState<KpiMetric[]>([
     {
       id: '1',

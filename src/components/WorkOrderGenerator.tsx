@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { WorkOrder, CreateWorkOrderDTO } from '../types/suite1-human-capital';
 
-export default function WorkOrderGenerator() {
+interface WorkOrderGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function WorkOrderGenerator({ onBack, darkMode, setDarkMode }: WorkOrderGeneratorProps) {
   const [formData, setFormData] = useState<CreateWorkOrderDTO>({
     wo_number: `WO-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
     client_name: '',

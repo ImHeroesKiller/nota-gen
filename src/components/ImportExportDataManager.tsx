@@ -12,7 +12,13 @@ interface ImportExportRecord {
   completedAt?: string;
 }
 
-export default function ImportExportDataManager() {
+interface ImportExportDataManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ImportExportDataManager({ onBack, darkMode, setDarkMode }: ImportExportDataManagerProps) {
   const [records, setRecords] = useState<ImportExportRecord[]>([
     {
       id: '1',

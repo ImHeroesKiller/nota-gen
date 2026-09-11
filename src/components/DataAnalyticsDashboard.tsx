@@ -11,7 +11,13 @@ interface AnalyticsData {
   monthlyData: { month: string; shipments: number; revenue: number }[];
 }
 
-export default function DataAnalyticsDashboard() {
+interface DataAnalyticsDashboardProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function DataAnalyticsDashboard({ onBack, darkMode, setDarkMode }: DataAnalyticsDashboardProps) {
   const [data] = useState<AnalyticsData>({
     totalShipments: 1250,
     deliveredShipments: 1100,

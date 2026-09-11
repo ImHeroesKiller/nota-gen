@@ -11,7 +11,13 @@ interface TaxData {
   description: string;
 }
 
-export default function TaxBillingCalculator() {
+interface TaxBillingCalculatorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function TaxBillingCalculator({ onBack, darkMode, setDarkMode }: TaxBillingCalculatorProps) {
   const [data, setData] = useState<TaxData>({
     transactionType: 'ppn',
     baseAmount: 0,

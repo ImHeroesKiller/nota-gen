@@ -1,5 +1,11 @@
 import { useState, useRef } from 'react';
 
+interface ReportPdfGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
 interface ReportData {
   reportTitle: string;
   reportDate: string;
@@ -14,7 +20,7 @@ interface ReportData {
   recommendations: string;
 }
 
-export default function ReportPdfGenerator() {
+export default function ReportPdfGenerator({ onBack, darkMode, setDarkMode }: ReportPdfGeneratorProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [reportData, setReportData] = useState<ReportData>({
     reportTitle: '',

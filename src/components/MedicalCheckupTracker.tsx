@@ -18,7 +18,13 @@ interface Employee {
   notes: string;
 }
 
-export default function MedicalCheckupTracker() {
+interface MedicalCheckupTrackerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function MedicalCheckupTracker({ onBack, darkMode, setDarkMode }: MedicalCheckupTrackerProps) {
   const [employees, setEmployees] = useState<Employee[]>([
     {
       id: '1',

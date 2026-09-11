@@ -12,7 +12,13 @@ interface Asset {
   notes: string;
 }
 
-export default function AssetTracker() {
+interface AssetTrackerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function AssetTracker({ onBack, darkMode, setDarkMode }: AssetTrackerProps) {
   const [assets, setAssets] = useState<Asset[]>([
     {
       id: '1',

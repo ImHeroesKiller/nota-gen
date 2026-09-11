@@ -23,7 +23,13 @@ interface ContractData {
   signatoryPosition: string;
 }
 
-export default function ContractGenerator() {
+interface ContractGeneratorProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ContractGenerator({ onBack, darkMode, setDarkMode }: ContractGeneratorProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [contractData, setContractData] = useState<ContractData>({
     contractNumber: `CTR-${Date.now()}`,

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Import Global CSS */
+@import './styles/global.css';
+
 :root {
   /* PERADA Brand Colors */
   --perada-red: #E31B23;

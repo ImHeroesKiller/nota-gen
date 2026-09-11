@@ -1,6 +1,12 @@
 import { useState } from 'react';
 
-export default function OutsourcingQuotation() {
+interface OutsourcingQuotationProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function OutsourcingQuotation({ onBack, darkMode, setDarkMode }: OutsourcingQuotationProps) {
   const [headcount, setHeadcount] = useState<number>(10);
   const [umk, setUmk] = useState<number>(5000000);
   const [bpjsPercentage, setBpjsPercentage] = useState<number>(11);

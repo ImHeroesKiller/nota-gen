@@ -14,7 +14,13 @@ interface Employee {
   totalContribution: number;
 }
 
-export default function BpjsAdminManager() {
+interface BpjsAdminManagerProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function BpjsAdminManager({ onBack, darkMode, setDarkMode }: BpjsAdminManagerProps) {
   const [employees, setEmployees] = useState<Employee[]>([
     {
       id: '1',

@@ -42,7 +42,13 @@ interface ShippingData {
   notes: string;
 }
 
-export default function ShippingDocFormatter() {
+interface ShippingDocFormatterProps {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+}
+
+export default function ShippingDocFormatter({ onBack, darkMode, setDarkMode }: ShippingDocFormatterProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [shippingData, setShippingData] = useState<ShippingData>({
     documentType: 'packing-list',
