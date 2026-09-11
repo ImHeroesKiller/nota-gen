@@ -1,136 +1,123 @@
 import { useMemo, useState } from 'react';
+import {
+  BedDouble,
+  CheckCircle2,
+  HardHat,
+  MapPin,
+  ShieldCheck,
+  Truck,
+  UserCheck,
+} from 'lucide-react';
+import {
+  calculateComplianceReadiness,
+  calculateDeploymentReadiness,
+  type DeploymentKey,
+  type MiningWorker,
+  useMiningWorkerLifecycle,
+} from '../lib/miningWorkerLifecycle';
 
-interface ChecklistItem {
-  id: string;
-  category: string;
-  item: string;
-  completed: boolean;
-  notes: string;
-}
+const rupiah = (value: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(value);
 
-interface Deployment {
-  id: string;
-  employeeName: string;
-  employeeId: string;
-  clientName: string;
-  position: string;
-  deploymentDate: string;
-  checklist: ChecklistItem[];
-}
-
-const seedDeployments: Deployment[] = [
-  {
-    id: '1', employeeName: 'Ahmad Fauzi', employeeId: 'EMP001', clientName: 'PT ABC Manufacturing', position: 'Staff Admin', deploymentDate: '2026-01-15',
-    checklist: [
-      { id: '1', category: 'Dokumen', item: 'KTP (Fotokopi)', completed: true, notes: '' }, { id: '2', category: 'Dokumen', item: 'NPWP (Fotokopi)', completed: true, notes: '' },
-      { id: '3', category: 'Dokumen', item: 'KK (Fotokopi)', completed: true, notes: '' }, { id: '4', category: 'Dokumen', item: 'Ijazah Terakhir', completed: true, notes: '' },
-      { id: '5', category: 'Dokumen', item: 'Pas Foto 3x4 (4 lembar)', completed: false, notes: '' }, { id: '6', category: 'Dokumen', item: 'SKCK', completed: true, notes: '' },
-      { id: '7', category: 'Dokumen', item: 'Surat Keterangan Sehat', completed: true, notes: '' }, { id: '8', category: 'Dokumen', item: 'BPJS Kesehatan', completed: false, notes: 'Dalam proses' },
-      { id: '9', category: 'Perlengkapan', item: 'Seragam Kerja', completed: true, notes: 'Size L' }, { id: '10', category: 'Perlengkapan', item: 'Safety Shoes', completed: true, notes: 'Size 42' },
-      { id: '11', category: 'Perlengkapan', item: 'Helmet', completed: false, notes: '' }, { id: '12', category: 'Perlengkapan', item: 'ID Card Karyawan', completed: true, notes: '' },
-      { id: '13', category: 'Perlengkapan', item: 'ID Card Client', completed: false, notes: 'Menunggu dari klien' }, { id: '14', category: 'Training', item: 'Induction Training', completed: true, notes: '' },
-      { id: '15', category: 'Training', item: 'Safety Training', completed: true, notes: '' }, { id: '16', category: 'Training', item: 'SOP Client', completed: false, notes: 'Jadwal: 10 Jan 2026' },
-    ],
-  },
-  {
-    id: '2', employeeName: 'Siti Nurhaliza', employeeId: 'EMP002', clientName: 'PT XYZ Logistics', position: 'Operator', deploymentDate: '2026-01-20',
-    checklist: [
-      { id: '1', category: 'Dokumen', item: 'KTP (Fotokopi)', completed: true, notes: '' }, { id: '2', category: 'Dokumen', item: 'NPWP (Fotokopi)', completed: true, notes: '' },
-      { id: '3', category: 'Dokumen', item: 'KK (Fotokopi)', completed: true, notes: '' }, { id: '4', category: 'Dokumen', item: 'Ijazah Terakhir', completed: true, notes: '' },
-      { id: '5', category: 'Dokumen', item: 'Pas Foto 3x4', completed: true, notes: '' }, { id: '6', category: 'Dokumen', item: 'SKCK', completed: true, notes: '' },
-      { id: '7', category: 'Dokumen', item: 'Surat Keterangan Sehat', completed: true, notes: '' }, { id: '8', category: 'Perlengkapan', item: 'Seragam Kerja', completed: true, notes: 'Size M' },
-      { id: '9', category: 'Perlengkapan', item: 'Safety Shoes', completed: true, notes: 'Size 38' }, { id: '10', category: 'Perlengkapan', item: 'ID Card Karyawan', completed: true, notes: '' },
-      { id: '11', category: 'Perlengkapan', item: 'ID Card Client', completed: true, notes: '' }, { id: '12', category: 'Training', item: 'Induction Training', completed: true, notes: '' },
-      { id: '13', category: 'Training', item: 'Safety Training', completed: true, notes: '' }, { id: '14', category: 'Training', item: 'SOP Client', completed: true, notes: '' },
-    ],
-  },
-];
+const itemIcons: Record<DeploymentKey, typeof Truck> = {
+  transport: Truck,
+  camp: BedDouble,
+  ppe: HardHat,
+  siteAccess: MapPin,
+  toolbox: ShieldCheck,
+};
 
 export default function DeploymentPlanner() {
-  const [deployments, setDeployments] = useState(seedDeployments);
-  const [selectedDeployment, setSelectedDeployment] = useState(seedDeployments[0]?.id || '');
-  const current = deployments.find((deployment) => deployment.id === selectedDeployment);
+  const { store, updateWorker, adminName, nowLabel } = useMiningWorkerLifecycle();
+  const deployable = useMemo(() => store.workers.filter((worker) => ['mobilization', 'active'].includes(worker.stage)), [store.workers]);
+  const [selectedId, setSelectedId] = useState<string>(() => deployable[0]?.id || '');
+  const current = deployable.find((worker) => worker.id === selectedId) ?? deployable[0];
 
-  const toggleChecklist = (deploymentId: string, itemId: string) => {
-    setDeployments((currentDeployments) => currentDeployments.map((deployment) => deployment.id !== deploymentId ? deployment : {
-      ...deployment,
-      checklist: deployment.checklist.map((item) => item.id === itemId ? { ...item, completed: !item.completed } : item),
+  const toggleItem = (worker: MiningWorker, key: DeploymentKey) => {
+    if (worker.stage === 'active') return;
+    updateWorker(worker.id, (item) => ({
+      ...item,
+      deployment: {
+        ...item.deployment,
+        [key]: {
+          ...item.deployment[key],
+          completed: !item.deployment[key].completed,
+          updatedBy: adminName,
+          updatedAt: nowLabel(),
+        },
+      },
     }));
   };
 
-  const updateNotes = (deploymentId: string, itemId: string, notes: string) => {
-    setDeployments((currentDeployments) => currentDeployments.map((deployment) => deployment.id !== deploymentId ? deployment : {
-      ...deployment,
-      checklist: deployment.checklist.map((item) => item.id === itemId ? { ...item, notes } : item),
+  const updateNotes = (worker: MiningWorker, key: DeploymentKey, notes: string) => {
+    if (worker.stage === 'active') return;
+    updateWorker(worker.id, (item) => ({
+      ...item,
+      deployment: { ...item.deployment, [key]: { ...item.deployment[key], notes, updatedBy: adminName, updatedAt: nowLabel() } },
     }));
   };
 
-  const stats = useMemo(() => {
-    if (!current) return { total: 0, completed: 0, percentage: 0, categories: [] as Array<{ category: string; completed: number; total: number; percentage: number }> };
-    const categories = Array.from(new Set(current.checklist.map((item) => item.category))).map((category) => {
-      const items = current.checklist.filter((item) => item.category === category);
-      const completed = items.filter((item) => item.completed).length;
-      return { category, completed, total: items.length, percentage: items.length ? Math.round((completed / items.length) * 100) : 0 };
-    });
-    const completed = current.checklist.filter((item) => item.completed).length;
-    return { total: current.checklist.length, completed, percentage: current.checklist.length ? Math.round((completed / current.checklist.length) * 100) : 0, categories };
-  }, [current]);
+  const activate = (worker: MiningWorker) => {
+    const compliance = calculateComplianceReadiness(worker);
+    const deployment = calculateDeploymentReadiness(worker);
+    if (compliance.percentage !== 100 || deployment.percentage !== 100) return;
+    updateWorker(worker.id, { stage: 'active', startDate: worker.startDate || new Date().toISOString().slice(0, 10) });
+  };
 
-  if (!current) return <div className="bg-white border rounded-xl p-10 text-center text-sm text-gray-500">Tidak ada data deployment.</div>;
+  if (!current) {
+    return <div className="mx-auto max-w-6xl rounded-2xl border border-dashed border-slate-300 p-12 text-center text-sm text-slate-500 dark:border-slate-700">Belum ada pekerja yang berstatus Siap Mobilisasi. Selesaikan Onboarding Checklist terlebih dahulu.</div>;
+  }
+
+  const readiness = calculateDeploymentReadiness(current);
+  const compliance = calculateComplianceReadiness(current);
+  const active = current.stage === 'active';
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5">
-      <section className="bg-white border rounded-xl p-4">
-        <label>Pilih Deployment
-          <select value={selectedDeployment} onChange={(event) => setSelectedDeployment(event.target.value)}>
-            {deployments.map((deployment) => <option key={deployment.id} value={deployment.id}>{deployment.employeeName} · {deployment.clientName} · {deployment.position}</option>)}
-          </select>
-        </label>
+    <div className="mx-auto max-w-[1400px] space-y-5 text-slate-900 dark:text-slate-100">
+      <section className="rounded-2xl border border-violet-200 bg-violet-50/70 p-4 dark:border-violet-500/20 dark:bg-violet-500/10">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-600 text-white"><Truck size={18} /></span><div><p className="text-xs font-bold">Deployment PHL ke Site</p><p className="mt-1 text-[11px] leading-5 text-slate-600 dark:text-slate-300">Admin memastikan transport, camp, APD, site access, dan toolbox briefing selesai. Aktivasi PHL hanya dapat dilakukan setelah onboarding compliance dan deployment 100%.</p></div></div>
+          <span className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-[10px] font-bold text-violet-700 dark:border-violet-500/20 dark:bg-slate-900 dark:text-violet-300">Owner: {adminName}</span>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <div className="bg-white border rounded-xl p-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div><p className="text-[10px] uppercase tracking-wide text-gray-500">Karyawan</p><strong className="block mt-1 text-sm">{current.employeeName}</strong><span className="text-[10px] text-gray-500">{current.employeeId}</span></div>
-            <div><p className="text-[10px] uppercase tracking-wide text-gray-500">Klien</p><strong className="block mt-1 text-sm">{current.clientName}</strong></div>
-            <div><p className="text-[10px] uppercase tracking-wide text-gray-500">Posisi</p><strong className="block mt-1 text-sm">{current.position}</strong></div>
-            <div><p className="text-[10px] uppercase tracking-wide text-gray-500">Deployment</p><strong className="block mt-1 text-sm">{new Date(`${current.deploymentDate}T00:00:00`).toLocaleDateString('id-ID')}</strong></div>
-          </div>
-        </div>
+      <section className="grid gap-3 lg:grid-cols-[minmax(320px,1fr)_auto] lg:items-end">
+        <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">Pekerja
+          <select value={current.id} onChange={(event) => setSelectedId(event.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+            {deployable.map((worker) => <option key={worker.id} value={worker.id}>{worker.workerCode} · {worker.name} · {worker.position} · {worker.site}</option>)}
+          </select>
+        </label>
+        <span className={`rounded-full px-3 py-2 text-[10px] font-bold ${active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'}`}>{active ? 'Aktif PHL' : 'Siap Mobilisasi'}</span>
+      </section>
 
-        <aside className="bg-white border rounded-xl p-4">
-          <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wide text-gray-500">Readiness</p><strong className="text-xl">{stats.percentage}%</strong></div><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${stats.percentage === 100 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{stats.completed}/{stats.total}</span></div>
-          <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden"><div className={`h-full rounded-full ${stats.percentage === 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${stats.percentage}%` }} /></div>
+      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <article className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              ['Pekerja', `${current.name}\n${current.workerCode}`],
+              ['Posisi', `${current.position}\n${current.trade}`],
+              ['Site / Project', `${current.site}\n${current.project}`],
+              ['Rate / Roster', `${rupiah(current.dailyRate)} / hari\n${current.roster}`],
+            ].map(([label, value]) => <div key={label}><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{label}</p>{String(value).split('\n').map((line, index) => <p key={line} className={`${index === 0 ? 'mt-1 text-xs font-semibold' : 'mt-0.5 text-[10px] text-slate-500'}`}>{line}</p>)}</div>)}
+          </div>
+        </article>
+        <aside className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center justify-between"><div><p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">Deployment Readiness</p><strong className="mt-1 block text-2xl">{readiness.percentage}%</strong></div><span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10"><Truck size={18} /></span></div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"><div className={`h-full rounded-full ${readiness.percentage === 100 ? 'bg-emerald-500' : 'bg-violet-500'}`} style={{ width: `${readiness.percentage}%` }} /></div>
+          <p className="mt-2 text-[10px] text-slate-500">{readiness.completed}/{readiness.total} item selesai · Compliance {compliance.percentage}%</p>
         </aside>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {stats.categories.map((stat) => <div key={stat.category} className="bg-white border rounded-xl p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-[10px] uppercase tracking-wide text-gray-500">{stat.category}</p><strong className="block mt-1 text-lg">{stat.completed}/{stat.total}</strong></div><strong className="text-sm text-blue-600">{stat.percentage}%</strong></div><div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full" style={{ width: `${stat.percentage}%` }} /></div></div>)}
+      <section className="grid gap-3 lg:grid-cols-2">
+        {(Object.entries(current.deployment) as Array<[DeploymentKey, MiningWorker['deployment'][DeploymentKey]]>).map(([key, item]) => {
+          const Icon = itemIcons[key];
+          return <article key={key} className={`rounded-2xl border p-4 ${item.completed ? 'border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/20 dark:bg-emerald-500/5' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><span className={`grid h-10 w-10 place-items-center rounded-xl ${item.completed ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' : 'bg-slate-100 text-slate-500 dark:bg-slate-800'}`}><Icon size={18} /></span><div><p className="text-xs font-bold">{item.label}</p><p className="mt-1 text-[10px] text-slate-500">{item.completed ? `Selesai · ${item.updatedBy || adminName}` : 'Belum selesai'}</p>{item.updatedAt && <p className="mt-0.5 text-[9px] text-slate-400">{item.updatedAt}</p>}</div></div>{!active && <button onClick={() => toggleItem(current, key)} className={`rounded-xl px-3 py-2 text-[10px] font-bold ${item.completed ? 'border border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300' : 'bg-violet-600 text-white'}`}>{item.completed ? 'Batalkan' : 'Tandai Selesai'}</button>}</div><textarea disabled={active} value={item.notes || ''} onChange={(event) => updateNotes(current, key, event.target.value)} placeholder="Catatan deployment..." className="mt-3 min-h-[70px] w-full rounded-xl border border-slate-200 bg-white p-3 text-xs disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950" /></article>;
+        })}
       </section>
 
-      <div className="space-y-3">
-        {stats.categories.map((stat) => {
-          const items = current.checklist.filter((item) => item.category === stat.category);
-          return (
-            <section key={stat.category} className="bg-white border rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold">{stat.category}</h2><p className="text-[10px] text-gray-500 mt-0.5">{stat.completed} dari {stat.total} selesai</p></div><span className="text-[10px] font-semibold text-blue-600">{stat.percentage}%</span></div>
-              <div className="divide-y">
-                {items.map((item) => (
-                  <div key={item.id} className="p-3 grid grid-cols-[auto_minmax(0,1fr)] gap-3 items-start">
-                    <input type="checkbox" checked={item.completed} onChange={() => toggleChecklist(current.id, item.id)} className="mt-1" />
-                    <div className="min-w-0">
-                      <div className="flex items-center justify-between gap-3"><strong className={`text-xs ${item.completed ? 'line-through text-gray-400' : ''}`}>{item.item}</strong>{item.completed && <span className="rounded-full bg-green-100 text-green-700 px-2 py-1 text-[9px] font-semibold">Done</span>}</div>
-                      <input value={item.notes} onChange={(event) => updateNotes(current.id, item.id, event.target.value)} placeholder="Tambahkan catatan..." className="mt-2" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-
-      {stats.percentage < 100 && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800">Deployment belum siap: {stats.total - stats.completed} item masih terbuka. Checklist harus selesai sebelum status dianggap 100% ready.</div>}
+      <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3"><span className={`grid h-10 w-10 place-items-center rounded-xl ${active ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10' : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10'}`}>{active ? <UserCheck size={18} /> : <ShieldCheck size={18} />}</span><div><p className="text-xs font-bold">{active ? 'Pekerja sudah aktif sebagai PHL' : 'Final Activation Gate'}</p><p className="mt-1 text-[10px] leading-5 text-slate-500">{active ? `Mulai bekerja ${current.startDate || '-'}. Pekerja sekarang tersedia di Daily Attendance, Timesheet, dan Payroll.` : 'Aktifkan hanya setelah Compliance 100% dan Deployment 100%. Setelah aktif, pekerja otomatis tersedia di Daily Attendance.'}</p></div></div>
+        {!active && <button disabled={readiness.percentage !== 100 || compliance.percentage !== 100} onClick={() => activate(current)} className="rounded-xl bg-emerald-600 px-5 py-3 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"><CheckCircle2 size={15} className="mr-1 inline" /> Aktifkan PHL</button>}
+      </section>
     </div>
   );
 }
