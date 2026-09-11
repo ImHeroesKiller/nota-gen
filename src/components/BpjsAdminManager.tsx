@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface Employee {
   id: string;
@@ -11,210 +11,128 @@ interface Employee {
   resignDate: string;
   bpjsHealth: number;
   bpjsEmployment: number;
-  totalContribution: number;
 }
+
+const seedEmployees: Employee[] = [
+  { id: '1', name: 'Ahmad Fauzi', employeeId: 'EMP001', clientName: 'PT ABC Manufacturing', bpjsNumber: '0001234567890', status: 'active', joinDate: '2025-01-15', resignDate: '', bpjsHealth: 150000, bpjsEmployment: 200000 },
+  { id: '2', name: 'Budi Santoso', employeeId: 'EMP002', clientName: 'PT ABC Manufacturing', bpjsNumber: '0001234567891', status: 'active', joinDate: '2025-02-01', resignDate: '', bpjsHealth: 150000, bpjsEmployment: 200000 },
+  { id: '3', name: 'Cahyo Widodo', employeeId: 'EMP003', clientName: 'PT XYZ Logistics', bpjsNumber: '0001234567892', status: 'inactive', joinDate: '2024-06-01', resignDate: '2025-12-31', bpjsHealth: 150000, bpjsEmployment: 200000 },
+];
 
 interface BpjsAdminManagerProps {
-  onBack: () => void;
-  darkMode: boolean;
-  setDarkMode: (value: boolean) => void;
+  onBack?: () => void;
+  darkMode?: boolean;
+  setDarkMode?: (value: boolean) => void;
 }
 
-export default function BpjsAdminManager({ onBack, darkMode, setDarkMode }: BpjsAdminManagerProps) {
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: '1',
-      name: 'Ahmad Fauzi',
-      employeeId: 'EMP001',
-      clientName: 'PT ABC Manufacturing',
-      bpjsNumber: '0001234567890',
-      status: 'active',
-      joinDate: '2025-01-15',
-      resignDate: '',
-      bpjsHealth: 150000,
-      bpjsEmployment: 200000,
-      totalContribution: 350000,
-    },
-    {
-      id: '2',
-      name: 'Budi Santoso',
-      employeeId: 'EMP002',
-      clientName: 'PT ABC Manufacturing',
-      bpjsNumber: '0001234567891',
-      status: 'active',
-      joinDate: '2025-02-01',
-      resignDate: '',
-      bpjsHealth: 150000,
-      bpjsEmployment: 200000,
-      totalContribution: 350000,
-    },
-    {
-      id: '3',
-      name: 'Cahyo Widodo',
-      employeeId: 'EMP003',
-      clientName: 'PT XYZ Logistics',
-      bpjsNumber: '0001234567892',
-      status: 'inactive',
-      joinDate: '2024-06-01',
-      resignDate: '2025-12-31',
-      bpjsHealth: 150000,
-      bpjsEmployment: 200000,
-      totalContribution: 350000,
-    },
-  ]);
+export default function BpjsAdminManager(_: BpjsAdminManagerProps) {
+  const [filterClient, setFilterClient] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [query, setQuery] = useState('');
 
-  const [filterClient, setFilterClient] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const clients = useMemo(() => Array.from(new Set(seedEmployees.map((employee) => employee.clientName))), []);
 
-  const clients = Array.from(new Set(employees.map(e => e.clientName)));
+  const filteredEmployees = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return seedEmployees.filter((employee) => {
+      const matchesClient = filterClient === 'all' || employee.clientName === filterClient;
+      const matchesStatus = filterStatus === 'all' || employee.status === filterStatus;
+      const matchesQuery = !normalizedQuery || `${employee.name} ${employee.employeeId} ${employee.bpjsNumber} ${employee.clientName}`.toLowerCase().includes(normalizedQuery);
+      return matchesClient && matchesStatus && matchesQuery;
+    });
+  }, [filterClient, filterStatus, query]);
 
-  const filteredEmployees = employees.filter(emp => {
-    const matchClient = filterClient === 'all' || emp.clientName === filterClient;
-    const matchStatus = filterStatus === 'all' || emp.status === filterStatus;
-    return matchClient && matchStatus;
-  });
+  const activeEmployees = seedEmployees.filter((employee) => employee.status === 'active');
+  const inactiveEmployees = seedEmployees.filter((employee) => employee.status === 'inactive');
+  const totalContribution = activeEmployees.reduce((sum, employee) => sum + employee.bpjsHealth + employee.bpjsEmployment, 0);
 
-  const activeCount = employees.filter(e => e.status === 'active').length;
-  const inactiveCount = employees.filter(e => e.status === 'inactive').length;
-  const totalContribution = employees.filter(e => e.status === 'active').reduce((sum, e) => sum + e.totalContribution, 0);
+  const byClient = useMemo(() => clients.map((client) => {
+    const employees = seedEmployees.filter((employee) => employee.clientName === client && employee.status === 'active');
+    return {
+      client,
+      employees: employees.length,
+      contribution: employees.reduce((sum, employee) => sum + employee.bpjsHealth + employee.bpjsEmployment, 0),
+    };
+  }), [clients]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', {
+    style: 'currency', currency: 'IDR', maximumFractionDigits: 0,
+  }).format(amount);
+
+  const formatDate = (value: string) => value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '-';
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center">
-          <span className="text-white text-xs font-bold">PA</span>
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold">BPJS Admin Manager</h1>
-          <p className="text-sm text-gray-600">PT Perdana Adi Yuda - Rekapitulasi Kepesertaan dan Iuran BPJS</p>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-5">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Total peserta</p><strong className="block mt-1 text-xl">{seedEmployees.length}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Aktif</p><strong className="block mt-1 text-xl text-green-600">{activeEmployees.length}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Nonaktif</p><strong className="block mt-1 text-xl text-gray-500">{inactiveEmployees.length}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Iuran aktif / bulan</p><strong className="block mt-1 text-lg text-blue-600">{formatCurrency(totalContribution)}</strong></div>
+      </section>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Total Employees</div>
-          <div className="text-3xl font-bold text-blue-600">{employees.length}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Active Participants</div>
-          <div className="text-3xl font-bold text-green-600">{activeCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Inactive Participants</div>
-          <div className="text-3xl font-bold text-gray-600">{inactiveCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Monthly Contribution</div>
-          <div className="text-2xl font-bold text-blue-600">{formatCurrency(totalContribution)}</div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Filter by Client</label>
-            <select
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Clients</option>
-              {clients.map(client => (
-                <option key={client} value={client}>{client}</option>
-              ))}
+      <section className="bg-white border rounded-xl p-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr] gap-3">
+          <label>Cari peserta
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nama, employee ID, BPJS, atau klien" />
+          </label>
+          <label>Klien
+            <select value={filterClient} onChange={(event) => setFilterClient(event.target.value)}>
+              <option value="all">Semua klien</option>
+              {clients.map((client) => <option key={client} value={client}>{client}</option>)}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Filter by Status</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+          </label>
+          <label>Status
+            <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)}>
+              <option value="all">Semua status</option><option value="active">Aktif</option><option value="inactive">Nonaktif</option>
             </select>
-          </div>
+          </label>
         </div>
-      </div>
+      </section>
 
-      {/* Employee Table */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <section className="bg-white border rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b">
+          <div><h2 className="text-sm font-semibold">Kepesertaan BPJS</h2><p className="text-[11px] text-gray-500 mt-0.5">{filteredEmployees.length} data sesuai filter</p></div>
+          <span className="text-[10px] text-gray-500">Total iuran dihitung langsung dari BPJS Kesehatan + Ketenagakerjaan</span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">BPJS Number</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">BPJS Kesehatan</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">BPJS TK</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredEmployees.map(emp => (
-                <tr key={emp.id} className={`hover:bg-gray-50 ${emp.status === 'inactive' ? 'bg-gray-50' : ''}`}>
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900">{emp.name}</div>
-                    <div className="text-xs text-gray-500">{emp.employeeId}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{emp.clientName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 font-mono">{emp.bpjsNumber}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                      emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {emp.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{emp.joinDate}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(emp.bpjsHealth)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{formatCurrency(emp.bpjsEmployment)}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-blue-600">{formatCurrency(emp.totalContribution)}</td>
-                </tr>
-              ))}
+            <thead><tr><th>Employee</th><th>Client</th><th>BPJS Number</th><th>Status</th><th>Join / Resign</th><th>Kesehatan</th><th>Ketenagakerjaan</th><th>Total</th></tr></thead>
+            <tbody>
+              {filteredEmployees.map((employee) => {
+                const contribution = employee.bpjsHealth + employee.bpjsEmployment;
+                const validBpjs = /^\d{11,16}$/.test(employee.bpjsNumber);
+                return (
+                  <tr key={employee.id}>
+                    <td><strong>{employee.name}</strong><div className="text-[10px] text-gray-500 mt-0.5">{employee.employeeId}</div></td>
+                    <td>{employee.clientName}</td>
+                    <td><span className="font-mono">{employee.bpjsNumber}</span>{!validBpjs && <div className="text-[9px] text-red-600">Format perlu dicek</div>}</td>
+                    <td><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${employee.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{employee.status === 'active' ? 'Aktif' : 'Nonaktif'}</span></td>
+                    <td>{formatDate(employee.joinDate)}{employee.resignDate && <div className="text-[10px] text-gray-500">s.d. {formatDate(employee.resignDate)}</div>}</td>
+                    <td>{formatCurrency(employee.bpjsHealth)}</td>
+                    <td>{formatCurrency(employee.bpjsEmployment)}</td>
+                    <td><strong className="text-blue-600">{formatCurrency(contribution)}</strong></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+        {filteredEmployees.length === 0 && <div className="p-10 text-center text-sm text-gray-500">Tidak ada peserta yang cocok dengan filter.</div>}
+      </section>
 
-      {/* Summary by Client */}
-      <div className="mt-6 bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Summary by Client</h2>
-        <div className="space-y-3">
-          {clients.map(client => {
-            const clientEmployees = employees.filter(e => e.clientName === client && e.status === 'active');
-            const totalContribution = clientEmployees.reduce((sum, e) => sum + e.totalContribution, 0);
-            
-            return (
-              <div key={client} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium">{client}</div>
-                  <div className="text-xs text-gray-600">{clientEmployees.length} active participants</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-lg font-bold text-blue-600">{formatCurrency(totalContribution)}</div>
-                  <div className="text-xs text-gray-600">monthly contribution</div>
-                </div>
-              </div>
-            );
-          })}
+      <section className="bg-white border rounded-xl p-4">
+        <div className="mb-3"><h2 className="text-sm font-semibold">Ringkasan per Klien</h2><p className="text-[11px] text-gray-500">Hanya peserta aktif yang masuk ke proyeksi iuran.</p></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {byClient.map((summary) => (
+            <div key={summary.client} className="rounded-lg bg-gray-50 border p-3 flex items-center justify-between gap-4">
+              <div><strong className="text-sm">{summary.client}</strong><div className="text-[10px] text-gray-500 mt-1">{summary.employees} peserta aktif</div></div>
+              <strong className="text-sm text-blue-600 text-right">{formatCurrency(summary.contribution)}</strong>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

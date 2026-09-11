@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+
+type ShiftType = 'morning' | 'afternoon' | 'night';
+type ShiftStatus = 'scheduled' | 'confirmed' | 'cancelled';
 
 interface Shift {
   id: string;
@@ -9,359 +12,226 @@ interface Shift {
   date: string;
   shiftStart: string;
   shiftEnd: string;
-  shiftType: 'morning' | 'afternoon' | 'night';
-  status: 'scheduled' | 'confirmed' | 'cancelled';
+  shiftType: ShiftType;
+  status: ShiftStatus;
 }
 
-interface ScheduleConflict {
-  id: string;
+interface ShiftForm {
   employeeName: string;
-  conflictDate: string;
-  shift1: string;
-  shift2: string;
-  severity: 'warning' | 'error';
+  employeeId: string;
+  division: string;
+  client: string;
+  date: string;
+  shiftType: ShiftType;
 }
+
+const shiftTimes: Record<ShiftType, { start: string; end: string; label: string }> = {
+  morning: { start: '06:00', end: '14:00', label: 'Morning' },
+  afternoon: { start: '14:00', end: '22:00', label: 'Afternoon' },
+  night: { start: '22:00', end: '06:00', label: 'Night' },
+};
+
+const seedShifts: Shift[] = [
+  { id: '1', employeeName: 'Ahmad Fauzi', employeeId: 'EMP001', division: 'Security', client: 'PT ABC Manufacturing', date: '2026-01-10', shiftStart: '06:00', shiftEnd: '14:00', shiftType: 'morning', status: 'confirmed' },
+  { id: '2', employeeName: 'Budi Santoso', employeeId: 'EMP002', division: 'Security', client: 'PT ABC Manufacturing', date: '2026-01-10', shiftStart: '14:00', shiftEnd: '22:00', shiftType: 'afternoon', status: 'scheduled' },
+  { id: '3', employeeName: 'Cahyo Widodo', employeeId: 'EMP003', division: 'Security', client: 'PT ABC Manufacturing', date: '2026-01-10', shiftStart: '22:00', shiftEnd: '06:00', shiftType: 'night', status: 'confirmed' },
+  { id: '4', employeeName: 'Dedi Kurniawan', employeeId: 'EMP004', division: 'Cleaning Service', client: 'PT XYZ Tower', date: '2026-01-10', shiftStart: '07:00', shiftEnd: '15:00', shiftType: 'morning', status: 'confirmed' },
+];
 
 interface ClientShiftSchedulerProps {
-  onBack: () => void;
-  darkMode: boolean;
-  setDarkMode: (value: boolean) => void;
+  onBack?: () => void;
+  darkMode?: boolean;
+  setDarkMode?: (value: boolean) => void;
 }
 
-export default function ClientShiftScheduler({ onBack, darkMode, setDarkMode }: ClientShiftSchedulerProps) {
-  const [shifts] = useState<Shift[]>([
-    {
-      id: '1',
-      employeeName: 'Ahmad Fauzi',
-      employeeId: 'EMP001',
-      division: 'Security',
-      client: 'PT ABC Manufacturing',
-      date: '2026-01-10',
-      shiftStart: '06:00',
-      shiftEnd: '14:00',
-      shiftType: 'morning',
-      status: 'confirmed',
-    },
-    {
-      id: '2',
-      employeeName: 'Budi Santoso',
-      employeeId: 'EMP002',
-      division: 'Security',
-      client: 'PT ABC Manufacturing',
-      date: '2026-01-10',
-      shiftStart: '14:00',
-      shiftEnd: '22:00',
-      shiftType: 'afternoon',
-      status: 'scheduled',
-    },
-    {
-      id: '3',
-      employeeName: 'Cahyo Widodo',
-      employeeId: 'EMP003',
-      division: 'Security',
-      client: 'PT ABC Manufacturing',
-      date: '2026-01-10',
-      shiftStart: '22:00',
-      shiftEnd: '06:00',
-      shiftType: 'night',
-      status: 'confirmed',
-    },
-    {
-      id: '4',
-      employeeName: 'Dedi Kurniawan',
-      employeeId: 'EMP004',
-      division: 'Cleaning Service',
-      client: 'PT XYZ Tower',
-      date: '2026-01-10',
-      shiftStart: '07:00',
-      shiftEnd: '15:00',
-      shiftType: 'morning',
-      status: 'confirmed',
-    },
-  ]);
+const emptyForm = (date: string): ShiftForm => ({
+  employeeName: '', employeeId: '', division: '', client: '', date, shiftType: 'morning',
+});
 
-  const [conflicts] = useState<ScheduleConflict[]>([
-    {
-      id: '1',
-      employeeName: 'Ahmad Fauzi',
-      conflictDate: '2026-01-12',
-      shift1: '06:00 - 14:00 (PT ABC)',
-      shift2: '13:00 - 21:00 (PT DEF)',
-      severity: 'error',
-    },
-    {
-      id: '2',
-      employeeName: 'Budi Santoso',
-      conflictDate: '2026-01-15',
-      shift1: '14:00 - 22:00 (PT ABC)',
-      shift2: '21:00 - 05:00 (PT GHI)',
-      severity: 'warning',
-    },
-  ]);
+const minutes = (value: string) => {
+  const [hour, minute] = value.split(':').map(Number);
+  return hour * 60 + minute;
+};
 
+const interval = (shift: Pick<Shift, 'shiftStart' | 'shiftEnd'>) => {
+  const start = minutes(shift.shiftStart);
+  let end = minutes(shift.shiftEnd);
+  if (end <= start) end += 24 * 60;
+  return { start, end };
+};
+
+const overlaps = (left: Pick<Shift, 'shiftStart' | 'shiftEnd'>, right: Pick<Shift, 'shiftStart' | 'shiftEnd'>) => {
+  const a = interval(left);
+  const b = interval(right);
+  const variants = [b, { start: b.start + 1440, end: b.end + 1440 }, { start: b.start - 1440, end: b.end - 1440 }];
+  return variants.some((candidate) => a.start < candidate.end && candidate.start < a.end);
+};
+
+export default function ClientShiftScheduler(_: ClientShiftSchedulerProps) {
+  const [shifts, setShifts] = useState<Shift[]>(seedShifts);
+  const [filterDate, setFilterDate] = useState('2026-01-10');
+  const [filterClient, setFilterClient] = useState('all');
+  const [filterDivision, setFilterDivision] = useState('all');
   const [showForm, setShowForm] = useState(false);
-  const [filterDate, setFilterDate] = useState<string>('2026-01-10');
-  const [filterClient, setFilterClient] = useState<string>('all');
-  const [filterDivision, setFilterDivision] = useState<string>('all');
+  const [form, setForm] = useState<ShiftForm>(emptyForm('2026-01-10'));
+  const [formError, setFormError] = useState('');
 
-  const clients = Array.from(new Set(shifts.map(s => s.client)));
-  const divisions = Array.from(new Set(shifts.map(s => s.division)));
+  const clients = useMemo(() => Array.from(new Set(shifts.map((shift) => shift.client))), [shifts]);
+  const divisions = useMemo(() => Array.from(new Set(shifts.map((shift) => shift.division))), [shifts]);
 
-  const filteredShifts = shifts.filter(s => {
-    const matchDate = s.date === filterDate;
-    const matchClient = filterClient === 'all' || s.client === filterClient;
-    const matchDivision = filterDivision === 'all' || s.division === filterDivision;
-    return matchDate && matchClient && matchDivision;
-  });
+  const filteredShifts = useMemo(() => shifts.filter((shift) => {
+    const dateMatches = !filterDate || shift.date === filterDate;
+    const clientMatches = filterClient === 'all' || shift.client === filterClient;
+    const divisionMatches = filterDivision === 'all' || shift.division === filterDivision;
+    return dateMatches && clientMatches && divisionMatches;
+  }), [filterClient, filterDate, filterDivision, shifts]);
 
-  const getShiftTypeBadge = (type: string) => {
-    const styles = {
-      morning: 'bg-yellow-100 text-yellow-800',
-      afternoon: 'bg-orange-100 text-orange-800',
-      night: 'bg-blue-100 text-blue-800',
-    };
-    return styles[type as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+  const conflicts = useMemo(() => {
+    const active = shifts.filter((shift) => shift.status !== 'cancelled');
+    const result: Array<{ id: string; employeeName: string; date: string; first: Shift; second: Shift }> = [];
+    for (let index = 0; index < active.length; index += 1) {
+      for (let cursor = index + 1; cursor < active.length; cursor += 1) {
+        const first = active[index];
+        const second = active[cursor];
+        if (first.employeeId === second.employeeId && first.date === second.date && overlaps(first, second)) {
+          result.push({ id: `${first.id}-${second.id}`, employeeName: first.employeeName, date: first.date, first, second });
+        }
+      }
+    }
+    return result;
+  }, [shifts]);
+
+  const counts = {
+    morning: filteredShifts.filter((shift) => shift.shiftType === 'morning' && shift.status !== 'cancelled').length,
+    afternoon: filteredShifts.filter((shift) => shift.shiftType === 'afternoon' && shift.status !== 'cancelled').length,
+    night: filteredShifts.filter((shift) => shift.shiftType === 'night' && shift.status !== 'cancelled').length,
+    confirmed: filteredShifts.filter((shift) => shift.status === 'confirmed').length,
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      scheduled: 'bg-gray-100 text-gray-800',
-      confirmed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-    };
-    return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+  const openForm = () => {
+    setForm(emptyForm(filterDate || new Date().toISOString().slice(0, 10)));
+    setFormError('');
+    setShowForm(true);
   };
 
-  const getConflictBadge = (severity: string) => {
-    const styles = {
-      warning: 'bg-yellow-100 text-yellow-800',
-      error: 'bg-red-100 text-red-800',
+  const saveShift = () => {
+    const required = form.employeeName.trim() && form.employeeId.trim() && form.division.trim() && form.client.trim() && form.date;
+    if (!required) {
+      setFormError('Lengkapi employee, ID, client, division, dan tanggal shift.');
+      return;
+    }
+
+    const time = shiftTimes[form.shiftType];
+    const candidate: Shift = {
+      id: `shift-${Date.now()}`,
+      employeeName: form.employeeName.trim(),
+      employeeId: form.employeeId.trim(),
+      division: form.division.trim(),
+      client: form.client.trim(),
+      date: form.date,
+      shiftType: form.shiftType,
+      shiftStart: time.start,
+      shiftEnd: time.end,
+      status: 'scheduled',
     };
-    return styles[severity as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+
+    const duplicateOrConflict = shifts.some((shift) =>
+      shift.status !== 'cancelled' &&
+      shift.employeeId.toLowerCase() === candidate.employeeId.toLowerCase() &&
+      shift.date === candidate.date &&
+      overlaps(shift, candidate)
+    );
+
+    if (duplicateOrConflict) {
+      setFormError('Shift bentrok dengan jadwal aktif karyawan pada tanggal yang sama.');
+      return;
+    }
+
+    setShifts((current) => [...current, candidate]);
+    setFilterDate(candidate.date);
+    setFilterClient('all');
+    setFilterDivision('all');
+    setShowForm(false);
+    setFormError('');
   };
 
-  const morningCount = filteredShifts.filter(s => s.shiftType === 'morning').length;
-  const afternoonCount = filteredShifts.filter(s => s.shiftType === 'afternoon').length;
-  const nightCount = filteredShifts.filter(s => s.shiftType === 'night').length;
-  const confirmedCount = filteredShifts.filter(s => s.status === 'confirmed').length;
+  const updateStatus = (id: string, status: ShiftStatus) => {
+    setShifts((current) => current.map((shift) => shift.id === id ? { ...shift, status } : shift));
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">PA</span>
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Client Shift & Scheduling Hub</h1>
-            <p className="text-sm text-gray-600">PT Perdana Adi Yuda - Perencana Jadwal Kerja 24/7</p>
-          </div>
-        </div>
-      </div>
+    <div className="max-w-7xl mx-auto space-y-5">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Morning</p><strong className="block mt-1 text-xl text-amber-600">{counts.morning}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Afternoon</p><strong className="block mt-1 text-xl text-orange-600">{counts.afternoon}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Night</p><strong className="block mt-1 text-xl text-blue-600">{counts.night}</strong></div>
+        <div className="bg-white border rounded-xl p-4"><p className="text-[10px] uppercase tracking-wide text-gray-500">Confirmed</p><strong className="block mt-1 text-xl text-green-600">{counts.confirmed}</strong></div>
+      </section>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Morning Shift</div>
-          <div className="text-3xl font-bold text-yellow-600">{morningCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Afternoon Shift</div>
-          <div className="text-3xl font-bold text-orange-600">{afternoonCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Night Shift</div>
-          <div className="text-3xl font-bold text-blue-600">{nightCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Confirmed</div>
-          <div className="text-3xl font-bold text-green-600">{confirmedCount}</div>
-        </div>
-      </div>
-
-      {/* Conflict Alerts */}
       {conflicts.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-red-800 mb-3">⚠️ Schedule Conflicts Detected</h3>
-          <div className="space-y-2">
-            {conflicts.map((conflict) => (
-              <div key={conflict.id} className="flex items-center justify-between bg-white p-3 rounded">
-                <div>
-                  <div className="font-medium">{conflict.employeeName}</div>
-                  <div className="text-sm text-gray-600">
-                    {conflict.conflictDate}: {conflict.shift1} vs {conflict.shift2}
-                  </div>
-                </div>
-                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getConflictBadge(conflict.severity)}`}>
-                  {conflict.severity === 'error' ? 'Conflict' : 'Warning'}
-                </span>
-              </div>
-            ))}
+        <section className="rounded-xl border border-red-200 bg-red-50 p-4">
+          <div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold text-red-800">Schedule conflict</h2><p className="text-[11px] text-red-700 mt-0.5">Konflik dihitung dari data shift aktual, bukan daftar alert statis.</p></div><span className="rounded-full bg-red-100 text-red-700 px-2 py-1 text-[10px] font-semibold">{conflicts.length} conflict</span></div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-3">
+            {conflicts.map((conflict) => <div key={conflict.id} className="rounded-lg border border-red-100 bg-white p-3 text-xs"><strong>{conflict.employeeName}</strong><p className="text-[10px] text-gray-500 mt-1">{conflict.date} · {conflict.first.shiftStart}-{conflict.first.shiftEnd} vs {conflict.second.shiftStart}-{conflict.second.shiftEnd}</p></div>)}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Date</label>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Client</label>
-            <select
-              value={filterClient}
-              onChange={(e) => setFilterClient(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Clients</option>
-              {clients.map(client => (
-                <option key={client} value={client}>{client}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Division</label>
-            <select
-              value={filterDivision}
-              onChange={(e) => setFilterDivision(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Divisions</option>
-              {divisions.map(div => (
-                <option key={div} value={div}>{div}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              {showForm ? 'Batal' : '+ Add Shift'}
-            </button>
-          </div>
+      <section className="bg-white border rounded-xl p-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
+          <label>Tanggal
+            <input type="date" value={filterDate} onChange={(event) => setFilterDate(event.target.value)} />
+          </label>
+          <label>Client
+            <select value={filterClient} onChange={(event) => setFilterClient(event.target.value)}><option value="all">Semua client</option>{clients.map((client) => <option key={client} value={client}>{client}</option>)}</select>
+          </label>
+          <label>Division
+            <select value={filterDivision} onChange={(event) => setFilterDivision(event.target.value)}><option value="all">Semua division</option>{divisions.map((division) => <option key={division} value={division}>{division}</option>)}</select>
+          </label>
+          <button type="button" onClick={showForm ? () => setShowForm(false) : openForm} className="px-4 py-2.5 bg-blue-600 text-white rounded-lg">{showForm ? 'Tutup Form' : '+ Add Shift'}</button>
         </div>
-      </div>
+      </section>
 
-      {/* Add Shift Form */}
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h3 className="text-lg font-bold mb-4">Add New Shift</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Employee</label>
-              <input type="text" className="w-full px-3 py-2 border rounded-lg" placeholder="Employee name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Employee ID</label>
-              <input type="text" className="w-full px-3 py-2 border rounded-lg" placeholder="EMP001" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Client</label>
-              <input type="text" className="w-full px-3 py-2 border rounded-lg" placeholder="Client name" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Division</label>
-              <input type="text" className="w-full px-3 py-2 border rounded-lg" placeholder="Security" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Date</label>
-              <input type="date" className="w-full px-3 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Shift Type</label>
-              <select className="w-full px-3 py-2 border rounded-lg">
-                <option value="morning">Morning (06:00 - 14:00)</option>
-                <option value="afternoon">Afternoon (14:00 - 22:00)</option>
-                <option value="night">Night (22:00 - 06:00)</option>
+        <section className="bg-white border rounded-xl p-4">
+          <div className="mb-4"><h2 className="text-sm font-semibold">Add Shift</h2><p className="text-[11px] text-gray-500 mt-1">Sistem akan menolak overlap untuk employee dan tanggal yang sama.</p></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <label>Employee name *<input value={form.employeeName} onChange={(event) => setForm({ ...form, employeeName: event.target.value })} placeholder="Nama karyawan" /></label>
+            <label>Employee ID *<input value={form.employeeId} onChange={(event) => setForm({ ...form, employeeId: event.target.value })} placeholder="EMP001" /></label>
+            <label>Client *<input value={form.client} onChange={(event) => setForm({ ...form, client: event.target.value })} placeholder="PT ABC" /></label>
+            <label>Division *<input value={form.division} onChange={(event) => setForm({ ...form, division: event.target.value })} placeholder="Security" /></label>
+            <label>Date *<input type="date" value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value })} /></label>
+            <label>Shift type
+              <select value={form.shiftType} onChange={(event) => setForm({ ...form, shiftType: event.target.value as ShiftType })}>
+                {Object.entries(shiftTimes).map(([key, value]) => <option key={key} value={key}>{value.label} ({value.start}-{value.end})</option>)}
               </select>
-            </div>
+            </label>
           </div>
-          <div className="mt-4 flex gap-2">
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-              Save Shift
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+          {formError && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-[11px] text-red-700">{formError}</div>}
+          <div className="mt-4 flex justify-end gap-2"><button type="button" onClick={() => setShowForm(false)} className="px-3 py-2 border rounded-lg">Cancel</button><button type="button" onClick={saveShift} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Save Shift</button></div>
+        </section>
       )}
 
-      {/* Shift Schedule Table */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Shift Schedule - {filterDate}</h2>
+      <section className="bg-white border rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold">Shift Schedule</h2><p className="text-[11px] text-gray-500 mt-0.5">{filteredShifts.length} shift pada filter aktif</p></div><span className="text-[10px] text-gray-500">{filterDate || 'Semua tanggal'}</span></div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Division</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shift Time</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shift Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
+            <thead><tr><th>Employee</th><th>Division</th><th>Client</th><th>Shift</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
               {filteredShifts.map((shift) => (
-                <tr key={shift.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-gray-900">{shift.employeeName}</div>
-                    <div className="text-xs text-gray-500">{shift.employeeId}</div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{shift.division}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{shift.client}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                    {shift.shiftStart} - {shift.shiftEnd}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getShiftTypeBadge(shift.shiftType)}`}>
-                      {shift.shiftType === 'morning' ? 'Morning' : shift.shiftType === 'afternoon' ? 'Afternoon' : 'Night'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(shift.status)}`}>
-                      {shift.status === 'scheduled' ? 'Scheduled' : shift.status === 'confirmed' ? 'Confirmed' : 'Cancelled'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      {shift.status === 'scheduled' && (
-                        <button className="text-green-600 hover:text-green-700 text-sm">
-                          Confirm
-                        </button>
-                      )}
-                      <button className="text-blue-600 hover:text-blue-700 text-sm">
-                        Edit
-                      </button>
-                      <button className="text-red-600 hover:text-red-700 text-sm">
-                        Cancel
-                      </button>
-                    </div>
-                  </td>
+                <tr key={shift.id}>
+                  <td><strong>{shift.employeeName}</strong><div className="text-[10px] text-gray-500 mt-0.5">{shift.employeeId}</div></td>
+                  <td>{shift.division}</td><td>{shift.client}</td><td><strong>{shift.shiftStart}–{shift.shiftEnd}</strong></td>
+                  <td><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${shift.shiftType === 'morning' ? 'bg-amber-100 text-amber-700' : shift.shiftType === 'afternoon' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>{shiftTimes[shift.shiftType].label}</span></td>
+                  <td><span className={`rounded-full px-2 py-1 text-[9px] font-semibold ${shift.status === 'confirmed' ? 'bg-green-100 text-green-700' : shift.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{shift.status}</span></td>
+                  <td><div className="flex gap-2">{shift.status === 'scheduled' && <button type="button" onClick={() => updateStatus(shift.id, 'confirmed')} className="text-green-600">Confirm</button>}{shift.status !== 'cancelled' && <button type="button" onClick={() => updateStatus(shift.id, 'cancelled')} className="text-red-600">Cancel</button>}{shift.status === 'cancelled' && <button type="button" onClick={() => updateStatus(shift.id, 'scheduled')} className="text-blue-600">Restore</button>}</div></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {filteredShifts.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            Tidak ada shift untuk tanggal dan filter yang dipilih
-          </div>
-        )}
-      </div>
+        {filteredShifts.length === 0 && <div className="p-10 text-center text-sm text-gray-500">Tidak ada shift pada filter yang dipilih.</div>}
+      </section>
     </div>
   );
 }
