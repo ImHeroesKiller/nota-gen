@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   Calculator,
+  FileText,
   Moon,
-  ReceiptText,
   Sun,
 } from 'lucide-react';
 
@@ -95,7 +95,7 @@ export default function TaxBillingCalculator({ onBack, darkMode, setDarkMode }: 
       <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b ${surface} ${border}`}>
         <div className="flex items-center gap-3 min-w-0">
           <button type="button" onClick={onBack} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Kembali"><ArrowLeft size={18} /></button>
-          <div className="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-600 inline-flex items-center justify-center shrink-0"><ReceiptText size={20} /></div>
+          <div className="w-9 h-9 rounded-lg bg-orange-500/10 text-orange-600 inline-flex items-center justify-center shrink-0"><FileText size={20} /></div>
           <div className="min-w-0">
             <h1 className="text-sm font-semibold truncate">Tax Billing Calculator</h1>
             <p className={`text-[11px] ${muted} truncate`}>Simulasi PPN dan withholding PPh 23</p>
