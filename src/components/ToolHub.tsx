@@ -1,9 +1,32 @@
-import { useState, useMemo } from 'react';
-import { hierarchicalStructure, getToolById, iconMap, type Tool } from './newHierarchicalStructure';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import {
+  ArrowLeft,
+  Bell,
+  ChevronRight,
+  Command,
+  Grid2X2,
+  Layers3,
+  List,
+  Menu,
+  Moon,
+  Search,
+  Sun,
+  Wrench,
+} from 'lucide-react';
+import {
+  hierarchicalStructure,
+  getToolById,
+  iconMap,
+  type Module as SuiteModule,
+  type Suite,
+  type Tool,
+} from './newHierarchicalStructure';
 import { Sidebar } from './Sidebar';
 import { Icons } from './IconLibrary';
 
-type ViewLevel = 'dashboard' | 'suite' | 'module' | 'tool';
+type ViewLevel = 'dashboard' | 'suites' | 'suite' | 'modules' | 'module' | 'tools' | 'tool';
+type DirectoryView = 'dashboard' | 'suites' | 'modules' | 'tools';
+type SuiteViewMode = 'grid' | 'list';
 
 interface NavigationState {
   level: ViewLevel;
@@ -12,201 +35,572 @@ interface NavigationState {
   selectedTool?: Tool;
 }
 
+interface ModuleContext {
+  suite: Suite;
+  module: SuiteModule;
+}
+
+interface ToolContext extends ModuleContext {
+  tool: Tool;
+}
+
+interface SearchResult {
+  id: string;
+  type: 'Suite' | 'Modul' | 'Tool';
+  title: string;
+  description: string;
+  context?: string;
+  iconName: string;
+  suiteId?: string;
+  moduleId?: string;
+  toolId?: string;
+}
+
+const suiteAccents: Record<string, string> = {
+  'human-capital': '#2563EB',
+  'logistics-fleet': '#10B981',
+  'customs-trade': '#7C3AED',
+  'finance-legal': '#F97316',
+  'field-operations': '#059669',
+  'document-management': '#E11D48',
+  'outsourcing-documents': '#8B5CF6',
+};
+
+const getSuiteStyle = (suiteId: string): CSSProperties => ({
+  '--suite-accent': suiteAccents[suiteId] || '#2563EB',
+} as CSSProperties);
+
 export default function ToolHub() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [navigation, setNavigation] = useState<NavigationState>({ level: 'dashboard' });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [suiteViewMode, setSuiteViewMode] = useState<SuiteViewMode>('grid');
 
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#F8FAFC]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#0F172A]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#64748B]';
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
 
-  const searchResults = useMemo(() => {
-    if (!searchQuery) return [];
-    return hierarchicalStructure
-      .flatMap(suite => suite.modules)
-      .flatMap(module => module.tools)
-      .filter(tool =>
-        tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tool.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-  }, [searchQuery]);
+  const modules = useMemo<ModuleContext[]>(
+    () => hierarchicalStructure.flatMap((suite) => suite.modules.map((module) => ({ suite, module }))),
+    []
+  );
 
-  const handleToolSelect = (toolId: string) => {
-    const tool = getToolById(toolId);
-    if (tool) {
-      setNavigation({ level: 'tool', selectedTool: tool });
-    }
+  const tools = useMemo<ToolContext[]>(
+    () => modules.flatMap(({ suite, module }) => module.tools.map((tool) => ({ suite, module, tool }))),
+    [modules]
+  );
+
+  const searchResults = useMemo<SearchResult[]>(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+
+    const suiteResults: SearchResult[] = hierarchicalStructure
+      .filter((suite) => `${suite.name} ${suite.description}`.toLowerCase().includes(query))
+      .map((suite) => ({
+        id: suite.id,
+        type: 'Suite',
+        title: suite.name,
+        description: suite.description,
+        iconName: iconMap[suite.id] || 'Dashboard',
+        suiteId: suite.id,
+      }));
+
+    const moduleResults: SearchResult[] = modules
+      .filter(({ module }) => `${module.name} ${module.description}`.toLowerCase().includes(query))
+      .map(({ suite, module }) => ({
+        id: module.id,
+        type: 'Modul',
+        title: module.name,
+        description: module.description,
+        context: suite.name,
+        iconName: iconMap[module.id] || 'Document',
+        suiteId: suite.id,
+        moduleId: module.id,
+      }));
+
+    const toolResults: SearchResult[] = tools
+      .filter(({ tool }) => `${tool.name} ${tool.description}`.toLowerCase().includes(query))
+      .map(({ suite, module, tool }) => ({
+        id: tool.id,
+        type: 'Tool',
+        title: tool.name,
+        description: tool.description,
+        context: `${suite.name} / ${module.name}`,
+        iconName: iconMap[tool.id] || 'Document',
+        suiteId: suite.id,
+        moduleId: module.id,
+        toolId: tool.id,
+      }));
+
+    return [...suiteResults, ...moduleResults, ...toolResults].slice(0, 36);
+  }, [modules, searchQuery, tools]);
+
+  const selectedSuite = navigation.selectedSuiteId
+    ? hierarchicalStructure.find((suite) => suite.id === navigation.selectedSuiteId)
+    : undefined;
+
+  const selectedModuleContext = navigation.selectedModuleId
+    ? modules.find(({ module }) => module.id === navigation.selectedModuleId)
+    : undefined;
+
+  const getIconComponent = (iconName: string, size = 22) => {
+    const IconComponent = (Icons as any)[iconName] || Icons.Document;
+    return <IconComponent size={size} />;
   };
 
-  const handleDashboardClick = () => {
-    setNavigation({ level: 'dashboard' });
+  const getToolContext = (toolId: string) => tools.find(({ tool }) => tool.id === toolId);
+
+  const activeDirectoryView: DirectoryView =
+    navigation.level === 'dashboard'
+      ? 'dashboard'
+      : navigation.level === 'modules' || navigation.level === 'module'
+        ? 'modules'
+        : navigation.level === 'tools' || navigation.level === 'tool'
+          ? 'tools'
+          : 'suites';
+
+  const handleNavigate = (view: DirectoryView) => {
+    setNavigation({ level: view });
     setSearchQuery('');
   };
 
-  const handleBack = () => {
-    if (navigation.level === 'tool') {
+  const handleSuiteSelect = (suiteId: string) => {
+    setNavigation({ level: 'suite', selectedSuiteId: suiteId });
+    setSearchQuery('');
+  };
+
+  const handleModuleSelect = (suiteId: string, moduleId: string) => {
+    setNavigation({ level: 'module', selectedSuiteId: suiteId, selectedModuleId: moduleId });
+    setSearchQuery('');
+  };
+
+  const handleToolSelect = (toolId: string) => {
+    const tool = getToolById(toolId);
+    const context = getToolContext(toolId);
+    if (!tool) return;
+
+    setNavigation({
+      level: 'tool',
+      selectedSuiteId: context?.suite.id,
+      selectedModuleId: context?.module.id,
+      selectedTool: tool,
+    });
+    setSearchQuery('');
+  };
+
+  const handleBackFromTool = () => {
+    if (navigation.selectedSuiteId && navigation.selectedModuleId) {
+      setNavigation({
+        level: 'module',
+        selectedSuiteId: navigation.selectedSuiteId,
+        selectedModuleId: navigation.selectedModuleId,
+      });
+    } else {
       setNavigation({ level: 'dashboard' });
     }
     setSearchQuery('');
   };
 
-  const getIconComponent = (iconName: string, size: number = 24) => {
-    const IconComponent = (Icons as any)[iconName] || Icons.Dashboard;
-    return <IconComponent size={size} />;
+  const handleSearchResult = (result: SearchResult) => {
+    if (result.type === 'Tool' && result.toolId) {
+      handleToolSelect(result.toolId);
+      return;
+    }
+    if (result.type === 'Modul' && result.suiteId && result.moduleId) {
+      handleModuleSelect(result.suiteId, result.moduleId);
+      return;
+    }
+    if (result.type === 'Suite' && result.suiteId) {
+      handleSuiteSelect(result.suiteId);
+    }
   };
 
-  const renderMainContent = () => {
-    if (navigation.level === 'tool' && navigation.selectedTool) {
-      const ToolComponent = navigation.selectedTool.component;
-      return <ToolComponent onBack={handleBack} darkMode={darkMode} setDarkMode={setDarkMode} />;
-    }
+  const SuiteCard = ({ suite }: { suite: Suite }) => {
+    const toolCount = suite.modules.reduce((total, module) => total + module.tools.length, 0);
 
-    if (searchQuery) {
+    if (suiteViewMode === 'list') {
       return (
-        <div className="p-6">
-          <h2 className="text-2xl font-bold mb-4">
-            Hasil Pencarian: {searchResults.length} tools ditemukan
-          </h2>
-          {searchResults.length === 0 ? (
-            <div className="text-center py-12">
-              <p className={textSecondary}>Tidak ada tools yang ditemukan</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {searchResults.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => handleToolSelect(tool.id)}
-                  className="text-left tool-card"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shrink-0 backdrop-blur-sm`}>
-                      {getIconComponent(iconMap[tool.id] || 'Document', 24)}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{tool.name}</h3>
-                      <p className={`text-sm ${textSecondary}`}>{tool.description}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <article className="erp-suite-list-row" style={getSuiteStyle(suite.id)}>
+          <button type="button" className="erp-suite-list-main" onClick={() => handleSuiteSelect(suite.id)}>
+            <span className="erp-suite-icon">{getIconComponent(iconMap[suite.id] || 'Dashboard', 24)}</span>
+            <span className="erp-suite-list-copy">
+              <strong>{suite.name}</strong>
+              <small>{suite.description}</small>
+            </span>
+          </button>
+          <span className="erp-list-meta">{suite.modules.length} modul</span>
+          <span className="erp-list-meta">{toolCount} tools</span>
+          <ChevronRight size={18} className="erp-chevron" />
+        </article>
       );
     }
 
     return (
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-6">Semua Suites</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hierarchicalStructure.map((suite) => (
-            <div
-              key={suite.id}
-              className="suite-card"
+      <article className="erp-suite-card" style={getSuiteStyle(suite.id)}>
+        <button type="button" className="erp-suite-card-header" onClick={() => handleSuiteSelect(suite.id)}>
+          <span className="erp-suite-icon">{getIconComponent(iconMap[suite.id] || 'Dashboard', 26)}</span>
+          <span className="erp-suite-heading">
+            <strong>{suite.name}</strong>
+            <small>{suite.description}</small>
+          </span>
+          <span className="erp-suite-tool-total">{toolCount} tools</span>
+        </button>
+
+        <div className="erp-module-rows">
+          {suite.modules.map((module) => (
+            <button
+              type="button"
+              key={module.id}
+              className="erp-module-row"
+              onClick={() => handleModuleSelect(suite.id, module.id)}
             >
-              <div className="flex items-start gap-4 mb-4">
-                <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl backdrop-blur-sm`}>
-                  {getIconComponent(iconMap[suite.id] || 'Dashboard', 32)}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-2">{suite.name}</h3>
-                  <p className={`text-sm ${textSecondary}`}>{suite.description}</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {suite.modules.map((module) => (
-                  <div key={module.id} className="text-sm">
-                    <div className="font-medium text-gray-700 dark:text-gray-300 mb-1">{module.name}</div>
-                    <div className={`text-xs ${textSecondary} ml-2`}>
-                      {module.tools.length} tools
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+              <span className="erp-module-row-icon">{getIconComponent(iconMap[module.id] || 'Document', 16)}</span>
+              <span className="erp-module-row-name">{module.name}</span>
+              <span className="erp-module-row-count">{module.tools.length} tools</span>
+              <ChevronRight size={16} className="erp-chevron" />
+            </button>
+          ))}
+        </div>
+      </article>
+    );
+  };
+
+  const ToolCard = ({ context }: { context: ToolContext }) => (
+    <button
+      type="button"
+      className="erp-tool-card"
+      style={getSuiteStyle(context.suite.id)}
+      onClick={() => handleToolSelect(context.tool.id)}
+    >
+      <span className="erp-tool-icon">{getIconComponent(iconMap[context.tool.id] || 'Document', 20)}</span>
+      <span className="erp-tool-card-copy">
+        <strong>{context.tool.name}</strong>
+        <small>{context.tool.description}</small>
+        <em>{context.suite.name} / {context.module.name}</em>
+      </span>
+      <ChevronRight size={17} className="erp-chevron" />
+    </button>
+  );
+
+  const SuiteSection = () => (
+    <section className="erp-section">
+      <div className="erp-section-head">
+        <div>
+          <h2>Suite Bisnis</h2>
+          <p>Pilih suite untuk mengakses modul dan tools yang tersedia.</p>
+        </div>
+        <div className="erp-view-toggle" aria-label="Mode tampilan suite">
+          <button
+            type="button"
+            className={suiteViewMode === 'grid' ? 'is-active' : ''}
+            onClick={() => setSuiteViewMode('grid')}
+            aria-label="Tampilan grid"
+          >
+            <Grid2X2 size={16} />
+            <span>Grid</span>
+          </button>
+          <button
+            type="button"
+            className={suiteViewMode === 'list' ? 'is-active' : ''}
+            onClick={() => setSuiteViewMode('list')}
+            aria-label="Tampilan list"
+          >
+            <List size={16} />
+            <span>List</span>
+          </button>
+        </div>
+      </div>
+      <div className={suiteViewMode === 'grid' ? 'erp-suite-grid' : 'erp-suite-list'}>
+        {hierarchicalStructure.map((suite) => <SuiteCard key={suite.id} suite={suite} />)}
+      </div>
+    </section>
+  );
+
+  const renderSearchResults = () => (
+    <div className="erp-page">
+      <div className="erp-page-heading">
+        <div>
+          <span className="erp-eyebrow">Global Search</span>
+          <h1>Hasil pencarian</h1>
+          <p>{searchResults.length} hasil untuk “{searchQuery.trim()}”</p>
+        </div>
+      </div>
+
+      {searchResults.length === 0 ? (
+        <div className="erp-empty-state">
+          <Search size={28} />
+          <strong>Tidak ada hasil ditemukan</strong>
+          <p>Coba nama suite, modul, atau tool yang berbeda.</p>
+        </div>
+      ) : (
+        <div className="erp-search-results">
+          {searchResults.map((result) => (
+            <button
+              type="button"
+              key={`${result.type}-${result.id}`}
+              className="erp-search-result"
+              onClick={() => handleSearchResult(result)}
+            >
+              <span className="erp-search-result-icon">{getIconComponent(result.iconName, 20)}</span>
+              <span className="erp-search-result-copy">
+                <span className="erp-result-type">{result.type}</span>
+                <strong>{result.title}</strong>
+                <small>{result.context || result.description}</small>
+              </span>
+              <ChevronRight size={17} className="erp-chevron" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderDashboard = () => (
+    <div className="erp-page">
+      <section className="erp-hero">
+        <div className="erp-hero-content">
+          <span className="erp-eyebrow">Enterprise Resource Planning</span>
+          <h1>PERADA Tools</h1>
+          <p>Kelola seluruh operasi bisnis dalam satu workspace yang modular, terintegrasi, dan siap berkembang.</p>
+          <div className="erp-hero-badges">
+            <span>Modular</span>
+            <span>Terintegrasi</span>
+            <span>Siap Berkembang</span>
+          </div>
+        </div>
+        <div className="erp-hero-visual" aria-hidden="true">
+          <span className="erp-hero-grid" />
+          <span className="erp-hero-orb erp-hero-orb-one" />
+          <span className="erp-hero-orb erp-hero-orb-two" />
+          <div className="erp-hero-stack">
+            <span><Layers3 size={17} /> Suite</span>
+            <span><Grid2X2 size={17} /> Modul</span>
+            <span><Wrench size={17} /> Tools</span>
+          </div>
+        </div>
+      </section>
+      <SuiteSection />
+    </div>
+  );
+
+  const renderSuitesDirectory = () => (
+    <div className="erp-page">
+      <div className="erp-page-heading">
+        <div>
+          <span className="erp-eyebrow">ERP Directory</span>
+          <h1>Semua Suites</h1>
+          <p>Struktur bisnis utama PERADA Tools dalam satu tampilan.</p>
+        </div>
+      </div>
+      <SuiteSection />
+    </div>
+  );
+
+  const renderModulesDirectory = () => (
+    <div className="erp-page">
+      <div className="erp-page-heading">
+        <div>
+          <span className="erp-eyebrow">ERP Directory</span>
+          <h1>Semua Modul</h1>
+          <p>Temukan modul lintas suite dan buka tools di dalamnya.</p>
+        </div>
+      </div>
+      <div className="erp-module-grid">
+        {modules.map(({ suite, module }) => (
+          <button
+            type="button"
+            key={module.id}
+            className="erp-module-card"
+            style={getSuiteStyle(suite.id)}
+            onClick={() => handleModuleSelect(suite.id, module.id)}
+          >
+            <span className="erp-module-card-icon">{getIconComponent(iconMap[module.id] || 'Document', 21)}</span>
+            <span className="erp-module-card-copy">
+              <em>{suite.name}</em>
+              <strong>{module.name}</strong>
+              <small>{module.description}</small>
+              <span>{module.tools.length} tools</span>
+            </span>
+            <ChevronRight size={17} className="erp-chevron" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderToolsDirectory = () => (
+    <div className="erp-page">
+      <div className="erp-page-heading">
+        <div>
+          <span className="erp-eyebrow">ERP Directory</span>
+          <h1>Semua Tools</h1>
+          <p>Akses seluruh tools operasional dari semua suite dan modul.</p>
+        </div>
+      </div>
+      <div className="erp-tool-grid">
+        {tools.map((context) => <ToolCard key={context.tool.id} context={context} />)}
+      </div>
+    </div>
+  );
+
+  const renderSuiteDetail = () => {
+    if (!selectedSuite) return renderSuitesDirectory();
+
+    return (
+      <div className="erp-page">
+        <button type="button" className="erp-back-link" onClick={() => handleNavigate('suites')}>
+          <ArrowLeft size={16} /> Semua Suites
+        </button>
+        <section className="erp-detail-head" style={getSuiteStyle(selectedSuite.id)}>
+          <span className="erp-suite-icon erp-detail-icon">{getIconComponent(iconMap[selectedSuite.id] || 'Dashboard', 28)}</span>
+          <div>
+            <span className="erp-eyebrow">Suite</span>
+            <h1>{selectedSuite.name}</h1>
+            <p>{selectedSuite.description}</p>
+          </div>
+        </section>
+        <div className="erp-module-grid">
+          {selectedSuite.modules.map((module) => (
+            <button
+              type="button"
+              key={module.id}
+              className="erp-module-card"
+              style={getSuiteStyle(selectedSuite.id)}
+              onClick={() => handleModuleSelect(selectedSuite.id, module.id)}
+            >
+              <span className="erp-module-card-icon">{getIconComponent(iconMap[module.id] || 'Document', 21)}</span>
+              <span className="erp-module-card-copy">
+                <strong>{module.name}</strong>
+                <small>{module.description}</small>
+                <span>{module.tools.length} tools</span>
+              </span>
+              <ChevronRight size={17} className="erp-chevron" />
+            </button>
           ))}
         </div>
       </div>
     );
   };
 
+  const renderModuleDetail = () => {
+    if (!selectedModuleContext) return renderModulesDirectory();
+    const { suite, module } = selectedModuleContext;
+    const moduleTools: ToolContext[] = module.tools.map((tool) => ({ suite, module, tool }));
+
+    return (
+      <div className="erp-page">
+        <div className="erp-breadcrumbs">
+          <button type="button" onClick={() => handleSuiteSelect(suite.id)}>{suite.name}</button>
+          <ChevronRight size={14} />
+          <span>{module.name}</span>
+        </div>
+        <section className="erp-detail-head" style={getSuiteStyle(suite.id)}>
+          <span className="erp-suite-icon erp-detail-icon">{getIconComponent(iconMap[module.id] || 'Document', 28)}</span>
+          <div>
+            <span className="erp-eyebrow">Modul</span>
+            <h1>{module.name}</h1>
+            <p>{module.description}</p>
+          </div>
+        </section>
+        <div className="erp-section-head erp-tools-heading">
+          <div>
+            <h2>Tools</h2>
+            <p>{module.tools.length} tools tersedia di modul ini.</p>
+          </div>
+        </div>
+        <div className="erp-tool-grid">
+          {moduleTools.map((context) => <ToolCard key={context.tool.id} context={context} />)}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMainContent = () => {
+    if (navigation.level === 'tool' && navigation.selectedTool) {
+      const ToolComponent = navigation.selectedTool.component;
+      return (
+        <div className="erp-tool-stage">
+          <ToolComponent onBack={handleBackFromTool} darkMode={darkMode} setDarkMode={setDarkMode} />
+        </div>
+      );
+    }
+
+    if (searchQuery.trim()) return renderSearchResults();
+
+    switch (navigation.level) {
+      case 'suites':
+        return renderSuitesDirectory();
+      case 'suite':
+        return renderSuiteDetail();
+      case 'modules':
+        return renderModulesDirectory();
+      case 'module':
+        return renderModuleDetail();
+      case 'tools':
+        return renderToolsDirectory();
+      default:
+        return renderDashboard();
+    }
+  };
+
   return (
-    <div className={`flex h-screen ${bg} ${textPrimary}`}>
-      {/* Sidebar - Always visible */}
+    <div className={`erp-shell ${darkMode ? 'is-dark' : ''}`}>
       <Sidebar
         collapsed={sidebarCollapsed}
-        onToolSelect={handleToolSelect}
-        onDashboardClick={handleDashboardClick}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-        activeTool={navigation.selectedTool?.id}
+        activeView={activeDirectoryView}
+        onNavigate={handleNavigate}
+        onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
       />
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="sticky top-0 z-40 border-b glass-header">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                    darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#F1F5F9]'
-                  }`}
-                >
-                  <Icons.Menu size={24} />
-                </button>
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E31B23] to-[#0072CE] flex items-center justify-center shadow-lg">
-                  <span className="text-white text-sm font-bold">PA</span>
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold tracking-tight">PERADA Tools</h1>
-                  <p className={`text-xs ${textSecondary}`}>Enterprise Resource Planning Suite</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className="btn-icon w-10 h-10"
-                >
-                  {darkMode ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
+      <div className="erp-workspace">
+        <header className="erp-topbar">
+          <button
+            type="button"
+            className="erp-icon-button erp-mobile-menu"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label="Toggle navigation"
+          >
+            <Menu size={20} />
+          </button>
 
-            {/* Global Search */}
-            <div className="relative">
-              <svg className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${textSecondary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Cari tools..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl border ${
-                  darkMode ? 'bg-[#161b22] border-[#30363d] text-[#e6edf3]' : 'bg-white border-[#E2E8F0] text-[#0F172A]'
-                } focus:outline-none focus:ring-2 focus:ring-[#0072CE]/30`}
-              />
+          <div className="erp-global-search">
+            <Search size={18} />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari tools, modul, atau fitur..."
+              aria-label="Cari tools, modul, atau fitur"
+            />
+            <span className="erp-search-shortcut"><Command size={13} /> K</span>
+          </div>
+
+          <div className="erp-topbar-actions">
+            <button type="button" className="erp-icon-button" aria-label="Notifikasi" title="Notifikasi">
+              <Bell size={19} />
+            </button>
+            <button
+              type="button"
+              className="erp-icon-button"
+              onClick={() => setDarkMode((value) => !value)}
+              aria-label={darkMode ? 'Aktifkan light mode' : 'Aktifkan dark mode'}
+              title={darkMode ? 'Light mode' : 'Dark mode'}
+            >
+              {darkMode ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+            <span className="erp-topbar-divider" />
+            <div className="erp-user-menu">
+              <span className="erp-avatar">PA</span>
+              <span className="erp-user-copy">
+                <strong>Administrator</strong>
+                <small>PERADA Tools</small>
+              </span>
             </div>
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
-          {renderMainContent()}
-        </main>
+        <main className="erp-main-content">{renderMainContent()}</main>
       </div>
     </div>
   );
