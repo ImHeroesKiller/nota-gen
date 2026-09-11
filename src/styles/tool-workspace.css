@@ -1,0 +1,566 @@
+/* ============================================================
+   PERADA Tools — Unified Tool Workspace
+   Applies a single ERP visual system to every legacy/current tool
+   without changing each tool's business logic.
+   ============================================================ */
+
+.erp-tool-stage {
+  width: 100%;
+  height: calc(100dvh - 68px);
+  min-height: 0;
+  overflow: auto;
+  background: var(--erp-bg);
+  color: var(--erp-text);
+  isolation: isolate;
+}
+
+/* Fix nested 100vh tools inside the ERP shell. */
+.erp-tool-stage > [class~="h-screen"] {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+.erp-tool-stage > [class~="min-h-screen"] {
+  min-height: 100% !important;
+}
+
+.erp-tool-stage > :not([class~="h-screen"]) {
+  width: 100%;
+}
+
+/* ------------------------------------------------------------
+   Typography hierarchy
+   ------------------------------------------------------------ */
+.erp-tool-stage h1,
+.erp-tool-stage h2,
+.erp-tool-stage h3,
+.erp-tool-stage h4 {
+  color: var(--erp-text);
+  letter-spacing: -0.02em;
+}
+
+.erp-tool-stage h1[class~="text-3xl"] {
+  font-size: 1.5rem !important;
+  line-height: 1.2 !important;
+  font-weight: 750 !important;
+}
+
+.erp-tool-stage h2[class~="text-2xl"] {
+  font-size: 1.25rem !important;
+  line-height: 1.25 !important;
+}
+
+.erp-tool-stage h2[class~="text-xl"],
+.erp-tool-stage h3[class~="text-xl"] {
+  font-size: 1.05rem !important;
+  line-height: 1.3 !important;
+}
+
+.erp-tool-stage p,
+.erp-tool-stage label,
+.erp-tool-stage small {
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------
+   Legacy local headers become compact ERP sub-toolbars
+   ------------------------------------------------------------ */
+.erp-tool-stage > [class~="h-screen"] > header {
+  min-height: 54px;
+  padding: 8px 16px !important;
+  border-color: var(--erp-border) !important;
+  background: var(--erp-surface) !important;
+  color: var(--erp-text) !important;
+  box-shadow: none !important;
+}
+
+.erp-tool-stage > [class~="h-screen"] > header h1 {
+  color: var(--erp-text) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.erp-tool-stage > [class~="h-screen"] > header p {
+  color: var(--erp-text-secondary) !important;
+}
+
+/* ------------------------------------------------------------
+   Surfaces / cards
+   ------------------------------------------------------------ */
+.erp-tool-stage .shadow-lg,
+.erp-tool-stage .shadow-xl,
+.erp-tool-stage .shadow-2xl {
+  box-shadow: var(--erp-shadow) !important;
+}
+
+.erp-tool-stage [class~="bg-white"][class~="rounded-lg"][class~="shadow-lg"],
+.erp-tool-stage [class~="bg-white"][class~="rounded-xl"][class~="shadow-lg"],
+.erp-tool-stage [class~="bg-white"][class~="rounded-2xl"][class~="shadow-lg"] {
+  border: 1px solid var(--erp-border);
+}
+
+.erp-tool-stage .rounded-lg {
+  border-radius: 10px !important;
+}
+
+.erp-tool-stage .rounded-xl {
+  border-radius: 12px !important;
+}
+
+.erp-tool-stage .rounded-2xl {
+  border-radius: 14px !important;
+}
+
+.erp-tool-stage [class~="border-gray-100"],
+.erp-tool-stage [class~="border-gray-200"],
+.erp-tool-stage [class~="border-gray-300"] {
+  border-color: var(--erp-border) !important;
+}
+
+.erp-tool-stage [class~="bg-gray-50"],
+.erp-tool-stage [class~="bg-gray-100"] {
+  background-color: var(--erp-surface-muted) !important;
+}
+
+/* Keep document/paper previews white even in dark mode. */
+.erp-tool-stage .preview-scroll [class~="bg-white"],
+.erp-tool-stage [style*="aspect-ratio"][class~="bg-white"] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* ------------------------------------------------------------
+   Form controls
+   ------------------------------------------------------------ */
+.erp-tool-stage input:not([type="range"]):not([type="color"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),
+.erp-tool-stage select,
+.erp-tool-stage textarea {
+  border-color: var(--erp-border) !important;
+  background-color: var(--erp-surface) !important;
+  color: var(--erp-text) !important;
+  border-radius: 9px !important;
+  font-size: 13px;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.erp-tool-stage input:not([type="range"]):not([type="color"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]):focus,
+.erp-tool-stage select:focus,
+.erp-tool-stage textarea:focus {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--erp-primary) 55%, var(--erp-border)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--erp-primary) 12%, transparent) !important;
+}
+
+.erp-tool-stage input::placeholder,
+.erp-tool-stage textarea::placeholder {
+  color: color-mix(in srgb, var(--erp-text-secondary) 78%, transparent) !important;
+}
+
+.erp-tool-stage textarea {
+  resize: vertical;
+}
+
+.erp-tool-stage select {
+  color-scheme: light;
+}
+
+.erp-shell.is-dark .erp-tool-stage select,
+.erp-shell.is-dark .erp-tool-stage input,
+.erp-shell.is-dark .erp-tool-stage textarea {
+  color-scheme: dark;
+}
+
+.erp-tool-stage input[type="checkbox"],
+.erp-tool-stage input[type="radio"] {
+  accent-color: var(--erp-primary);
+}
+
+.erp-tool-stage input[type="range"] {
+  accent-color: var(--erp-primary);
+}
+
+/* ------------------------------------------------------------
+   Buttons / interactive states
+   ------------------------------------------------------------ */
+.erp-tool-stage button {
+  transition-duration: 150ms !important;
+}
+
+.erp-tool-stage button:focus-visible,
+.erp-tool-stage a:focus-visible,
+.erp-tool-stage input:focus-visible,
+.erp-tool-stage select:focus-visible,
+.erp-tool-stage textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--erp-primary) 70%, transparent) !important;
+  outline-offset: 2px;
+}
+
+.erp-tool-stage button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.48;
+}
+
+.erp-tool-stage .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.erp-tool-stage .bg-blue-700 {
+  background-color: #1d4ed8 !important;
+}
+
+.erp-tool-stage .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.erp-tool-stage .border-blue-500,
+.erp-tool-stage .border-blue-600 {
+  border-color: #2563eb !important;
+}
+
+/* ------------------------------------------------------------
+   Tables and data-heavy layouts
+   ------------------------------------------------------------ */
+.erp-tool-stage table {
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--erp-text);
+}
+
+.erp-tool-stage thead {
+  background: var(--erp-surface-muted);
+}
+
+.erp-tool-stage th {
+  color: var(--erp-text-secondary);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.025em;
+}
+
+.erp-tool-stage td {
+  color: var(--erp-text);
+  font-size: 12px;
+}
+
+.erp-tool-stage th,
+.erp-tool-stage td {
+  border-color: var(--erp-border) !important;
+}
+
+.erp-tool-stage tbody tr {
+  transition: background 130ms ease;
+}
+
+.erp-tool-stage tbody tr:hover {
+  background: color-mix(in srgb, var(--erp-primary) 3%, var(--erp-surface));
+}
+
+/* ------------------------------------------------------------
+   Internal sidebars, workspaces and upload panels
+   ------------------------------------------------------------ */
+.erp-tool-stage aside {
+  border-color: var(--erp-border) !important;
+}
+
+.erp-tool-stage [class*="border-dashed"] {
+  border-color: color-mix(in srgb, var(--erp-text-secondary) 35%, var(--erp-border)) !important;
+  background: color-mix(in srgb, var(--erp-surface-muted) 82%, transparent);
+}
+
+.erp-tool-stage [class*="border-dashed"]:hover {
+  border-color: color-mix(in srgb, var(--erp-primary) 45%, var(--erp-border)) !important;
+}
+
+.erp-tool-stage [class~="overflow-y-auto"],
+.erp-tool-stage [class~="overflow-auto"] {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--erp-text-secondary) 32%, transparent) transparent;
+}
+
+.erp-tool-stage [class~="overflow-y-auto"]::-webkit-scrollbar,
+.erp-tool-stage [class~="overflow-auto"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.erp-tool-stage [class~="overflow-y-auto"]::-webkit-scrollbar-thumb,
+.erp-tool-stage [class~="overflow-auto"]::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--erp-text-secondary) 28%, transparent);
+}
+
+/* ------------------------------------------------------------
+   Modals
+   ------------------------------------------------------------ */
+.erp-tool-stage [class~="fixed"][class~="inset-0"] {
+  backdrop-filter: blur(5px);
+}
+
+.erp-tool-stage [class~="fixed"][class~="inset-0"] > [class*="rounded"] {
+  border-color: var(--erp-border) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18) !important;
+}
+
+/* ------------------------------------------------------------
+   Dark-mode repair for legacy tools that hard-code light classes
+   ------------------------------------------------------------ */
+.erp-shell.is-dark .erp-tool-stage [class~="bg-white"][class~="shadow-lg"]:not([style*="aspect-ratio"]),
+.erp-shell.is-dark .erp-tool-stage [class~="bg-white"][class~="shadow-xl"]:not([style*="aspect-ratio"]),
+.erp-shell.is-dark .erp-tool-stage [class~="bg-white"][class~="shadow-2xl"]:not([style*="aspect-ratio"]),
+.erp-shell.is-dark .erp-tool-stage > [class~="h-screen"] > header,
+.erp-shell.is-dark .erp-tool-stage > [class~="h-screen"] aside {
+  background: var(--erp-surface) !important;
+  color: var(--erp-text) !important;
+}
+
+.erp-shell.is-dark .erp-tool-stage .text-gray-900,
+.erp-shell.is-dark .erp-tool-stage .text-gray-800,
+.erp-shell.is-dark .erp-tool-stage .text-gray-700 {
+  color: var(--erp-text) !important;
+}
+
+.erp-shell.is-dark .erp-tool-stage .text-gray-600,
+.erp-shell.is-dark .erp-tool-stage .text-gray-500,
+.erp-shell.is-dark .erp-tool-stage .text-gray-400 {
+  color: var(--erp-text-secondary) !important;
+}
+
+.erp-shell.is-dark .erp-tool-stage .bg-gray-50,
+.erp-shell.is-dark .erp-tool-stage .bg-gray-100,
+.erp-shell.is-dark .erp-tool-stage .bg-gray-200,
+.erp-shell.is-dark .erp-tool-stage .bg-gray-300 {
+  background: var(--erp-surface-muted) !important;
+}
+
+.erp-shell.is-dark .erp-tool-stage .border-gray-100,
+.erp-shell.is-dark .erp-tool-stage .border-gray-200,
+.erp-shell.is-dark .erp-tool-stage .border-gray-300,
+.erp-shell.is-dark .erp-tool-stage .border-gray-400 {
+  border-color: var(--erp-border) !important;
+}
+
+/* Preserve status chips that intentionally use gray backgrounds. */
+.erp-shell.is-dark .erp-tool-stage [class~="rounded-full"][class~="bg-gray-100"] {
+  color: var(--erp-text-secondary) !important;
+}
+
+/* Restore paper-preview text after dark-mode normalization. */
+.erp-shell.is-dark .erp-tool-stage .preview-scroll,
+.erp-shell.is-dark .erp-tool-stage .preview-scroll * {
+  color-scheme: light;
+}
+
+.erp-shell.is-dark .erp-tool-stage .preview-scroll .text-gray-900,
+.erp-shell.is-dark .erp-tool-stage .preview-scroll .text-gray-800,
+.erp-shell.is-dark .erp-tool-stage .preview-scroll .text-gray-700,
+.erp-shell.is-dark .erp-tool-stage .preview-scroll .text-gray-600 {
+  color: #475569 !important;
+}
+
+/* ------------------------------------------------------------
+   Legacy dashboard-style summary cards inside tools
+   ------------------------------------------------------------ */
+.erp-tool-stage .grid > [class~="bg-white"][class~="shadow-lg"] {
+  box-shadow: var(--erp-shadow) !important;
+  border: 1px solid var(--erp-border);
+}
+
+.erp-tool-stage .grid > [class~="bg-white"][class~="shadow-lg"] [class~="text-3xl"] {
+  font-size: 1.65rem !important;
+  letter-spacing: -0.035em;
+}
+
+/* ------------------------------------------------------------
+   Global fatal recovery screen
+   ------------------------------------------------------------ */
+.erp-fatal-error {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: #f6f8fb;
+  color: #0f172a;
+}
+
+.erp-fatal-error-card {
+  width: min(620px, 100%);
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 16px 18px;
+  padding: 24px;
+  border: 1px solid #e5eaf1;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
+}
+
+.erp-fatal-error-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #e11d48;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.erp-fatal-error-copy h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.erp-fatal-error-copy p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.erp-fatal-error-copy small {
+  display: inline-block;
+  margin-top: 9px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.erp-fatal-error-actions {
+  grid-column: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.erp-fatal-error-actions button {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.erp-error-secondary {
+  border: 1px solid #e5eaf1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.erp-error-primary {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------
+   Responsive repair for fixed-width tool workspaces
+   ------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .erp-tool-stage {
+    height: calc(100dvh - 68px);
+  }
+
+  .erp-tool-stage > [class~="h-screen"] > header {
+    padding-inline: 12px !important;
+  }
+
+  .erp-tool-stage > [class~="h-screen"] > [class~="flex"][class~="flex-1"][class~="overflow-hidden"] {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .erp-tool-stage {
+    height: auto;
+    min-height: calc(100dvh - 68px);
+    overflow: visible;
+  }
+
+  .erp-tool-stage > [class~="h-screen"] {
+    height: auto !important;
+    min-height: calc(100dvh - 68px) !important;
+    overflow: visible !important;
+  }
+
+  .erp-tool-stage > [class~="h-screen"] > [class~="flex"][class~="flex-1"][class~="overflow-hidden"] {
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+
+  .erp-tool-stage aside[class~="w-80"],
+  .erp-tool-stage aside[class~="w-72"],
+  .erp-tool-stage aside[class~="w-64"] {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    flex: none !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid var(--erp-border) !important;
+  }
+
+  .erp-tool-stage aside[class~="w-80"] > [class~="flex-1"],
+  .erp-tool-stage aside[class~="w-72"] > [class~="flex-1"],
+  .erp-tool-stage aside[class~="w-64"] > [class~="flex-1"] {
+    overflow: visible !important;
+  }
+
+  .erp-tool-stage [class~="p-6"] {
+    padding: 16px !important;
+  }
+
+  .erp-tool-stage [class~="p-8"] {
+    padding: 18px !important;
+  }
+
+  .erp-tool-stage [class~="gap-6"] {
+    gap: 14px !important;
+  }
+
+  .erp-tool-stage [class~="grid-cols-2"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .erp-fatal-error-card {
+    grid-template-columns: 1fr;
+  }
+
+  .erp-fatal-error-actions {
+    grid-column: 1;
+    flex-direction: column-reverse;
+  }
+}
+
+@media (max-width: 430px) {
+  .erp-tool-stage [class~="p-6"],
+  .erp-tool-stage [class~="p-4"] {
+    padding-inline: 12px !important;
+  }
+
+  .erp-tool-stage h1[class~="text-3xl"] {
+    font-size: 1.3rem !important;
+  }
+
+  .erp-tool-stage .grid > [class~="bg-white"][class~="shadow-lg"] {
+    padding: 14px !important;
+  }
+}
+
+@media print {
+  .erp-sidebar,
+  .erp-topbar {
+    display: none !important;
+  }
+
+  .erp-workspace,
+  .erp-main-content,
+  .erp-tool-stage,
+  .erp-tool-stage > [class~="h-screen"] {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+}

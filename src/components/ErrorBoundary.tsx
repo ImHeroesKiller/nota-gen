@@ -21,51 +21,42 @@ export default class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('PERADA Tools recovered from a render error:', error, errorInfo);
   }
 
-  render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+  private retry = () => {
+    this.setState({ hasError: false, error: null });
+  };
 
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-red-50 p-8">
-          <div className="max-w-2xl bg-white rounded-lg shadow-lg p-8">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">
-              ⚠️ Terjadi Error
-            </h1>
-            <p className="text-gray-700 mb-4">
-              Maaf, terjadi kesalahan saat memuat komponen ini.
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    if (this.props.fallback) return this.props.fallback;
+
+    return (
+      <main className="erp-fatal-error" role="alert" aria-live="assertive">
+        <section className="erp-fatal-error-card">
+          <span className="erp-fatal-error-mark" aria-hidden="true">!</span>
+          <div className="erp-fatal-error-copy">
+            <span className="erp-eyebrow">Application Recovery</span>
+            <h1>Tool tidak dapat dimuat</h1>
+            <p>
+              PERADA Tools menghentikan komponen yang bermasalah agar workspace lain tetap aman.
+              Silakan coba lagi atau muat ulang aplikasi.
             </p>
-            <details className="mb-4">
-              <summary className="cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-                Detail Error (untuk debugging)
-              </summary>
-              <div className="mt-2 p-4 bg-gray-100 rounded text-xs font-mono overflow-x-auto">
-                <p className="font-bold text-red-600 mb-2">
-                  {this.state.error?.name}: {this.state.error?.message}
-                </p>
-                <pre className="whitespace-pre-wrap">
-                  {this.state.error?.stack}
-                </pre>
-              </div>
-            </details>
-            <button
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.reload();
-              }}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Reload Halaman
+            {this.state.error?.name && (
+              <small>Kode error: {this.state.error.name}</small>
+            )}
+          </div>
+          <div className="erp-fatal-error-actions">
+            <button type="button" className="erp-error-secondary" onClick={this.retry}>
+              Coba lagi
+            </button>
+            <button type="button" className="erp-error-primary" onClick={() => window.location.reload()}>
+              Muat ulang aplikasi
             </button>
           </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
+        </section>
+      </main>
+    );
   }
 }
