@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { hierarchicalStructure, getToolById, type Tool } from './newHierarchicalStructure';
+import { hierarchicalStructure, getToolById, iconMap, type Tool } from './newHierarchicalStructure';
 import { Sidebar } from './Sidebar';
 import { Icons } from './IconLibrary';
 
@@ -52,6 +52,11 @@ export default function ToolHub() {
     setSearchQuery('');
   };
 
+  const getIconComponent = (iconName: string, size: number = 24) => {
+    const IconComponent = (Icons as any)[iconName] || Icons.Dashboard;
+    return <IconComponent size={size} />;
+  };
+
   const renderMainContent = () => {
     if (navigation.level === 'tool' && navigation.selectedTool) {
       const ToolComponent = navigation.selectedTool.component;
@@ -74,13 +79,13 @@ export default function ToolHub() {
                 <button
                   key={tool.id}
                   onClick={() => handleToolSelect(tool.id)}
-                  className={`text-left p-4 rounded-xl border transition-all hover:shadow-lg ${
-                    darkMode ? 'bg-[#161b22] border-[#30363d] hover:border-[#0072CE]/50' : 'bg-white border-[#E2E8F0] hover:border-[#0072CE]/50 shadow-sm'
+                  className={`text-left p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 ${
+                    darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-white/20 shadow-lg'
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-2xl shrink-0`}>
-                      {tool.icon}
+                    <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shrink-0 backdrop-blur-sm`}>
+                      {getIconComponent(iconMap[tool.id] || 'Document', 24)}
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold mb-1">{tool.name}</h3>
@@ -102,13 +107,13 @@ export default function ToolHub() {
           {hierarchicalStructure.map((suite) => (
             <div
               key={suite.id}
-              className={`p-6 rounded-xl border transition-all hover:shadow-lg ${
-                darkMode ? 'bg-[#161b22] border-[#30363d]' : 'bg-white border-[#E2E8F0] shadow-sm'
+              className={`p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 ${
+                darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-white/20 shadow-lg'
               }`}
             >
               <div className="flex items-start gap-4 mb-4">
-                <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl`}>
-                  {suite.icon}
+                <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl backdrop-blur-sm`}>
+                  {getIconComponent(iconMap[suite.id] || 'Dashboard', 32)}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold mb-2">{suite.name}</h3>
