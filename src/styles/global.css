@@ -210,11 +210,14 @@ html, body {
   -webkit-backdrop-filter: blur(var(--blur-xl));
   transition: all var(--transition-normal);
   cursor: pointer;
+  border: 1px solid var(--color-glass-border-light);
+  background: var(--color-glass-light);
 }
 
 .tool-card:hover {
   box-shadow: var(--shadow-2xl);
   transform: scale(1.05);
+  border-color: var(--color-primary);
 }
 
 /* Suite Card */
@@ -224,6 +227,30 @@ html, body {
   backdrop-filter: blur(var(--blur-xl));
   -webkit-backdrop-filter: blur(var(--blur-xl));
   transition: all var(--transition-normal);
+  border: 1px solid var(--color-glass-border-light);
+  background: var(--color-glass-light);
+}
+
+/* Sidebar Item */
+.sidebar-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sidebar-item:hover {
+  background: var(--color-glass-dark);
+  transform: translateX(4px);
+}
+
+.sidebar-item.active {
+  background: var(--color-glass-dark);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 /* ========================================
@@ -252,26 +279,7 @@ html, body {
    Sidebar Styles
    ======================================== */
 
-/* Sidebar Item */
-.sidebar-item {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.sidebar-item:hover {
-  background: var(--color-glass-dark);
-  transform: translateX(4px);
-}
-
-.sidebar-item.active {
-  background: var(--color-glass-dark);
-  color: var(--color-primary);
-}
+/* Sidebar styles are defined in Card Styles section above */
 
 /* ========================================
    Animation Classes
@@ -408,27 +416,6 @@ html, body {
 
 .transition-slow {
   transition: all var(--transition-slow);
-}
-
-/* Backdrop Blur */
-.backdrop-blur-sm {
-  backdrop-filter: blur(var(--blur-sm));
-  -webkit-backdrop-filter: blur(var(--blur-sm));
-}
-
-.backdrop-blur-md {
-  backdrop-filter: blur(var(--blur-md));
-  -webkit-backdrop-filter: blur(var(--blur-md));
-}
-
-.backdrop-blur-lg {
-  backdrop-filter: blur(var(--blur-lg));
-  -webkit-backdrop-filter: blur(var(--blur-lg));
-}
-
-.backdrop-blur-xl {
-  backdrop-filter: blur(var(--blur-xl));
-  -webkit-backdrop-filter: blur(var(--blur-xl));
 }
 
 /* ========================================
