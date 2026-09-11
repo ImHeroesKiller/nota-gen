@@ -173,15 +173,6 @@ export default function ToolHub() {
               </div>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={handleDashboardClick}
-                  className={`p-2 rounded-lg transition-all ${
-                    darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#F1F5F9]'
-                  }`}
-                  title="Dashboard"
-                >
-                  <Icons.Dashboard size={24} className="text-blue-600" />
-                </button>
-                <button
                   onClick={() => setDarkMode(!darkMode)}
                   className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
                     darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#F1F5F9]'
