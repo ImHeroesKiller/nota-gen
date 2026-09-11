@@ -2,6 +2,7 @@
 
 /* Import Global CSS */
 @import './styles/global.css';
+@import './styles/erp-modern.css';
 
 :root {
   /* PERADA Brand Colors */
