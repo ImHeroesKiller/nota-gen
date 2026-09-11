@@ -12,6 +12,8 @@ import DeploymentPlanner from './components/DeploymentPlanner';
 import DailyAttendance from './components/DailyAttendance';
 import TimesheetRekap from './components/TimesheetRekap';
 import PayrollSlipGenerator from './components/PayrollSlipGenerator';
+import PhlInvoiceBilling from './components/PhlInvoiceBilling';
+import PhlArMonitoring from './components/PhlArMonitoring';
 import {
   activateLifecycleNumberRegistry,
   PHL_LIFECYCLE_REGISTER_PREFIX,
@@ -26,6 +28,8 @@ const lifecycleToolIds = new Set([
   'daily-attendance',
   'timesheet-rekap',
   'payroll-slip-generator',
+  'phl-invoice-billing',
+  'phl-ar-monitoring',
 ]);
 
 type DirectLifecycleSuite = Suite & {
@@ -107,6 +111,22 @@ const lifecycleTools: Tool[] = [
     'Pembayaran PHL berdasarkan paid days × rate harian, lembur, dan potongan',
     'Payroll',
     PayrollSlipGenerator,
+    ['phl-invoice-billing'],
+  ),
+  tool(
+    'phl-invoice-billing',
+    'Invoice & Billing',
+    'Generate invoice PHL dari paid attendance, payroll base, fee, dan komponen billing',
+    'Invoice',
+    PhlInvoiceBilling,
+    ['phl-ar-monitoring'],
+  ),
+  tool(
+    'phl-ar-monitoring',
+    'Monitoring AR',
+    'Monitor outstanding, aging, overdue, dan pembayaran invoice PHL',
+    'Invoice',
+    PhlArMonitoring,
     [],
   ),
 ];
@@ -114,7 +134,7 @@ const lifecycleTools: Tool[] = [
 const lifecycleSuite: DirectLifecycleSuite = {
   id: PHL_LIFECYCLE_SUITE_ID,
   name: 'PHL Mining Workforce Lifecycle',
-  description: 'Satu alur berurutan pekerja harian tambang dari recruitment sampai payroll',
+  description: 'Satu alur berurutan pekerja harian tambang dari recruitment sampai invoice dan collection',
   icon: 'FieldOps',
   color: 'from-blue-600 to-cyan-500',
   navigationMode: 'direct-tools',
@@ -151,6 +171,8 @@ Object.assign(iconMap, {
   [PHL_LIFECYCLE_SUITE_ID]: 'FieldOps',
   'phl-lifecycle-flow': 'FieldOps',
   'phl-lifecycle-control-center': 'Dashboard',
+  'phl-invoice-billing': 'Invoice',
+  'phl-ar-monitoring': 'Invoice',
 });
 
 // Register numbers are assigned automatically to every worker in this lifecycle,
