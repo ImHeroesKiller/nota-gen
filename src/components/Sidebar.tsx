@@ -47,11 +47,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (collapsed) {
     return (
-      <div className="w-16 bg-white/80 backdrop-blur-xl border-r border-white/20 flex flex-col shadow-xl">
+      <div className="w-16 glass-sidebar flex flex-col">
         <div className="p-4 border-b border-white/20">
           <button
             onClick={onToggleCollapse}
-            className="w-full flex items-center justify-center p-2 hover:bg-white/10 rounded-lg transition-all duration-300"
+            className="btn-icon w-full flex items-center justify-center"
             title="Expand Sidebar"
           >
             <Icons.Menu size={24} className="text-gray-600" />
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <div className="w-72 bg-white/80 backdrop-blur-xl border-r border-white/20 flex flex-col shadow-xl">
+    <div className="w-72 glass-sidebar flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-white/20 flex items-center gap-2">
         <button
@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
         <button
           onClick={onDashboardClick}
-          className="flex-1 flex items-center gap-3 p-2 hover:bg-white/10 rounded-lg transition-all duration-300"
+          className="sidebar-item flex-1 flex items-center gap-3"
         >
           <Icons.Dashboard size={24} className="text-blue-600" />
           <span className="font-semibold text-gray-800">Dashboard</span>
@@ -107,8 +107,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Suite Header */}
               <button
                 onClick={() => toggleSuite(suite.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all duration-300 ${
-                  isSuiteExpanded ? 'bg-white/10' : ''
+                className={`sidebar-item w-full flex items-center gap-3 px-4 py-3 ${
+                  isSuiteExpanded ? 'active' : ''
                 }`}
               >
                 <div className="text-gray-600">{getIconComponent(iconMap[suite.id] || 'Dashboard', 20)}</div>
@@ -131,8 +131,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         {/* Module Header */}
                         <button
                           onClick={() => toggleModule(module.id)}
-                          className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-all duration-300 rounded-lg ${
-                            isModuleExpanded ? 'bg-white/10' : ''
+                          className={`sidebar-item w-full flex items-center gap-2 px-3 py-2 rounded-lg ${
+                            isModuleExpanded ? 'active' : ''
                           }`}
                         >
                           <div className={`transition-transform duration-300 ${isModuleExpanded ? 'rotate-180' : ''}`}>
@@ -151,8 +151,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               <button
                                 key={tool.id}
                                 onClick={() => onToolSelect(tool.id)}
-                                className={`w-full flex items-center gap-2 px-3 py-2 hover:bg-white/10 transition-all duration-300 rounded-lg mb-0.5 ${
-                                  activeTool === tool.id ? 'bg-white/20 text-blue-700' : 'text-gray-600'
+                                className={`sidebar-item w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-0.5 ${
+                                  activeTool === tool.id ? 'active' : ''
                                 }`}
                               >
                                 <div className="text-gray-500">{getIconComponent(iconMap[tool.id] || 'Document', 16)}</div>

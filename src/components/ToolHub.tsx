@@ -79,9 +79,7 @@ export default function ToolHub() {
                 <button
                   key={tool.id}
                   onClick={() => handleToolSelect(tool.id)}
-                  className={`text-left p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 ${
-                    darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-white/20 shadow-lg'
-                  }`}
+                  className="text-left tool-card"
                 >
                   <div className="flex items-start gap-3">
                     <div className={`${tool.color} w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shrink-0 backdrop-blur-sm`}>
@@ -107,9 +105,7 @@ export default function ToolHub() {
           {hierarchicalStructure.map((suite) => (
             <div
               key={suite.id}
-              className={`p-6 rounded-2xl border backdrop-blur-xl transition-all duration-300 hover:shadow-2xl hover:scale-105 ${
-                darkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-white/20 shadow-lg'
-              }`}
+              className="suite-card"
             >
               <div className="flex items-start gap-4 mb-4">
                 <div className={`${suite.color} w-16 h-16 rounded-2xl flex items-center justify-center text-white text-2xl backdrop-blur-sm`}>
@@ -151,7 +147,7 @@ export default function ToolHub() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${darkMode ? 'border-[#21262d] bg-[#161b22]/80' : 'border-[#e2e5e9] bg-white/80'}`}>
+        <header className="sticky top-0 z-40 border-b glass-header">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -174,9 +170,7 @@ export default function ToolHub() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setDarkMode(!darkMode)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                    darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#F1F5F9]'
-                  }`}
+                  className="btn-icon w-10 h-10"
                 >
                   {darkMode ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
