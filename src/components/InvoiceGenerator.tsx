@@ -1,5 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Download,
+  FileText,
+  Moon,
+  Plus,
+  Sun,
+  Trash2,
+} from 'lucide-react';
 
 interface InvoiceItem {
   id: string;
@@ -23,11 +33,22 @@ interface InvoiceData {
   taxRate: number;
 }
 
-export default function InvoiceGenerator({ onBack, darkMode, setDarkMode }: any) {
+type Props = {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+};
+
+const makeId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const today = () => new Date().toISOString().split('T')[0];
+const plusDays = (days: number) => new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+const rupiah = (value: number) => `Rp ${Math.round(value).toLocaleString('id-ID')}`;
+
+export default function InvoiceGenerator({ onBack, darkMode, setDarkMode }: Props) {
   const [invoice, setInvoice] = useState<InvoiceData>({
     invoiceNumber: `INV-${Date.now()}`,
-    date: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    date: today(),
+    dueDate: plusDays(30),
     clientName: '',
     clientAddress: '',
     clientPhone: '',
@@ -37,417 +58,385 @@ export default function InvoiceGenerator({ onBack, darkMode, setDarkMode }: any)
     paymentTerms: 'Net 30',
     taxRate: 11,
   });
+  const [error, setError] = useState<string | null>(null);
 
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
-  const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
-  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
-  const cardBg = darkMode ? 'bg-[#1c2128]' : 'bg-[#f3f4f6]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
-  const inputBg = darkMode ? 'bg-[#0d1117] border-[#30363d]' : 'bg-white border-[#d0d7de]';
-  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
+  const bg = darkMode ? 'bg-[#0b1220]' : 'bg-[#f6f8fb]';
+  const surface = darkMode ? 'bg-[#111827]' : 'bg-white';
+  const surfaceMuted = darkMode ? 'bg-[#172033]' : 'bg-[#f8fafc]';
+  const border = darkMode ? 'border-[#273449]' : 'border-[#e5eaf1]';
+  const text = darkMode ? 'text-[#e5edf8]' : 'text-[#0f172a]';
+  const muted = darkMode ? 'text-[#92a3ba]' : 'text-[#64748b]';
+  const input = darkMode
+    ? 'bg-[#0b1220] border-[#334155] text-[#e5edf8]'
+    : 'bg-white border-[#dbe3ee] text-[#0f172a]';
+  const hover = darkMode ? 'hover:bg-[#172033]' : 'hover:bg-[#f8fafc]';
+
+  const subtotal = useMemo(() => invoice.items.reduce((sum, item) => sum + item.total, 0), [invoice.items]);
+  const tax = useMemo(() => (subtotal * invoice.taxRate) / 100, [invoice.taxRate, subtotal]);
+  const total = subtotal + tax;
 
   const addItem = () => {
-    setInvoice({
-      ...invoice,
-      items: [
-        ...invoice.items,
-        {
-          id: Date.now().toString(),
-          description: '',
-          quantity: 1,
-          unitPrice: 0,
-          total: 0,
-        },
-      ],
-    });
+    setInvoice((previous) => ({
+      ...previous,
+      items: [...previous.items, { id: makeId(), description: '', quantity: 1, unitPrice: 0, total: 0 }],
+    }));
+    setError(null);
   };
 
-  const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    const updatedItems = invoice.items.map((item) => {
-      if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        if (field === 'quantity' || field === 'unitPrice') {
-          updated.total = updated.quantity * updated.unitPrice;
+  const updateItem = (id: string, field: 'description' | 'quantity' | 'unitPrice', value: string | number) => {
+    setInvoice((previous) => ({
+      ...previous,
+      items: previous.items.map((item) => {
+        if (item.id !== id) return item;
+        if (field === 'description') return { ...item, description: String(value) };
+        if (field === 'quantity') {
+          const quantity = Math.max(1, Math.floor(Number(value) || 1));
+          return { ...item, quantity, total: quantity * item.unitPrice };
         }
-        return updated;
-      }
-      return item;
-    });
-    setInvoice({ ...invoice, items: updatedItems });
+        const unitPrice = Math.max(0, Number(value) || 0);
+        return { ...item, unitPrice, total: item.quantity * unitPrice };
+      }),
+    }));
+    setError(null);
   };
 
   const removeItem = (id: string) => {
-    setInvoice({
-      ...invoice,
-      items: invoice.items.filter((item) => item.id !== id),
-    });
+    setInvoice((previous) => ({ ...previous, items: previous.items.filter((item) => item.id !== id) }));
   };
 
-  const subtotal = invoice.items.reduce((sum, item) => sum + item.total, 0);
-  const tax = (subtotal * invoice.taxRate) / 100;
-  const total = subtotal + tax;
+  const validateInvoice = () => {
+    if (!invoice.invoiceNumber.trim()) return 'Nomor invoice wajib diisi.';
+    if (!invoice.date || !invoice.dueDate) return 'Tanggal invoice dan jatuh tempo wajib diisi.';
+    if (invoice.dueDate < invoice.date) return 'Tanggal jatuh tempo tidak boleh lebih awal dari tanggal invoice.';
+    if (!invoice.clientName.trim()) return 'Nama klien wajib diisi.';
+    if (invoice.clientEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invoice.clientEmail.trim())) return 'Format email klien tidak valid.';
+    if (invoice.taxRate < 0 || invoice.taxRate > 100 || !Number.isFinite(invoice.taxRate)) return 'Tarif pajak harus berada di antara 0% dan 100%.';
+    if (invoice.items.length === 0) return 'Tambahkan minimal satu item invoice.';
+    if (invoice.items.some((item) => !item.description.trim())) return 'Setiap item wajib memiliki deskripsi.';
+    if (invoice.items.some((item) => item.quantity < 1 || !Number.isFinite(item.quantity))) return 'Quantity item minimal 1.';
+    if (invoice.items.some((item) => item.unitPrice < 0 || !Number.isFinite(item.unitPrice))) return 'Harga item tidak valid.';
+    return null;
+  };
 
   const generatePDF = () => {
-    const doc = new jsPDF();
-    let y = 20;
+    const validationError = validateInvoice();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError(null);
 
-    // Header
-    doc.setFontSize(24);
-    doc.setTextColor(10, 37, 64);
-    doc.text('INVOICE', 20, y);
-    y += 10;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const left = 18;
+    const right = pageWidth - 18;
+    const bottomLimit = pageHeight - 24;
+    let y = 18;
 
+    const addPage = () => {
+      doc.addPage();
+      y = 20;
+    };
+
+    const ensureSpace = (height: number) => {
+      if (y + height > bottomLimit) addPage();
+    };
+
+    const drawTableHeader = () => {
+      ensureSpace(12);
+      doc.setFillColor(245, 247, 250);
+      doc.rect(left, y - 4, right - left, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text('Description', left + 2, y + 1);
+      doc.text('Qty', 124, y + 1, { align: 'right' });
+      doc.text('Unit Price', 157, y + 1, { align: 'right' });
+      doc.text('Total', right - 2, y + 1, { align: 'right' });
+      y += 8;
+    };
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(23);
+    doc.setTextColor(15, 23, 42);
+    doc.text('INVOICE', left, y);
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Invoice #: ${invoice.invoiceNumber}`, 20, y);
-    y += 5;
-    doc.text(`Date: ${invoice.date}`, 20, y);
-    y += 5;
-    doc.text(`Due Date: ${invoice.dueDate}`, 20, y);
-    y += 15;
+    doc.setTextColor(37, 99, 235);
+    doc.text('PERADA GROUP', right, y, { align: 'right' });
+    y += 11;
 
-    // Client Info
-    doc.setFontSize(12);
-    doc.setTextColor(10, 37, 64);
-    doc.text('Bill To:', 20, y);
-    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Invoice #: ${invoice.invoiceNumber.trim()}`, left, y);
+    doc.text(`Date: ${invoice.date}`, right, y, { align: 'right' });
+    y += 5;
+    doc.text(`Payment Terms: ${invoice.paymentTerms}`, left, y);
+    doc.text(`Due: ${invoice.dueDate}`, right, y, { align: 'right' });
+    y += 8;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(left, y, right, y);
+    y += 9;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(15, 23, 42);
+    doc.text('BILL TO', left, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.setTextColor(0);
-    doc.text(invoice.clientName || '-', 20, y);
-    y += 5;
-    doc.text(invoice.clientAddress || '-', 20, y);
-    y += 5;
-    doc.text(invoice.clientPhone || '-', 20, y);
-    y += 5;
-    doc.text(invoice.clientEmail || '-', 20, y);
-    y += 15;
-
-    // Items Table
-    doc.setFontSize(10);
-    doc.setTextColor(10, 37, 64);
-    doc.text('Description', 20, y);
-    doc.text('Qty', 120, y);
-    doc.text('Unit Price', 140, y);
-    doc.text('Total', 170, y);
-    y += 2;
-    doc.setLineWidth(0.5);
-    doc.line(20, y, 190, y);
+    doc.text(invoice.clientName.trim(), left, y);
     y += 5;
 
-    doc.setTextColor(0);
+    const addressLines = doc.splitTextToSize(invoice.clientAddress.trim() || '-', 105) as string[];
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    addressLines.slice(0, 4).forEach((line) => {
+      doc.text(line, left, y);
+      y += 4.5;
+    });
+    if (invoice.clientPhone.trim()) {
+      doc.text(invoice.clientPhone.trim(), left, y);
+      y += 4.5;
+    }
+    if (invoice.clientEmail.trim()) {
+      doc.text(invoice.clientEmail.trim(), left, y);
+      y += 4.5;
+    }
+    y += 5;
+
+    drawTableHeader();
+
     invoice.items.forEach((item) => {
-      doc.text(item.description || '-', 20, y);
-      doc.text(item.quantity.toString(), 120, y);
-      doc.text(`Rp ${item.unitPrice.toLocaleString('id-ID')}`, 140, y);
-      doc.text(`Rp ${item.total.toLocaleString('id-ID')}`, 170, y);
-      y += 7;
+      const descriptionLines = doc.splitTextToSize(item.description.trim(), 88) as string[];
+      const rowHeight = Math.max(8, descriptionLines.length * 4.2 + 4);
+      if (y + rowHeight > bottomLimit) {
+        addPage();
+        drawTableHeader();
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(30, 41, 59);
+      descriptionLines.forEach((line, index) => doc.text(line, left + 2, y + 3.5 + index * 4.2));
+      doc.text(String(item.quantity), 124, y + 3.5, { align: 'right' });
+      doc.text(rupiah(item.unitPrice), 157, y + 3.5, { align: 'right' });
+      doc.text(rupiah(item.total), right - 2, y + 3.5, { align: 'right' });
+      y += rowHeight;
+      doc.setDrawColor(241, 245, 249);
+      doc.line(left, y, right, y);
     });
 
-    y += 5;
-    doc.line(20, y, 190, y);
+    y += 6;
+    ensureSpace(34);
+    const totalsX = 137;
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.text('Subtotal', totalsX, y);
+    doc.setTextColor(15, 23, 42);
+    doc.text(rupiah(subtotal), right, y, { align: 'right' });
+    y += 6;
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Tax (${invoice.taxRate}%)`, totalsX, y);
+    doc.setTextColor(15, 23, 42);
+    doc.text(rupiah(tax), right, y, { align: 'right' });
+    y += 3;
+    doc.setDrawColor(203, 213, 225);
+    doc.line(totalsX, y, right, y);
     y += 7;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TOTAL', totalsX, y);
+    doc.setTextColor(37, 99, 235);
+    doc.text(rupiah(total), right, y, { align: 'right' });
+    y += 12;
 
-    // Totals
-    doc.text('Subtotal:', 140, y);
-    doc.text(`Rp ${subtotal.toLocaleString('id-ID')}`, 170, y);
-    y += 7;
-    doc.text(`Tax (${invoice.taxRate}%):`, 140, y);
-    doc.text(`Rp ${tax.toLocaleString('id-ID')}`, 170, y);
-    y += 2;
-    doc.setLineWidth(0.5);
-    doc.line(140, y, 190, y);
-    y += 7;
-    doc.setFontSize(12);
-    doc.setTextColor(10, 37, 64);
-    doc.text('Total:', 140, y);
-    doc.text(`Rp ${total.toLocaleString('id-ID')}`, 170, y);
-    y += 15;
-
-    // Notes
-    if (invoice.notes) {
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Notes:', 20, y);
+    if (invoice.notes.trim()) {
+      ensureSpace(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text('NOTES', left, y);
       y += 5;
-      doc.setTextColor(0);
-      const lines = doc.splitTextToSize(invoice.notes, 170);
-      doc.text(lines, 20, y);
-      y += lines.length * 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      const noteLines = doc.splitTextToSize(invoice.notes.trim(), right - left) as string[];
+      noteLines.forEach((line) => {
+        if (y + 5 > bottomLimit) addPage();
+        doc.text(line, left, y);
+        y += 4.5;
+      });
     }
 
-    // Payment Terms
-    y += 5;
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Payment Terms:', 20, y);
-    y += 5;
-    doc.setTextColor(0);
-    doc.text(invoice.paymentTerms, 20, y);
+    const pages = doc.getNumberOfPages();
+    for (let page = 1; page <= pages; page += 1) {
+      doc.setPage(page);
+      doc.setDrawColor(226, 232, 240);
+      doc.line(left, pageHeight - 16, right, pageHeight - 16);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text('PERADA GROUP · PT Perdana Adi Yuda', left, pageHeight - 10);
+      doc.text(`Page ${page} / ${pages}`, right, pageHeight - 10, { align: 'right' });
+    }
 
-    // Footer
-    y = 280;
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.text('PERADA GROUP - PT Perdana Adi Yuda', 20, y);
-    doc.text('perada.net', 20, y + 4);
-
-    doc.save(`${invoice.invoiceNumber}.pdf`);
+    const safeName = invoice.invoiceNumber.trim().replace(/[^a-z0-9-_]/gi, '_');
+    doc.save(`${safeName || 'invoice'}.pdf`);
   };
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden ${bg} ${textPrimary}`}>
-      <header className={`flex items-center justify-between px-4 py-2.5 border-b shrink-0 ${sidebarBg} ${borderColor}`}>
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className={`w-7 h-7 rounded-lg flex items-center justify-center ${hoverBg}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+    <div className={`min-h-full ${bg} ${text}`}>
+      <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b ${surface} ${border}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <button type="button" onClick={onBack} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Kembali">
+            <ArrowLeft size={18} />
           </button>
-          <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center shadow-sm">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+          <div className="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-600 inline-flex items-center justify-center shrink-0">
+            <FileText size={20} />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold tracking-tight">Invoice Generator</h1>
-            <p className={`text-[10px] ${textSecondary}`}>Buat invoice profesional</p>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold truncate">Invoice Generator</h1>
+            <p className={`text-[11px] ${muted} truncate`}>Invoice profesional dengan validasi dan pagination PDF</p>
           </div>
         </div>
-        <button onClick={() => setDarkMode(!darkMode)} className={`w-8 h-8 rounded-lg flex items-center justify-center ${hoverBg}`}>
-          {darkMode ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-          )}
+        <button type="button" onClick={() => setDarkMode(!darkMode)} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Ubah tema">
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </header>
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Invoice Info */}
-          <div className={`rounded-xl border p-4 ${borderColor} ${sidebarBg}`}>
-            <h3 className={`text-xs font-semibold uppercase tracking-wider ${textSecondary} mb-3`}>Invoice Information</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Invoice Number</label>
-                <input
-                  value={invoice.invoiceNumber}
-                  onChange={(e) => setInvoice({ ...invoice, invoiceNumber: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                />
-              </div>
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Date</label>
-                <input
-                  type="date"
-                  value={invoice.date}
-                  onChange={(e) => setInvoice({ ...invoice, date: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                />
-              </div>
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Due Date</label>
-                <input
-                  type="date"
-                  value={invoice.dueDate}
-                  onChange={(e) => setInvoice({ ...invoice, dueDate: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                />
-              </div>
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Payment Terms</label>
-                <select
-                  value={invoice.paymentTerms}
-                  onChange={(e) => setInvoice({ ...invoice, paymentTerms: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                >
-                  <option value="Net 30">Net 30</option>
-                  <option value="Net 60">Net 60</option>
-                  <option value="Net 90">Net 90</option>
-                  <option value="COD">COD</option>
-                </select>
-              </div>
-            </div>
+      <main className="max-w-6xl mx-auto p-4 md:p-6 space-y-5">
+        <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>Finance · Billing & Invoicing</p>
+            <h2 className="text-2xl font-semibold mt-1">Buat Invoice</h2>
+            <p className={`text-sm mt-1 ${muted}`}>Form ringkas dengan validasi tanggal, item, pajak, dan layout PDF multi-halaman.</p>
           </div>
+          <button type="button" onClick={generatePDF} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]">
+            <Download size={16} /> Generate PDF
+          </button>
+        </section>
 
-          {/* Client Info */}
-          <div className={`rounded-xl border p-4 ${borderColor} ${sidebarBg}`}>
-            <h3 className={`text-xs font-semibold uppercase tracking-wider ${textSecondary} mb-3`}>Client Information</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Client Name</label>
-                <input
-                  value={invoice.clientName}
-                  onChange={(e) => setInvoice({ ...invoice, clientName: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                  placeholder="PT Example"
-                />
-              </div>
-              <div>
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Phone</label>
-                <input
-                  value={invoice.clientPhone}
-                  onChange={(e) => setInvoice({ ...invoice, clientPhone: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                  placeholder="021-12345678"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Address</label>
-                <input
-                  value={invoice.clientAddress}
-                  onChange={(e) => setInvoice({ ...invoice, clientAddress: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                  placeholder="Jl. Example No. 123, Jakarta"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className={`text-[10px] ${textSecondary} block mb-1`}>Email</label>
-                <input
-                  type="email"
-                  value={invoice.clientEmail}
-                  onChange={(e) => setInvoice({ ...invoice, clientEmail: e.target.value })}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                  placeholder="client@example.com"
-                />
-              </div>
-            </div>
+        {error && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+            <AlertTriangle size={17} className="shrink-0 mt-0.5" />
+            <p className="text-xs leading-5">{error}</p>
           </div>
+        )}
 
-          {/* Items */}
-          <div className={`rounded-xl border p-4 ${borderColor} ${sidebarBg}`}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className={`text-xs font-semibold uppercase tracking-wider ${textSecondary}`}>Items</h3>
-              <button
-                onClick={addItem}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-green-600 hover:bg-green-700 text-white"
-              >
-                + Add Item
-              </button>
-            </div>
-
-            {invoice.items.length === 0 ? (
-              <div className={`text-center py-8 ${textSecondary}`}>
-                <p className="text-sm">Belum ada item</p>
-                <p className="text-xs mt-1">Klik "Add Item" untuk menambahkan</p>
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.5fr)_360px] gap-5 items-start">
+          <div className="space-y-5">
+            <section className={`rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+              <h3 className="text-sm font-semibold">Informasi Invoice</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                <label className="text-xs font-medium">Nomor Invoice *
+                  <input value={invoice.invoiceNumber} onChange={(e) => setInvoice({ ...invoice, invoiceNumber: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} />
+                </label>
+                <label className="text-xs font-medium">Payment Terms
+                  <select value={invoice.paymentTerms} onChange={(e) => setInvoice({ ...invoice, paymentTerms: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`}>
+                    <option value="Net 14">Net 14</option>
+                    <option value="Net 30">Net 30</option>
+                    <option value="Net 60">Net 60</option>
+                    <option value="Net 90">Net 90</option>
+                    <option value="COD">COD</option>
+                  </select>
+                </label>
+                <label className="text-xs font-medium">Tanggal *
+                  <input type="date" value={invoice.date} onChange={(e) => setInvoice({ ...invoice, date: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} />
+                </label>
+                <label className="text-xs font-medium">Jatuh Tempo *
+                  <input type="date" min={invoice.date} value={invoice.dueDate} onChange={(e) => setInvoice({ ...invoice, dueDate: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} />
+                </label>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {invoice.items.map((item, index) => (
-                  <div key={item.id} className={`grid grid-cols-12 gap-2 p-2 rounded-lg ${cardBg}`}>
-                    <div className="col-span-5">
-                      <input
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                        placeholder="Description"
-                        className={`w-full px-2 py-1 rounded text-xs border ${inputBg} ${textPrimary}`}
-                      />
+            </section>
+
+            <section className={`rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+              <h3 className="text-sm font-semibold">Informasi Klien</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                <label className="text-xs font-medium">Nama Klien *
+                  <input value={invoice.clientName} onChange={(e) => setInvoice({ ...invoice, clientName: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="PT Example" />
+                </label>
+                <label className="text-xs font-medium">Telepon
+                  <input value={invoice.clientPhone} onChange={(e) => setInvoice({ ...invoice, clientPhone: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="021-12345678" />
+                </label>
+                <label className="text-xs font-medium md:col-span-2">Alamat
+                  <textarea value={invoice.clientAddress} onChange={(e) => setInvoice({ ...invoice, clientAddress: e.target.value })} rows={2} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm resize-y ${input}`} placeholder="Alamat klien" />
+                </label>
+                <label className="text-xs font-medium md:col-span-2">Email
+                  <input type="email" value={invoice.clientEmail} onChange={(e) => setInvoice({ ...invoice, clientEmail: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="finance@client.com" />
+                </label>
+              </div>
+            </section>
+
+            <section className={`rounded-2xl border ${surface} ${border} overflow-hidden`}>
+              <div className={`flex items-center justify-between gap-3 px-4 md:px-5 py-4 border-b ${border}`}>
+                <div>
+                  <h3 className="text-sm font-semibold">Item Invoice</h3>
+                  <p className={`text-[11px] mt-0.5 ${muted}`}>{invoice.items.length} item</p>
+                </div>
+                <button type="button" onClick={addItem} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"><Plus size={14} /> Tambah Item</button>
+              </div>
+
+              <div className="p-4 md:p-5 space-y-3">
+                {invoice.items.length === 0 ? (
+                  <div className={`rounded-xl border border-dashed p-8 text-center ${border}`}>
+                    <FileText size={26} className={`mx-auto ${muted}`} />
+                    <p className="text-sm font-semibold mt-3">Belum ada item</p>
+                    <p className={`text-[11px] mt-1 ${muted}`}>Tambahkan minimal satu item sebelum membuat PDF.</p>
+                  </div>
+                ) : invoice.items.map((item, index) => (
+                  <div key={item.id} className={`grid grid-cols-1 md:grid-cols-[36px_minmax(180px,1fr)_90px_150px_130px_36px] gap-2 items-end rounded-xl border p-3 ${surfaceMuted} ${border}`}>
+                    <span className={`text-xs font-semibold self-center ${muted}`}>#{index + 1}</span>
+                    <label className="text-[10px] font-medium">Deskripsi
+                      <input value={item.description} onChange={(e) => updateItem(item.id, 'description', e.target.value)} className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-xs ${input}`} placeholder="Jasa / produk" />
+                    </label>
+                    <label className="text-[10px] font-medium">Qty
+                      <input type="number" min={1} step={1} value={item.quantity} onChange={(e) => updateItem(item.id, 'quantity', e.target.value)} className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-xs ${input}`} />
+                    </label>
+                    <label className="text-[10px] font-medium">Harga Satuan
+                      <input type="number" min={0} step={1000} value={item.unitPrice} onChange={(e) => updateItem(item.id, 'unitPrice', e.target.value)} className={`mt-1 w-full rounded-lg border px-2.5 py-2 text-xs ${input}`} />
+                    </label>
+                    <div>
+                      <p className={`text-[10px] font-medium ${muted}`}>Total</p>
+                      <p className="text-xs font-semibold mt-2">{rupiah(item.total)}</p>
                     </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                        placeholder="Qty"
-                        className={`w-full px-2 py-1 rounded text-xs border ${inputBg} ${textPrimary}`}
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <input
-                        type="number"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
-                        placeholder="Price"
-                        className={`w-full px-2 py-1 rounded text-xs border ${inputBg} ${textPrimary}`}
-                      />
-                    </div>
-                    <div className="col-span-2 flex items-center">
-                      <span className={`text-xs font-medium ${textPrimary}`}>
-                        Rp {item.total.toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                    <div className="col-span-1 flex items-center justify-end">
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                    <button type="button" onClick={() => removeItem(item.id)} className="w-9 h-9 rounded-lg inline-flex items-center justify-center text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30" aria-label="Hapus item"><Trash2 size={15} /></button>
                   </div>
                 ))}
               </div>
-            )}
+            </section>
 
-            {/* Totals */}
-            {invoice.items.length > 0 && (
-              <div className={`mt-4 pt-4 border-t ${borderColor}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <label className={`text-[10px] ${textSecondary} block mb-1`}>Tax Rate (%)</label>
-                    <input
-                      type="number"
-                      value={invoice.taxRate}
-                      onChange={(e) => setInvoice({ ...invoice, taxRate: Number(e.target.value) })}
-                      className={`w-20 px-2 py-1 rounded text-xs border ${inputBg} ${textPrimary}`}
-                    />
-                  </div>
-                </div>
-                <div className={`space-y-1 text-sm ${textPrimary}`}>
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>Rp {subtotal.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Tax ({invoice.taxRate}%):</span>
-                    <span>Rp {tax.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className={`flex justify-between pt-2 border-t ${borderColor} font-bold text-base`}>
-                    <span>Total:</span>
-                    <span className="text-green-600">Rp {total.toLocaleString('id-ID')}</span>
-                  </div>
-                </div>
+            <section className={`rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+              <h3 className="text-sm font-semibold">Catatan</h3>
+              <textarea value={invoice.notes} onChange={(e) => setInvoice({ ...invoice, notes: e.target.value })} rows={4} className={`mt-3 w-full rounded-lg border px-3 py-2.5 text-sm resize-y ${input}`} placeholder="Catatan pembayaran atau informasi tambahan" />
+            </section>
+          </div>
+
+          <aside className={`xl:sticky xl:top-[88px] rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+            <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>Invoice Summary</p>
+            <div className="space-y-3 mt-4">
+              <div className="flex items-center justify-between text-sm"><span className={muted}>Subtotal</span><strong>{rupiah(subtotal)}</strong></div>
+              <label className="flex items-center justify-between gap-4 text-sm">
+                <span className={muted}>Pajak</span>
+                <span className="flex items-center gap-1">
+                  <input type="number" min={0} max={100} step={0.1} value={invoice.taxRate} onChange={(e) => setInvoice({ ...invoice, taxRate: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })} className={`w-20 rounded-lg border px-2 py-1.5 text-right text-xs ${input}`} />
+                  <span className={muted}>%</span>
+                </span>
+              </label>
+              <div className="flex items-center justify-between text-sm"><span className={muted}>Nilai Pajak</span><strong>{rupiah(tax)}</strong></div>
+              <div className={`border-t pt-4 ${border}`}>
+                <div className="flex items-end justify-between gap-3"><span className="text-sm font-semibold">Total</span><strong className="text-xl text-[#2563eb]">{rupiah(total)}</strong></div>
               </div>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div className={`rounded-xl border p-4 ${borderColor} ${sidebarBg}`}>
-            <label className={`text-xs font-semibold uppercase tracking-wider ${textSecondary} block mb-2`}>Notes</label>
-            <textarea
-              value={invoice.notes}
-              onChange={(e) => setInvoice({ ...invoice, notes: e.target.value })}
-              rows={3}
-              className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-              placeholder="Additional notes..."
-            />
-          </div>
-
-          {/* Generate Button */}
-          <button
-            onClick={generatePDF}
-            disabled={invoice.items.length === 0}
-            className="w-full py-3 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Generate Invoice PDF
-          </button>
+            </div>
+            <div className={`mt-5 rounded-xl p-3 ${surfaceMuted}`}>
+              <p className={`text-[10px] uppercase tracking-wide ${muted}`}>Output</p>
+              <p className="text-xs font-medium mt-1">A4 PDF · multi-page safe</p>
+              <p className={`text-[10px] mt-1 leading-4 ${muted}`}>Deskripsi panjang dan banyak item akan otomatis dipaginasi agar tidak terpotong.</p>
+            </div>
+            <button type="button" onClick={generatePDF} className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"><Download size={16} /> Generate PDF</button>
+          </aside>
         </div>
-      </div>
-
-      <footer className={`px-4 py-2 border-t shrink-0 flex items-center justify-between ${sidebarBg} ${borderColor}`}>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-[#0A2540] flex items-center justify-center">
-            <span className="text-white text-[6px] font-bold">PA</span>
-          </div>
-          <span className={`text-[10px] ${textSecondary}`}>
-            <span className="font-medium text-[#0A2540] dark:text-[#58a6ff]">PT Perdana Adi Yuda</span> — PERADA GROUP
-          </span>
-        </div>
-        <span className={`text-[10px] ${textSecondary}`}>© 2026</span>
-      </footer>
+      </main>
     </div>
   );
 }

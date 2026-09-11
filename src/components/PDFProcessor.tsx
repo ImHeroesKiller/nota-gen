@@ -1,311 +1,312 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { PDFDocument, degrees } from 'pdf-lib';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  FilePlus2,
+  FileText,
+  Files,
+  Layers,
+  Moon,
+  Plus,
+  RotateCw,
+  Scissors,
+  Sun,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 
 type PDFOperation = 'compress' | 'merge' | 'add-page' | 'rotate' | 'delete' | 'extract' | 'reorder';
 
-export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
+type Props = {
+  onBack: () => void;
+  darkMode: boolean;
+  setDarkMode: (value: boolean) => void;
+};
+
+type PdfInfo = {
+  name: string;
+  pages: number;
+  size: number;
+};
+
+const operations: Array<{
+  key: PDFOperation;
+  label: string;
+  description: string;
+  icon: typeof FileText;
+}> = [
+  { key: 'compress', label: 'Optimize PDF', description: 'Optimasi struktur file tanpa mengubah isi', icon: FileText },
+  { key: 'merge', label: 'Merge PDF', description: 'Gabungkan beberapa PDF menjadi satu', icon: Files },
+  { key: 'add-page', label: 'Add Blank Page', description: 'Tambahkan halaman kosong di bagian akhir', icon: FilePlus2 },
+  { key: 'rotate', label: 'Rotate Pages', description: 'Rotasi halaman yang dipilih', icon: RotateCw },
+  { key: 'delete', label: 'Delete Pages', description: 'Hapus halaman tertentu dengan guard', icon: Trash2 },
+  { key: 'extract', label: 'Extract Pages', description: 'Ekstrak halaman terpilih ke PDF baru', icon: Scissors },
+  { key: 'reorder', label: 'Reorder Pages', description: 'Atur ulang urutan halaman', icon: Layers },
+];
+
+const formatMb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+
+export default function PDFProcessor({ onBack, darkMode, setDarkMode }: Props) {
   const [operation, setOperation] = useState<PDFOperation>('compress');
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
-  const [pdfInfo, setPdfInfo] = useState<{ name: string; pages: number; size: number }[]>([]);
+  const [pdfInfo, setPdfInfo] = useState<PdfInfo[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  
-  // Operation-specific states
-  const [compressQuality, setCompressQuality] = useState(70);
+  const [notice, setNotice] = useState<string | null>(null);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [rotationAngle, setRotationAngle] = useState(90);
   const [pageOrder, setPageOrder] = useState<number[]>([]);
-  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const bg = darkMode ? 'bg-[#0f1419]' : 'bg-[#f8f9fb]';
-  const sidebarBg = darkMode ? 'bg-[#161b22]' : 'bg-white';
-  const borderColor = darkMode ? 'border-[#21262d]' : 'border-[#e2e5e9]';
-  const cardBg = darkMode ? 'bg-[#1c2128]' : 'bg-[#f3f4f6]';
-  const textPrimary = darkMode ? 'text-[#e6edf3]' : 'text-[#1a1a2e]';
-  const textSecondary = darkMode ? 'text-[#8b949e]' : 'text-[#57606a]';
-  const inputBg = darkMode ? 'bg-[#0d1117] border-[#30363d]' : 'bg-white border-[#d0d7de]';
-  const hoverBg = darkMode ? 'hover:bg-[#21262d]' : 'hover:bg-[#f0f1f3]';
+  const bg = darkMode ? 'bg-[#0b1220]' : 'bg-[#f6f8fb]';
+  const surface = darkMode ? 'bg-[#111827]' : 'bg-white';
+  const surfaceMuted = darkMode ? 'bg-[#172033]' : 'bg-[#f8fafc]';
+  const border = darkMode ? 'border-[#273449]' : 'border-[#e5eaf1]';
+  const text = darkMode ? 'text-[#e5edf8]' : 'text-[#0f172a]';
+  const muted = darkMode ? 'text-[#92a3ba]' : 'text-[#64748b]';
+  const input = darkMode
+    ? 'bg-[#0b1220] border-[#334155] text-[#e5edf8]'
+    : 'bg-white border-[#dbe3ee] text-[#0f172a]';
+  const hover = darkMode ? 'hover:bg-[#172033]' : 'hover:bg-[#f8fafc]';
 
-  const handleFileSelect = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter(f => f.type === 'application/pdf');
-    if (fileArray.length === 0) {
-      setError('Hanya file PDF yang didukung');
-      return;
-    }
-
-    setPdfFiles(fileArray);
+  const clearFeedback = () => {
     setError(null);
     setSuccessMsg(null);
+    setNotice(null);
+  };
 
-    // Get PDF info
-    const info = await Promise.all(
-      fileArray.map(async (file) => {
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          const pdf = await PDFDocument.load(arrayBuffer);
-          return {
-            name: file.name,
-            pages: pdf.getPageCount(),
-            size: file.size,
-          };
-        } catch {
-          return { name: file.name, pages: 0, size: file.size };
-        }
-      })
-    );
-    setPdfInfo(info);
-
-    // Reset states
+  const resetPageState = (pages = 0) => {
     setSelectedPages(new Set());
-    
-    // Initialize page order for reorder operation
-    if (info.length > 0 && info[0].pages > 0) {
-      setPageOrder(Array.from({ length: info[0].pages }, (_, i) => i + 1));
-    } else {
-      setPageOrder([]);
-    }
+    setPageOrder(Array.from({ length: pages }, (_, index) => index + 1));
   };
 
-  const compressPDF = async () => {
-    if (pdfFiles.length === 0) return;
-    setIsProcessing(true);
-    setError(null);
+  const changeOperation = (next: PDFOperation) => {
+    setOperation(next);
+    clearFeedback();
 
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      // Compress by re-saving with optimization
-      const compressedPdf = await PDFDocument.create();
-      const copiedPages = await compressedPdf.copyPages(pdf, pdf.getPageIndices());
-      copiedPages.forEach(page => compressedPdf.addPage(page));
-
-      // Use object streams for better compression
-      const pdfBytes = await compressedPdf.save({
-        useObjectStreams: true,
-        addDefaultPage: false,
-        objectsPerTick: 50,
-      });
-
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_compressed.pdf`);
-      
-      const originalSize = (file.size / 1024 / 1024).toFixed(2);
-      const compressedSize = (pdfBytes.length / 1024 / 1024).toFixed(2);
-      const reduction = (((file.size - pdfBytes.length) / file.size) * 100).toFixed(1);
-      
-      setSuccessMsg(`PDF berhasil dikompres!\nUkuran asli: ${originalSize} MB\nUkuran baru: ${compressedSize} MB\nPengurangan: ${reduction}%`);
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal mengompres PDF: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const mergePDFs = async () => {
-    if (pdfFiles.length < 2) {
-      setError('Pilih minimal 2 file PDF untuk digabungkan');
+    if (next !== 'merge' && pdfFiles.length > 1) {
+      setPdfFiles(pdfFiles.slice(0, 1));
+      setPdfInfo(pdfInfo.slice(0, 1));
+      resetPageState(pdfInfo[0]?.pages ?? 0);
+      setNotice('Operasi ini menggunakan satu file. File pertama dipertahankan.');
       return;
     }
-    setIsProcessing(true);
-    setError(null);
-    setProgress({ current: 0, total: pdfFiles.length });
 
-    try {
-      const mergedPdf = await PDFDocument.create();
+    resetPageState(pdfInfo[0]?.pages ?? 0);
+  };
 
-      for (let i = 0; i < pdfFiles.length; i++) {
-        const arrayBuffer = await pdfFiles[i].arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach(page => mergedPdf.addPage(page));
-        setProgress({ current: i + 1, total: pdfFiles.length });
+  const handleFileSelect = async (files: FileList | File[]) => {
+    clearFeedback();
+
+    const incoming = Array.from(files).filter(
+      (file) => file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf'),
+    );
+
+    if (incoming.length === 0) {
+      setError('Tidak ada file PDF yang valid.');
+      return;
+    }
+
+    const candidates = operation === 'merge' ? incoming : incoming.slice(0, 1);
+    if (operation !== 'merge' && incoming.length > 1) {
+      setNotice('Operasi ini hanya menerima satu PDF. File pertama digunakan.');
+    }
+
+    const validFiles: File[] = [];
+    const validInfo: PdfInfo[] = [];
+    let invalidCount = 0;
+
+    for (const file of candidates) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const pdf = await PDFDocument.load(buffer);
+        const pages = pdf.getPageCount();
+        if (pages < 1) throw new Error('PDF tanpa halaman');
+        validFiles.push(file);
+        validInfo.push({ name: file.name, pages, size: file.size });
+      } catch {
+        invalidCount += 1;
       }
-
-      const pdfBytes = await mergedPdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `merged_${new Date().toISOString().slice(0, 10)}.pdf`);
-      
-      setSuccessMsg(`${pdfFiles.length} PDF berhasil digabungkan!`);
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal menggabungkan PDF: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
     }
-  };
 
-  const addBlankPage = async () => {
-    if (pdfFiles.length === 0) return;
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      // Add blank page at the end
-      pdf.addPage();
-
-      const pdfBytes = await pdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_with_blank_page.pdf`);
-      
-      setSuccessMsg('Halaman kosong berhasil ditambahkan!');
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal menambahkan halaman: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const rotatePages = async () => {
-    if (pdfFiles.length === 0 || selectedPages.size === 0) {
-      setError('Pilih minimal 1 halaman untuk dirotasi');
+    if (validFiles.length === 0) {
+      setPdfFiles([]);
+      setPdfInfo([]);
+      resetPageState();
+      setError('PDF tidak dapat dibaca, rusak, atau terenkripsi.');
       return;
     }
-    setIsProcessing(true);
-    setError(null);
 
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      const pages = pdf.getPages();
-      selectedPages.forEach(pageNum => {
-        if (pageNum <= pages.length) {
-          const page = pages[pageNum - 1];
-          const currentRotation = page.getRotation().angle;
-          page.setRotation(degrees(currentRotation + rotationAngle));
-        }
-      });
-
-      const pdfBytes = await pdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_rotated.pdf`);
-      
-      setSuccessMsg(`${selectedPages.size} halaman berhasil dirotasi ${rotationAngle}°!`);
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal merotasi halaman: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
+    if (invalidCount > 0) {
+      setNotice(`${invalidCount} file dilewati karena tidak dapat dibaca.`);
     }
-  };
 
-  const deletePages = async () => {
-    if (pdfFiles.length === 0 || selectedPages.size === 0) {
-      setError('Pilih minimal 1 halaman untuk dihapus');
-      return;
-    }
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      const pagesToKeep = Array.from({ length: pdf.getPageCount() }, (_, i) => i)
-        .filter(i => !selectedPages.has(i + 1));
-      
-      const newPdf = await PDFDocument.create();
-      const copiedPages = await newPdf.copyPages(pdf, pagesToKeep);
-      copiedPages.forEach(page => newPdf.addPage(page));
-
-      const pdfBytes = await newPdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_pages_removed.pdf`);
-      
-      setSuccessMsg(`${selectedPages.size} halaman berhasil dihapus!`);
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal menghapus halaman: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const extractPages = async () => {
-    if (pdfFiles.length === 0 || selectedPages.size === 0) {
-      setError('Pilih minimal 1 halaman untuk diekstrak');
-      return;
-    }
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      const pagesToExtract = Array.from(selectedPages).sort((a, b) => a - b);
-      const newPdf = await PDFDocument.create();
-      const copiedPages = await newPdf.copyPages(pdf, pagesToExtract.map(p => p - 1));
-      copiedPages.forEach(page => newPdf.addPage(page));
-
-      const pdfBytes = await newPdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_extracted.pdf`);
-      
-      setSuccessMsg(`${selectedPages.size} halaman berhasil diekstrak!`);
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal mengekstrak halaman: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const reorderPages = async () => {
-    if (pdfFiles.length === 0) return;
-    setIsProcessing(true);
-    setError(null);
-
-    try {
-      const file = pdfFiles[0];
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await PDFDocument.load(arrayBuffer);
-      
-      const newPdf = await PDFDocument.create();
-      const copiedPages = await newPdf.copyPages(pdf, pageOrder.map(p => p - 1));
-      copiedPages.forEach(page => newPdf.addPage(page));
-
-      const pdfBytes = await newPdf.save();
-      downloadBlob(new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), 
-        `${file.name.replace('.pdf', '')}_reordered.pdf`);
-      
-      setSuccessMsg('Urutan halaman berhasil diubah!');
-      setTimeout(() => setSuccessMsg(null), 5000);
-    } catch (err) {
-      setError(`Gagal mengubah urutan halaman: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
+    setPdfFiles(validFiles);
+    setPdfInfo(validInfo);
+    resetPageState(validInfo[0]?.pages ?? 0);
   };
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
     URL.revokeObjectURL(url);
   };
 
+  const withProcessing = async (task: () => Promise<void>) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setError(null);
+    setSuccessMsg(null);
+    try {
+      await task();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan saat memproses PDF.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const optimizePdf = () => withProcessing(async () => {
+    const file = pdfFiles[0];
+    if (!file) throw new Error('Pilih satu file PDF terlebih dahulu.');
+
+    const pdf = await PDFDocument.load(await file.arrayBuffer());
+    const bytes = await pdf.save({
+      useObjectStreams: true,
+      addDefaultPage: false,
+      objectsPerTick: 50,
+      updateFieldAppearances: false,
+    });
+
+    if (bytes.length >= file.size) {
+      setSuccessMsg(`PDF sudah cukup optimal. Ukuran hasil ${formatMb(bytes.length)} tidak lebih kecil dari file asli ${formatMb(file.size)}, sehingga file baru tidak dibuat.`);
+      return;
+    }
+
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_optimized.pdf`);
+    const reduction = (((file.size - bytes.length) / file.size) * 100).toFixed(1);
+    setSuccessMsg(`Optimasi selesai: ${formatMb(file.size)} → ${formatMb(bytes.length)} (${reduction}% lebih kecil).`);
+  });
+
+  const mergePdfs = () => withProcessing(async () => {
+    if (pdfFiles.length < 2) throw new Error('Pilih minimal dua PDF untuk digabungkan.');
+    setProgress({ current: 0, total: pdfFiles.length });
+
+    const merged = await PDFDocument.create();
+    for (let index = 0; index < pdfFiles.length; index += 1) {
+      const source = await PDFDocument.load(await pdfFiles[index].arrayBuffer());
+      const pages = await merged.copyPages(source, source.getPageIndices());
+      pages.forEach((page) => merged.addPage(page));
+      setProgress({ current: index + 1, total: pdfFiles.length });
+    }
+
+    const bytes = await merged.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `merged_${new Date().toISOString().slice(0, 10)}.pdf`);
+    setSuccessMsg(`${pdfFiles.length} PDF berhasil digabungkan.`);
+  });
+
+  const addBlankPage = () => withProcessing(async () => {
+    const file = pdfFiles[0];
+    if (!file) throw new Error('Pilih satu file PDF terlebih dahulu.');
+    const pdf = await PDFDocument.load(await file.arrayBuffer());
+    pdf.addPage();
+    const bytes = await pdf.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_with_blank_page.pdf`);
+    setSuccessMsg('Halaman kosong berhasil ditambahkan di bagian akhir PDF.');
+  });
+
+  const validateSelectedPages = () => {
+    const totalPages = pdfInfo[0]?.pages ?? 0;
+    if (!pdfFiles[0] || totalPages === 0) throw new Error('Pilih satu file PDF terlebih dahulu.');
+    if (selectedPages.size === 0) throw new Error('Pilih minimal satu halaman.');
+    const pages = Array.from(selectedPages).sort((a, b) => a - b);
+    if (pages.some((page) => page < 1 || page > totalPages)) throw new Error('Pilihan halaman tidak valid. Muat ulang file dan coba lagi.');
+    return { pages, totalPages };
+  };
+
+  const rotatePages = () => withProcessing(async () => {
+    const { pages } = validateSelectedPages();
+    const file = pdfFiles[0];
+    const pdf = await PDFDocument.load(await file.arrayBuffer());
+    const sourcePages = pdf.getPages();
+
+    pages.forEach((pageNumber) => {
+      const page = sourcePages[pageNumber - 1];
+      page.setRotation(degrees((page.getRotation().angle + rotationAngle) % 360));
+    });
+
+    const bytes = await pdf.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_rotated.pdf`);
+    setSuccessMsg(`${pages.length} halaman berhasil dirotasi ${rotationAngle}°.`);
+  });
+
+  const deletePages = () => withProcessing(async () => {
+    const { pages, totalPages } = validateSelectedPages();
+    if (pages.length >= totalPages) throw new Error('Semua halaman tidak boleh dihapus. Sisakan minimal satu halaman.');
+
+    const file = pdfFiles[0];
+    const source = await PDFDocument.load(await file.arrayBuffer());
+    const selected = new Set(pages);
+    const keepIndexes = source.getPageIndices().filter((index) => !selected.has(index + 1));
+    const result = await PDFDocument.create();
+    const copied = await result.copyPages(source, keepIndexes);
+    copied.forEach((page) => result.addPage(page));
+
+    const bytes = await result.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_pages_removed.pdf`);
+    setSuccessMsg(`${pages.length} halaman dihapus. PDF hasil tetap memiliki ${totalPages - pages.length} halaman.`);
+  });
+
+  const extractPages = () => withProcessing(async () => {
+    const { pages } = validateSelectedPages();
+    const file = pdfFiles[0];
+    const source = await PDFDocument.load(await file.arrayBuffer());
+    const result = await PDFDocument.create();
+    const copied = await result.copyPages(source, pages.map((page) => page - 1));
+    copied.forEach((page) => result.addPage(page));
+
+    const bytes = await result.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_extracted.pdf`);
+    setSuccessMsg(`${pages.length} halaman berhasil diekstrak.`);
+  });
+
+  const reorderPages = () => withProcessing(async () => {
+    const file = pdfFiles[0];
+    const totalPages = pdfInfo[0]?.pages ?? 0;
+    if (!file || totalPages === 0) throw new Error('Pilih satu file PDF terlebih dahulu.');
+
+    const unique = new Set(pageOrder);
+    if (pageOrder.length !== totalPages || unique.size !== totalPages) {
+      throw new Error('Urutan halaman tidak valid. Muat ulang file dan coba lagi.');
+    }
+    if (pageOrder.some((page) => page < 1 || page > totalPages)) {
+      throw new Error('Urutan halaman berada di luar rentang dokumen.');
+    }
+
+    const source = await PDFDocument.load(await file.arrayBuffer());
+    const result = await PDFDocument.create();
+    const copied = await result.copyPages(source, pageOrder.map((page) => page - 1));
+    copied.forEach((page) => result.addPage(page));
+
+    const bytes = await result.save({ useObjectStreams: true });
+    downloadBlob(new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' }), `${file.name.replace(/\.pdf$/i, '')}_reordered.pdf`);
+    setSuccessMsg('Urutan halaman berhasil diperbarui.');
+  });
+
   const togglePageSelection = (page: number) => {
-    setSelectedPages(prev => {
-      const next = new Set(prev);
+    setSelectedPages((previous) => {
+      const next = new Set(previous);
       if (next.has(page)) next.delete(page);
       else next.add(page);
       return next;
@@ -313,359 +314,262 @@ export default function PDFProcessor({ onBack, darkMode, setDarkMode }: any) {
   };
 
   const selectAllPages = () => {
-    if (pdfInfo.length > 0) {
-      setSelectedPages(new Set(Array.from({ length: pdfInfo[0].pages }, (_, i) => i + 1)));
+    const total = pdfInfo[0]?.pages ?? 0;
+    setSelectedPages(new Set(Array.from({ length: total }, (_, index) => index + 1)));
+  };
+
+  const movePage = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= pageOrder.length) return;
+    setPageOrder((previous) => {
+      const next = [...previous];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const runOperation = () => {
+    switch (operation) {
+      case 'compress': return optimizePdf();
+      case 'merge': return mergePdfs();
+      case 'add-page': return addBlankPage();
+      case 'rotate': return rotatePages();
+      case 'delete': return deletePages();
+      case 'extract': return extractPages();
+      case 'reorder': return reorderPages();
     }
   };
 
-  const deselectAllPages = () => {
-    setSelectedPages(new Set());
-  };
-
-  const movePageUp = (index: number) => {
-    if (index === 0) return;
-    const newOrder = [...pageOrder];
-    [newOrder[index], newOrder[index - 1]] = [newOrder[index - 1], newOrder[index]];
-    setPageOrder(newOrder);
-  };
-
-  const movePageDown = (index: number) => {
-    if (index === pageOrder.length - 1) return;
-    const newOrder = [...pageOrder];
-    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
-    setPageOrder(newOrder);
-  };
-
-  const operations = [
-    { key: 'compress', label: 'Compress PDF', icon: '🗜️', desc: 'Kurangi ukuran file PDF' },
-    { key: 'merge', label: 'Merge PDF', icon: '📑', desc: 'Gabungkan beberapa PDF' },
-    { key: 'add-page', label: 'Add Page', icon: '➕', desc: 'Tambah halaman kosong' },
-    { key: 'rotate', label: 'Rotate Pages', icon: '🔄', desc: 'Rotasi halaman tertentu' },
-    { key: 'delete', label: 'Delete Pages', icon: '🗑️', desc: 'Hapus halaman tertentu' },
-    { key: 'extract', label: 'Extract Pages', icon: '📤', desc: 'Ekstrak halaman tertentu' },
-    { key: 'reorder', label: 'Reorder Pages', icon: '🔀', desc: 'Ubah urutan halaman' },
-  ];
+  const requiresSelection = operation === 'rotate' || operation === 'delete' || operation === 'extract';
+  const canProcess = operation === 'merge'
+    ? pdfFiles.length >= 2
+    : pdfFiles.length === 1 && (!requiresSelection || selectedPages.size > 0);
+  const ActiveIcon = operations.find((item) => item.key === operation)?.icon ?? FileText;
 
   return (
-    <div className={`h-screen flex flex-col overflow-hidden ${bg} ${textPrimary}`}>
-      {/* Header */}
-      <header className={`flex items-center justify-between px-4 py-2.5 border-b shrink-0 ${sidebarBg} ${borderColor}`}>
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className={`w-7 h-7 rounded-lg flex items-center justify-center ${hoverBg}`}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+    <div className={`min-h-full flex flex-col ${bg} ${text}`}>
+      <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b ${surface} ${border}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <button type="button" onClick={onBack} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Kembali">
+            <ArrowLeft size={18} />
           </button>
-          <div className="w-8 h-8 rounded-lg bg-pink-600 flex items-center justify-center shadow-sm">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          <div className="w-9 h-9 rounded-lg bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center shrink-0">
+            <FileText size={20} />
           </div>
-          <div>
-            <h1 className="text-sm font-semibold tracking-tight">PDF Processor</h1>
-            <p className={`text-[10px] ${textSecondary}`}>Compress, merge, edit PDF</p>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold truncate">PDF Processor</h1>
+            <p className={`text-[11px] ${muted} truncate`}>Optimasi, merge, rotasi, ekstrak, hapus, dan reorder PDF</p>
           </div>
         </div>
-        <button onClick={() => setDarkMode(!darkMode)} className={`w-8 h-8 rounded-lg flex items-center justify-center ${hoverBg}`}>
-          {darkMode ? (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          ) : (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-          )}
+        <button
+          type="button"
+          onClick={() => setDarkMode(!darkMode)}
+          className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`}
+          aria-label={darkMode ? 'Aktifkan light mode' : 'Aktifkan dark mode'}
+        >
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <aside className={`w-80 flex flex-col border-r overflow-hidden shrink-0 ${sidebarBg} ${borderColor}`}>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Operation Selection */}
-            <div>
-              <h3 className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} mb-2`}>Operasi</h3>
+      <div className="flex flex-1 min-h-0 max-lg:flex-col">
+        <aside className={`w-[320px] max-lg:w-full shrink-0 border-r max-lg:border-r-0 max-lg:border-b ${surface} ${border}`}>
+          <div className="p-4 space-y-5">
+            <section>
+              <p className={`text-[10px] font-bold tracking-[0.12em] uppercase mb-2 ${muted}`}>Operasi</p>
               <div className="space-y-1.5">
-                {operations.map(op => (
-                  <button
-                    key={op.key}
-                    onClick={() => {
-                      setOperation(op.key as PDFOperation);
-                      setSelectedPages(new Set());
-                      // Reset pageOrder when changing operation
-                      if (pdfInfo.length > 0 && pdfInfo[0].pages > 0) {
-                        setPageOrder(Array.from({ length: pdfInfo[0].pages }, (_, i) => i + 1));
-                      }
-                    }}
-                    className={`w-full text-left p-2.5 rounded-lg border transition-all ${
-                      operation === op.key
-                        ? 'border-pink-500 bg-pink-500/5 dark:bg-pink-500/10'
-                        : `${borderColor} ${hoverBg}`
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{op.icon}</span>
-                      <div>
-                        <p className={`text-xs font-medium ${operation === op.key ? 'text-pink-600 dark:text-pink-400' : textPrimary}`}>
-                          {op.label}
-                        </p>
-                        <p className={`text-[10px] ${textSecondary}`}>{op.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                {operations.map((item) => {
+                  const Icon = item.icon;
+                  const active = operation === item.key;
+                  return (
+                    <button
+                      type="button"
+                      key={item.key}
+                      onClick={() => changeOperation(item.key)}
+                      className={`w-full flex items-start gap-3 rounded-xl border p-3 text-left transition ${active ? 'border-[#2563eb] bg-[#2563eb]/[0.06]' : `${border} ${hover}`}`}
+                    >
+                      <span className={`w-8 h-8 rounded-lg inline-flex items-center justify-center shrink-0 ${active ? 'bg-[#2563eb] text-white' : `${surfaceMuted} ${muted}`}`}>
+                        <Icon size={17} />
+                      </span>
+                      <span className="min-w-0">
+                        <strong className={`block text-xs ${active ? 'text-[#2563eb]' : text}`}>{item.label}</strong>
+                        <small className={`block mt-0.5 text-[10px] leading-4 ${muted}`}>{item.description}</small>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </section>
 
-            {/* File Upload */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${
-                darkMode ? 'border-[#30363d] hover:border-pink-500/50' : 'border-[#d0d7de] hover:border-pink-500/50'
-              }`}
-            >
-              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-pink-500/10 flex items-center justify-center">
-                <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707L14.293 4.293A1 1 0 0013.586 4H7a2 2 0 00-2 2v13a2 2 0 002 2z" /></svg>
-              </div>
-              <p className="text-xs font-medium">{pdfFiles.length > 0 ? `${pdfFiles.length} file dipilih` : 'Pilih file PDF'}</p>
-              <p className={`text-[10px] mt-0.5 ${textSecondary}`}>
-                {operation === 'merge' ? 'Pilih beberapa file' : 'Klik untuk upload'}
-              </p>
-            </div>
-            <input ref={fileInputRef} type="file" accept="application/pdf" multiple className="hidden" onChange={e => e.target.files && handleFileSelect(e.target.files)} />
+            <section>
+              <p className={`text-[10px] font-bold tracking-[0.12em] uppercase mb-2 ${muted}`}>File PDF</p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full rounded-xl border-2 border-dashed p-4 text-center transition ${border} ${hover}`}
+              >
+                <span className="w-10 h-10 mx-auto mb-2 rounded-xl bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center">
+                  <Upload size={19} />
+                </span>
+                <span className="block text-xs font-semibold">{pdfFiles.length ? `${pdfFiles.length} file dipilih` : 'Pilih file PDF'}</span>
+                <span className={`block text-[10px] mt-1 ${muted}`}>{operation === 'merge' ? 'Pilih 2 atau lebih file' : 'Hanya 1 file untuk operasi ini'}</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple={operation === 'merge'}
+                className="hidden"
+                onChange={(event) => event.target.files && handleFileSelect(event.target.files)}
+              />
+            </section>
 
-            {/* File Info */}
             {pdfInfo.length > 0 && (
-              <div className={`p-3 rounded-lg ${cardBg} space-y-2`}>
-                <h4 className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary}`}>File Info</h4>
-                {pdfInfo.map((info, idx) => (
-                  <div key={idx} className={`text-xs ${textPrimary}`}>
-                    <p className="font-medium truncate">{info.name}</p>
-                    <p className={`text-[10px] ${textSecondary}`}>
-                      {info.pages} halaman • {(info.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <section className={`rounded-xl border p-3 ${surfaceMuted} ${border}`}>
+                <p className={`text-[10px] font-bold tracking-[0.12em] uppercase mb-2 ${muted}`}>File Info</p>
+                <div className="space-y-2">
+                  {pdfInfo.map((info) => (
+                    <div key={`${info.name}-${info.size}`} className="min-w-0">
+                      <p className="text-xs font-medium truncate">{info.name}</p>
+                      <p className={`text-[10px] ${muted}`}>{info.pages} halaman · {formatMb(info.size)}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
             )}
 
-            {/* Operation-specific options */}
-            {operation === 'compress' && (
-              <div>
-                <label className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} block mb-1`}>
-                  Quality: {compressQuality}%
-                </label>
-                <input
-                  type="range"
-                  min={10}
-                  max={100}
-                  value={compressQuality}
-                  onChange={e => setCompressQuality(Number(e.target.value))}
-                  className="w-full accent-pink-500"
-                />
-                <p className={`text-[10px] ${textSecondary} mt-1`}>
-                  Lower = smaller file, higher = better quality
-                </p>
-              </div>
-            )}
-
-            {(operation === 'rotate' || operation === 'delete' || operation === 'extract') && pdfInfo.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary}`}>
-                    Pilih Halaman ({selectedPages.size} dipilih)
-                  </h4>
-                  <div className="flex gap-1">
-                    <button onClick={selectAllPages} className="text-[10px] text-pink-500 hover:underline">Semua</button>
-                    <button onClick={deselectAllPages} className="text-[10px] text-pink-500 hover:underline">Batal</button>
+            {requiresSelection && pdfInfo[0] && (
+              <section>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>Pilih Halaman</p>
+                  <div className="flex gap-2 text-[10px]">
+                    <button type="button" onClick={selectAllPages} className="text-[#2563eb] font-semibold">Semua</button>
+                    <button type="button" onClick={() => setSelectedPages(new Set())} className={muted}>Bersihkan</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-8 gap-1 max-h-[200px] overflow-y-auto">
-                  {Array.from({ length: pdfInfo[0].pages }, (_, i) => i + 1).map(page => (
+                <div className="grid grid-cols-8 gap-1.5 max-h-40 overflow-auto pr-1">
+                  {Array.from({ length: pdfInfo[0].pages }, (_, index) => index + 1).map((page) => (
                     <button
+                      type="button"
                       key={page}
                       onClick={() => togglePageSelection(page)}
-                      className={`w-full aspect-square rounded text-[10px] font-medium transition-all ${
-                        selectedPages.has(page)
-                          ? 'bg-pink-500 text-white'
-                          : `${cardBg} ${textSecondary} hover:bg-pink-500/20`
-                      }`}
+                      className={`aspect-square rounded-md text-[10px] font-semibold border transition ${selectedPages.has(page) ? 'bg-[#2563eb] border-[#2563eb] text-white' : `${surfaceMuted} ${border} ${muted} ${hover}`}`}
                     >
                       {page}
                     </button>
                   ))}
                 </div>
-                {operation === 'rotate' && (
-                  <div className="mt-3">
-                    <label className={`text-[10px] ${textSecondary} block mb-1`}>Rotation Angle</label>
-                    <select
-                      value={rotationAngle}
-                      onChange={e => setRotationAngle(Number(e.target.value))}
-                      className={`w-full px-2.5 py-1.5 rounded-lg text-sm border ${inputBg} ${textPrimary}`}
-                    >
-                      <option value={90}>90° Clockwise</option>
-                      <option value={180}>180°</option>
-                      <option value={270}>270° Clockwise</option>
-                    </select>
-                  </div>
+                {operation === 'delete' && selectedPages.size === pdfInfo[0].pages && (
+                  <p className="mt-2 text-[10px] text-amber-600 dark:text-amber-400">Sisakan minimal satu halaman. Semua halaman tidak dapat dihapus sekaligus.</p>
                 )}
-              </div>
+                {operation === 'rotate' && (
+                  <select
+                    value={rotationAngle}
+                    onChange={(event) => setRotationAngle(Number(event.target.value))}
+                    className={`w-full mt-3 px-3 py-2 rounded-lg border text-xs ${input}`}
+                  >
+                    <option value={90}>90° clockwise</option>
+                    <option value={180}>180°</option>
+                    <option value={270}>270° clockwise</option>
+                  </select>
+                )}
+              </section>
             )}
 
-            {operation === 'reorder' && pdfInfo.length > 0 && (
-              <div>
-                <h4 className={`text-[10px] font-semibold uppercase tracking-wider ${textSecondary} mb-2`}>
-                  Urutan Halaman
-                </h4>
-                <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                  {pageOrder.map((page, idx) => (
-                    <div key={page} className={`flex items-center gap-2 p-2 rounded ${cardBg}`}>
-                      <span className={`text-xs font-medium ${textPrimary} w-8`}>{idx + 1}.</span>
-                      <span className={`text-xs ${textSecondary} flex-1`}>Page {page}</span>
-                      <button
-                        onClick={() => movePageUp(idx)}
-                        disabled={idx === 0}
-                        className={`w-5 h-5 rounded flex items-center justify-center ${idx === 0 ? 'opacity-30' : hoverBg}`}
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={() => movePageDown(idx)}
-                        disabled={idx === pageOrder.length - 1}
-                        className={`w-5 h-5 rounded flex items-center justify-center ${idx === pageOrder.length - 1 ? 'opacity-30' : hoverBg}`}
-                      >
-                        ↓
-                      </button>
+            {operation === 'reorder' && pageOrder.length > 0 && (
+              <section>
+                <p className={`text-[10px] font-bold tracking-[0.12em] uppercase mb-2 ${muted}`}>Urutan Halaman</p>
+                <div className="space-y-1 max-h-56 overflow-auto pr-1">
+                  {pageOrder.map((page, index) => (
+                    <div key={page} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 ${surfaceMuted} ${border}`}>
+                      <span className={`w-5 text-[10px] ${muted}`}>{index + 1}.</span>
+                      <span className="flex-1 text-xs">Page {page}</span>
+                      <button type="button" disabled={index === 0} onClick={() => movePage(index, -1)} className="w-7 h-7 inline-flex items-center justify-center rounded-md disabled:opacity-25" aria-label="Naikkan halaman"><ChevronUp size={14} /></button>
+                      <button type="button" disabled={index === pageOrder.length - 1} onClick={() => movePage(index, 1)} className="w-7 h-7 inline-flex items-center justify-center rounded-md disabled:opacity-25" aria-label="Turunkan halaman"><ChevronDown size={14} /></button>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
-          </div>
-
-          {/* Action Button */}
-          <div className={`p-3 border-t ${borderColor}`}>
-            <button
-              onClick={() => {
-                switch (operation) {
-                  case 'compress': compressPDF(); break;
-                  case 'merge': mergePDFs(); break;
-                  case 'add-page': addBlankPage(); break;
-                  case 'rotate': rotatePages(); break;
-                  case 'delete': deletePages(); break;
-                  case 'extract': extractPages(); break;
-                  case 'reorder': reorderPages(); break;
-                }
-              }}
-              disabled={pdfFiles.length === 0 || isProcessing}
-              className={`w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                pdfFiles.length === 0 || isProcessing
-                  ? 'opacity-40 cursor-not-allowed bg-pink-500 text-white'
-                  : 'bg-pink-500 hover:bg-pink-600 text-white shadow-sm'
-              }`}
-            >
-              {isProcessing ? (
-                <><span className="pulse-dot">●</span> Processing...</>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  {operations.find(o => o.key === operation)?.label}
-                </>
-              )}
-            </button>
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* Progress */}
-          {isProcessing && (
-            <div className="mx-4 mt-4 fade-in">
-              <div className={`h-1.5 rounded-full overflow-hidden ${darkMode ? 'bg-[#21262d]' : 'bg-[#e2e5e9]'}`}>
-                <div className="h-full bg-pink-500 rounded-full progress-bar" style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }} />
-              </div>
-              <p className={`text-[10px] mt-1 ${textSecondary}`}>Memproses {progress.current} dari {progress.total}...</p>
-            </div>
-          )}
-
-          {/* Messages */}
-          {error && (
-            <div className="mx-4 mt-4 p-2.5 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-center justify-between fade-in">
-              <span>{error}</span>
-              <button onClick={() => setError(null)} className="hover:text-red-300">✕</button>
-            </div>
-          )}
-          {successMsg && (
-            <div className="mx-4 mt-4 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-400 flex items-center justify-between fade-in">
-              <span style={{ whiteSpace: 'pre-line' }}>{successMsg}</span>
-              <button onClick={() => setSuccessMsg(null)} className="hover:text-emerald-300">✕</button>
-            </div>
-          )}
-
-          {/* Content */}
-          <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            {pdfFiles.length === 0 ? (
-              <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-3xl bg-pink-500/5 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-pink-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <main className="flex-1 min-w-0 p-5 md:p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto space-y-4">
+            <section className={`rounded-2xl border p-5 md:p-6 ${surface} ${border}`}>
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center shrink-0">
+                  <ActiveIcon size={22} />
                 </div>
-                <h3 className="text-base font-semibold mb-1">Upload PDF</h3>
-                <p className={`text-sm max-w-xs ${textSecondary}`}>
-                  Pilih file PDF dari sidebar untuk mulai memproses
-                </p>
-                <div className={`mt-4 grid grid-cols-3 gap-3 text-center ${textSecondary}`}>
-                  <div className={`p-3 rounded-xl ${cardBg}`}>
-                    <p className="text-xs font-medium mb-0.5">Compress</p>
-                    <p className="text-[10px] opacity-60">Kurangi ukuran</p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${cardBg}`}>
-                    <p className="text-xs font-medium mb-0.5">Merge</p>
-                    <p className="text-[10px] opacity-60">Gabungkan PDF</p>
-                  </div>
-                  <div className={`p-3 rounded-xl ${cardBg}`}>
-                    <p className="text-xs font-medium mb-0.5">Edit</p>
-                    <p className="text-[10px] opacity-60">Rotasi, hapus, dll</p>
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>PDF Workspace</p>
+                  <h2 className="text-xl font-semibold mt-1">{operations.find((item) => item.key === operation)?.label}</h2>
+                  <p className={`text-sm mt-1 leading-6 ${muted}`}>{operations.find((item) => item.key === operation)?.description}</p>
                 </div>
               </div>
-            ) : (
-              <div className="w-full max-w-2xl">
-                <div className={`rounded-2xl border p-6 ${darkMode ? 'border-[#30363d]' : 'border-[#e2e5e9]'}`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{pdfFiles[0].name}</p>
-                      <p className={`text-xs ${textSecondary}`}>{pdfInfo[0]?.pages} halaman • {(pdfFiles[0].size / 1024 / 1024).toFixed(2)} MB</p>
-                    </div>
-                  </div>
 
-                  {/* Operation Info */}
-                  <div className={`p-4 rounded-xl ${cardBg}`}>
-                    <h4 className={`text-xs font-semibold mb-2 ${textPrimary}`}>
-                      {operations.find(o => o.key === operation)?.icon} {operations.find(o => o.key === operation)?.label}
-                    </h4>
-                    <p className={`text-xs ${textSecondary}`}>
-                      {operation === 'compress' && 'Mengompres PDF untuk mengurangi ukuran file. File akan di-save ulang dengan optimasi.'}
-                      {operation === 'merge' && `Menggabungkan ${pdfFiles.length} file PDF menjadi satu file.`}
-                      {operation === 'add-page' && 'Menambahkan satu halaman kosong di akhir dokumen.'}
-                      {operation === 'rotate' && `Merotasi ${selectedPages.size} halaman sebesar ${rotationAngle}°.`}
-                      {operation === 'delete' && `Menghapus ${selectedPages.size} halaman dari dokumen.`}
-                      {operation === 'extract' && `Mengekstrak ${selectedPages.size} halaman menjadi PDF baru.`}
-                      {operation === 'reorder' && 'Mengubah urutan halaman sesuai yang ditentukan.'}
-                    </p>
+              {operation === 'compress' && (
+                <div className={`mt-5 rounded-xl border p-4 ${surfaceMuted} ${border}`}>
+                  <p className="text-xs font-semibold">Optimasi aman, bukan recompression gambar</p>
+                  <p className={`text-[11px] mt-1 leading-5 ${muted}`}>Tool mengoptimalkan struktur PDF dengan object streams. Jika hasil tidak lebih kecil dari file asli, download dibatalkan agar ukuran file tidak menjadi lebih besar.</p>
+                </div>
+              )}
+
+              {operation === 'merge' && pdfFiles.length > 0 && (
+                <div className={`mt-5 rounded-xl border p-4 ${surfaceMuted} ${border}`}>
+                  <p className="text-xs font-semibold">Urutan merge mengikuti urutan file yang dipilih</p>
+                  <p className={`text-[11px] mt-1 ${muted}`}>{pdfFiles.map((file) => file.name).join(' → ')}</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                  <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+                  <p className="text-xs leading-5">{error}</p>
+                </div>
+              )}
+              {notice && (
+                <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-5 text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300">{notice}</div>
+              )}
+              {successMsg && (
+                <div className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  <CheckCircle size={17} className="mt-0.5 shrink-0" />
+                  <p className="text-xs leading-5">{successMsg}</p>
+                </div>
+              )}
+
+              {isProcessing && progress.total > 0 && (
+                <div className="mt-5">
+                  <div className="flex justify-between text-[10px] mb-1.5">
+                    <span className={muted}>Processing</span>
+                    <span>{progress.current}/{progress.total}</span>
+                  </div>
+                  <div className={`h-1.5 rounded-full overflow-hidden ${surfaceMuted}`}>
+                    <div className="h-full bg-[#2563eb] transition-all" style={{ width: `${Math.min(100, (progress.current / progress.total) * 100)}%` }} />
                   </div>
                 </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={runOperation}
+                  disabled={!canProcess || isProcessing}
+                  className="min-w-[180px] inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? 'Memproses…' : <><Plus size={16} /> Jalankan Proses</>}
+                </button>
+                {!canProcess && (
+                  <span className={`text-[11px] ${muted}`}>
+                    {operation === 'merge'
+                      ? 'Pilih minimal 2 PDF.'
+                      : requiresSelection
+                        ? 'Pilih PDF dan minimal 1 halaman.'
+                        : 'Pilih 1 PDF untuk melanjutkan.'}
+                  </span>
+                )}
               </div>
-            )}
+            </section>
           </div>
-
-          {/* Footer */}
-          <footer className={`px-4 py-2 border-t shrink-0 flex items-center justify-between ${sidebarBg} ${borderColor}`}>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-[#0A2540] flex items-center justify-center">
-                <span className="text-white text-[6px] font-bold">PA</span>
-              </div>
-              <span className={`text-[10px] ${textSecondary}`}>
-                <span className="font-medium text-[#0A2540] dark:text-[#58a6ff]">PT Perdana Adi Yuda</span> — PERADA GROUP
-              </span>
-            </div>
-            <span className={`text-[10px] ${textSecondary}`}>© 2026</span>
-          </footer>
         </main>
       </div>
     </div>

@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Moon,
+  Plus,
+  Search,
+  Star,
+  Sun,
+  Users,
+} from 'lucide-react';
 
 interface RecruitmentPipelineProps {
   onBack: () => void;
   darkMode: boolean;
   setDarkMode: (value: boolean) => void;
 }
+
+type ApplicantStage = 'applied' | 'screening' | 'interview' | 'test' | 'offered' | 'hired' | 'rejected';
 
 interface Applicant {
   id: string;
@@ -14,10 +26,29 @@ interface Applicant {
   position: string;
   division: string;
   appliedDate: string;
-  stage: 'applied' | 'screening' | 'interview' | 'test' | 'offered' | 'hired' | 'rejected';
+  stage: ApplicantStage;
   notes: string;
   rating: number;
 }
+
+const stageConfig: Record<ApplicantStage, {
+  label: string;
+  badge: string;
+  next?: ApplicantStage;
+  action?: string;
+}> = {
+  applied: { label: 'Applied', badge: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', next: 'screening', action: 'Move to Screening' },
+  screening: { label: 'Screening', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300', next: 'interview', action: 'Schedule Interview' },
+  interview: { label: 'Interview', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300', next: 'test', action: 'Move to Test' },
+  test: { label: 'Test', badge: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300', next: 'offered', action: 'Make Offer' },
+  offered: { label: 'Offered', badge: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300', next: 'hired', action: 'Mark as Hired' },
+  hired: { label: 'Hired', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' },
+  rejected: { label: 'Rejected', badge: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300' },
+};
+
+const makeId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const today = () => new Date().toISOString().split('T')[0];
+const normalizePhone = (value: string) => value.replace(/[\s()-]/g, '');
 
 export default function RecruitmentPipeline({ onBack, darkMode, setDarkMode }: RecruitmentPipelineProps) {
   const [applicants, setApplicants] = useState<Applicant[]>([
@@ -72,9 +103,10 @@ export default function RecruitmentPipeline({ onBack, darkMode, setDarkMode }: R
   ]);
 
   const [showForm, setShowForm] = useState(false);
-  const [filterStage, setFilterStage] = useState<string>('all');
-  const [filterDivision, setFilterDivision] = useState<string>('all');
-
+  const [filterStage, setFilterStage] = useState<'all' | ApplicantStage>('all');
+  const [filterDivision, setFilterDivision] = useState('all');
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -84,335 +116,268 @@ export default function RecruitmentPipeline({ onBack, darkMode, setDarkMode }: R
     notes: '',
   });
 
-  const stages = [
-    { id: 'applied', label: 'Applied', color: 'bg-gray-500' },
-    { id: 'screening', label: 'Screening', color: 'bg-blue-500' },
-    { id: 'interview', label: 'Interview', color: 'bg-yellow-500' },
-    { id: 'test', label: 'Test', color: 'bg-orange-500' },
-    { id: 'offered', label: 'Offered', color: 'bg-purple-500' },
-    { id: 'hired', label: 'Hired', color: 'bg-green-500' },
-    { id: 'rejected', label: 'Rejected', color: 'bg-red-500' },
-  ];
+  const bg = darkMode ? 'bg-[#0b1220]' : 'bg-[#f6f8fb]';
+  const surface = darkMode ? 'bg-[#111827]' : 'bg-white';
+  const surfaceMuted = darkMode ? 'bg-[#172033]' : 'bg-[#f8fafc]';
+  const border = darkMode ? 'border-[#273449]' : 'border-[#e5eaf1]';
+  const text = darkMode ? 'text-[#e5edf8]' : 'text-[#0f172a]';
+  const muted = darkMode ? 'text-[#92a3ba]' : 'text-[#64748b]';
+  const input = darkMode
+    ? 'bg-[#0b1220] border-[#334155] text-[#e5edf8]'
+    : 'bg-white border-[#dbe3ee] text-[#0f172a]';
+  const hover = darkMode ? 'hover:bg-[#172033]' : 'hover:bg-[#f8fafc]';
 
-  const divisions = Array.from(new Set(applicants.map(a => a.division)));
+  const divisions = useMemo(() => Array.from(new Set(applicants.map((item) => item.division))).sort(), [applicants]);
+
+  const stats = useMemo(() => ({
+    total: applicants.length,
+    new: applicants.filter((item) => item.stage === 'applied').length,
+    active: applicants.filter((item) => !['hired', 'rejected'].includes(item.stage)).length,
+    hired: applicants.filter((item) => item.stage === 'hired').length,
+  }), [applicants]);
+
+  const filteredApplicants = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return applicants.filter((applicant) => {
+      const matchesStage = filterStage === 'all' || applicant.stage === filterStage;
+      const matchesDivision = filterDivision === 'all' || applicant.division === filterDivision;
+      const haystack = `${applicant.name} ${applicant.email} ${applicant.phone} ${applicant.position} ${applicant.division}`.toLowerCase();
+      return matchesStage && matchesDivision && (!needle || haystack.includes(needle));
+    });
+  }, [applicants, filterDivision, filterStage, query]);
+
+  const resetForm = () => {
+    setFormData({ name: '', email: '', phone: '', position: '', division: '', notes: '' });
+    setError(null);
+    setShowForm(false);
+  };
+
+  const validateApplicant = () => {
+    const name = formData.name.trim();
+    const email = formData.email.trim().toLowerCase();
+    const phone = normalizePhone(formData.phone.trim());
+    const position = formData.position.trim();
+    const division = formData.division.trim();
+
+    if (!name || !email || !phone || !position || !division) return 'Nama, email, telepon, posisi, dan divisi wajib diisi.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Format email tidak valid.';
+    if (!/^\+?\d{9,15}$/.test(phone)) return 'Nomor telepon harus berisi 9–15 digit dan boleh diawali +.';
+    if (applicants.some((item) => item.email.toLowerCase() === email)) return 'Email kandidat sudah terdaftar.';
+    if (applicants.some((item) => normalizePhone(item.phone) === phone)) return 'Nomor telepon kandidat sudah terdaftar.';
+    return null;
+  };
 
   const handleSubmit = () => {
-    const newApplicant: Applicant = {
-      id: Date.now().toString(),
-      ...formData,
-      appliedDate: new Date().toISOString().split('T')[0],
+    const validationError = validateApplicant();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const applicant: Applicant = {
+      id: makeId(),
+      name: formData.name.trim(),
+      email: formData.email.trim().toLowerCase(),
+      phone: normalizePhone(formData.phone.trim()),
+      position: formData.position.trim(),
+      division: formData.division.trim(),
+      notes: formData.notes.trim(),
+      appliedDate: today(),
       stage: 'applied',
       rating: 0,
     };
-    setApplicants([newApplicant, ...applicants]);
-    setShowForm(false);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      position: '',
-      division: '',
-      notes: '',
-    });
+
+    setApplicants((previous) => [applicant, ...previous]);
+    resetForm();
   };
 
-  const updateStage = (id: string, stage: Applicant['stage']) => {
-    setApplicants(applicants.map(app =>
-      app.id === id ? { ...app, stage } : app
-    ));
+  const moveApplicant = (id: string, target: ApplicantStage) => {
+    setError(null);
+    setApplicants((previous) => previous.map((applicant) => {
+      if (applicant.id !== id) return applicant;
+      if (applicant.stage === 'hired' || applicant.stage === 'rejected') return applicant;
+      if (target === 'rejected') return { ...applicant, stage: 'rejected' };
+      const allowedNext = stageConfig[applicant.stage].next;
+      return allowedNext === target ? { ...applicant, stage: target } : applicant;
+    }));
   };
 
   const updateRating = (id: string, rating: number) => {
-    setApplicants(applicants.map(app =>
-      app.id === id ? { ...app, rating } : app
-    ));
+    const safeRating = Math.max(0, Math.min(5, Math.round(rating)));
+    setApplicants((previous) => previous.map((applicant) => (
+      applicant.id === id ? { ...applicant, rating: safeRating } : applicant
+    )));
   };
 
-  const filteredApplicants = applicants.filter(app => {
-    const matchStage = filterStage === 'all' || app.stage === filterStage;
-    const matchDivision = filterDivision === 'all' || app.division === filterDivision;
-    return matchStage && matchDivision;
-  });
-
-  const getStageBadge = (stage: string) => {
-    const stageInfo = stages.find(s => s.id === stage);
-    return stageInfo ? `${stageInfo.color} text-white` : 'bg-gray-100 text-gray-800';
+  const formatDate = (value: string) => {
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   };
-
-  const renderStars = (rating: number, applicantId: string) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map(star => (
-          <button
-            key={star}
-            onClick={() => updateRating(applicantId, star)}
-            className={`text-xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'} hover:text-yellow-500`}
-          >
-            ★
-          </button>
-        ))}
-      </div>
-    );
-  };
-
-  const appliedCount = applicants.filter(a => a.stage === 'applied').length;
-  const interviewCount = applicants.filter(a => a.stage === 'interview').length;
-  const hiredCount = applicants.filter(a => a.stage === 'hired').length;
-  const totalApplicants = applicants.length;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0A2540] to-[#1E3A5F] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">PA</span>
+    <div className={`min-h-full ${bg} ${text}`}>
+      <header className={`sticky top-0 z-20 flex items-center justify-between gap-3 px-4 py-3 border-b ${surface} ${border}`}>
+        <div className="flex items-center gap-3 min-w-0">
+          <button type="button" onClick={onBack} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Kembali">
+            <ArrowLeft size={18} />
+          </button>
+          <div className="w-9 h-9 rounded-lg bg-[#2563eb]/10 text-[#2563eb] inline-flex items-center justify-center shrink-0">
+            <Users size={20} />
           </div>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold truncate">Recruitment Pipeline</h1>
+            <p className={`text-[11px] ${muted} truncate`}>Applicant Tracking System dengan stage transition terkontrol</p>
+          </div>
+        </div>
+        <button type="button" onClick={() => setDarkMode(!darkMode)} className={`w-9 h-9 rounded-lg inline-flex items-center justify-center ${hover}`} aria-label="Ubah tema">
+          {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </header>
+
+      <main className="max-w-7xl mx-auto p-4 md:p-6 space-y-5">
+        <section className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Recruitment Pipeline</h1>
-            <p className="text-sm text-gray-600">PT Perdana Adi Yuda - Applicant Tracking System</p>
+            <p className={`text-[10px] font-bold tracking-[0.12em] uppercase ${muted}`}>Human Capital · Recruitment</p>
+            <h2 className="text-2xl font-semibold mt-1">Kandidat & Pipeline</h2>
+            <p className={`text-sm mt-1 ${muted}`}>Kelola kandidat dari application hingga hired dengan transisi tahap yang konsisten.</p>
           </div>
-        </div>
-      </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (showForm) resetForm();
+              else {
+                setShowForm(true);
+                setError(null);
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]"
+          >
+            <Plus size={16} /> {showForm ? 'Batal Tambah' : 'Tambah Kandidat'}
+          </button>
+        </section>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Total Applicants</div>
-          <div className="text-3xl font-bold text-blue-600">{totalApplicants}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">New Applications</div>
-          <div className="text-3xl font-bold text-gray-600">{appliedCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">In Interview</div>
-          <div className="text-3xl font-bold text-yellow-600">{interviewCount}</div>
-        </div>
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <div className="text-sm text-gray-600 mb-1">Hired</div>
-          <div className="text-3xl font-bold text-green-600">{hiredCount}</div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Filter by Stage</label>
-            <select
-              value={filterStage}
-              onChange={(e) => setFilterStage(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Stages</option>
-              {stages.map(stage => (
-                <option key={stage.id} value={stage.id}>{stage.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Filter by Division</label>
-            <select
-              value={filterDivision}
-              onChange={(e) => setFilterDivision(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Divisions</option>
-              {divisions.map(div => (
-                <option key={div} value={div}>{div}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
-            >
-              {showForm ? 'Cancel' : '+ Add Applicant'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Form */}
-      {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Add New Applicant</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Full Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Applicant name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Email *</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="email@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Phone *</label>
-              <input
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="08xxxxxxxxxx"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Position Applied *</label>
-              <input
-                type="text"
-                value={formData.position}
-                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Security Guard"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Division *</label>
-              <input
-                type="text"
-                value={formData.division}
-                onChange={(e) => setFormData({ ...formData, division: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Security"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Additional notes about the applicant..."
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex gap-4">
-            <button
-              onClick={handleSubmit}
-              disabled={!formData.name || !formData.email || !formData.phone || !formData.position || !formData.division}
-              className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
-            >
-              Add Applicant
-            </button>
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Pipeline Board */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Applicants</h2>
-        <div className="space-y-4">
-          {filteredApplicants.map(applicant => (
-            <div key={applicant.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-bold">{applicant.name}</h3>
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStageBadge(applicant.stage)}`}>
-                      {stages.find(s => s.id === applicant.stage)?.label}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {applicant.position} • {applicant.division}
-                  </p>
-                  <p className="text-sm text-gray-600 mb-1">
-                    {applicant.email} • {applicant.phone}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Applied: {applicant.appliedDate}
-                  </p>
-                  {applicant.notes && (
-                    <p className="text-sm text-gray-700 mt-2 italic">"{applicant.notes}"</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-600 mb-1">Rating</div>
-                  {renderStars(applicant.rating, applicant.id)}
-                </div>
-              </div>
-
-              <div className="mt-3 flex gap-2 flex-wrap">
-                {applicant.stage !== 'hired' && applicant.stage !== 'rejected' && (
-                  <>
-                    {applicant.stage === 'applied' && (
-                      <button
-                        onClick={() => updateStage(applicant.id, 'screening')}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        Move to Screening
-                      </button>
-                    )}
-                    {applicant.stage === 'screening' && (
-                      <button
-                        onClick={() => updateStage(applicant.id, 'interview')}
-                        className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
-                      >
-                        Schedule Interview
-                      </button>
-                    )}
-                    {applicant.stage === 'interview' && (
-                      <button
-                        onClick={() => updateStage(applicant.id, 'test')}
-                        className="px-3 py-1 bg-orange-600 text-white rounded text-sm hover:bg-orange-700"
-                      >
-                        Move to Test
-                      </button>
-                    )}
-                    {applicant.stage === 'test' && (
-                      <button
-                        onClick={() => updateStage(applicant.id, 'offered')}
-                        className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                      >
-                        Make Offer
-                      </button>
-                    )}
-                    {applicant.stage === 'offered' && (
-                      <button
-                        onClick={() => updateStage(applicant.id, 'hired')}
-                        className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                      >
-                        Mark as Hired
-                      </button>
-                    )}
-                    <button
-                      onClick={() => updateStage(applicant.id, 'rejected')}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                    >
-                      Reject
-                    </button>
-                  </>
-                )}
-              </div>
+        <section className={`grid grid-cols-2 lg:grid-cols-4 gap-2 rounded-xl border p-3 ${surface} ${border}`}>
+          {[
+            ['Total Kandidat', stats.total, 'text-[#2563eb]'],
+            ['Baru', stats.new, 'text-slate-600 dark:text-slate-300'],
+            ['Dalam Proses', stats.active, 'text-amber-600'],
+            ['Hired', stats.hired, 'text-emerald-600'],
+          ].map(([label, value, valueClass]) => (
+            <div key={String(label)} className={`rounded-lg px-3 py-2.5 ${surfaceMuted}`}>
+              <p className={`text-[10px] uppercase tracking-wide ${muted}`}>{label}</p>
+              <p className={`text-lg font-semibold mt-0.5 ${valueClass}`}>{value}</p>
             </div>
           ))}
-        </div>
+        </section>
 
-        {filteredApplicants.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No applicants found
-          </div>
+        {showForm && (
+          <section className={`rounded-2xl border p-4 md:p-5 ${surface} ${border}`}>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-sm font-semibold">Kandidat Baru</h3>
+                <p className={`text-[11px] mt-0.5 ${muted}`}>Duplikasi email dan nomor telepon akan ditolak.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <label className="text-xs font-medium">Nama Lengkap *
+                <input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Nama kandidat" />
+              </label>
+              <label className="text-xs font-medium">Email *
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="nama@email.com" />
+              </label>
+              <label className="text-xs font-medium">Nomor Telepon *
+                <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="081234567890" />
+              </label>
+              <label className="text-xs font-medium">Posisi Dilamar *
+                <input value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Security Guard" />
+              </label>
+              <label className="text-xs font-medium">Divisi *
+                <input value={formData.division} onChange={(e) => setFormData({ ...formData, division: e.target.value })} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm ${input}`} placeholder="Security" />
+              </label>
+              <label className="text-xs font-medium md:col-span-2">Catatan
+                <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={3} className={`mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm resize-y ${input}`} placeholder="Catatan kandidat" />
+              </label>
+            </div>
+            {error && (
+              <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <p className="text-xs leading-5">{error}</p>
+              </div>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button type="button" onClick={handleSubmit} className="rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#1d4ed8]">Simpan Kandidat</button>
+              <button type="button" onClick={resetForm} className={`rounded-lg border px-4 py-2.5 text-sm font-semibold ${border} ${hover}`}>Batal</button>
+            </div>
+          </section>
         )}
-      </div>
+
+        <section className={`rounded-2xl border ${surface} ${border} overflow-hidden`}>
+          <div className={`p-4 md:p-5 border-b ${border}`}>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,1fr)_180px_210px] gap-3">
+              <label className={`flex items-center gap-2 rounded-lg border px-3 ${input}`}>
+                <Search size={16} className={muted} />
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari kandidat, email, posisi..." className="w-full bg-transparent py-2.5 text-sm outline-none" />
+              </label>
+              <select value={filterStage} onChange={(e) => setFilterStage(e.target.value as 'all' | ApplicantStage)} className={`rounded-lg border px-3 py-2.5 text-sm ${input}`}>
+                <option value="all">Semua Stage</option>
+                {(Object.keys(stageConfig) as ApplicantStage[]).map((stage) => <option key={stage} value={stage}>{stageConfig[stage].label}</option>)}
+              </select>
+              <select value={filterDivision} onChange={(e) => setFilterDivision(e.target.value)} className={`rounded-lg border px-3 py-2.5 text-sm ${input}`}>
+                <option value="all">Semua Divisi</option>
+                {divisions.map((division) => <option key={division} value={division}>{division}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="p-4 md:p-5 space-y-3">
+            {filteredApplicants.length === 0 ? (
+              <div className={`rounded-xl border border-dashed p-10 text-center ${border}`}>
+                <Users size={28} className={`mx-auto ${muted}`} />
+                <p className="text-sm font-semibold mt-3">Tidak ada kandidat ditemukan</p>
+                <p className={`text-[11px] mt-1 ${muted}`}>Ubah filter atau kata pencarian.</p>
+              </div>
+            ) : filteredApplicants.map((applicant) => {
+              const stage = stageConfig[applicant.stage];
+              return (
+                <article key={applicant.id} className={`rounded-xl border p-4 ${surfaceMuted} ${border}`}>
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-sm font-semibold">{applicant.name}</h4>
+                        <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${stage.badge}`}>{stage.label}</span>
+                      </div>
+                      <p className={`text-xs mt-1 ${muted}`}>{applicant.position} · {applicant.division}</p>
+                      <p className={`text-[11px] mt-1 ${muted}`}>{applicant.email} · {applicant.phone}</p>
+                      <p className={`text-[10px] mt-1 ${muted}`}>Applied {formatDate(applicant.appliedDate)}</p>
+                      {applicant.notes && <p className="text-xs mt-3 leading-5">{applicant.notes}</p>}
+                    </div>
+
+                    <div className="lg:text-right shrink-0">
+                      <p className={`text-[10px] uppercase tracking-wide ${muted}`}>Rating</p>
+                      <div className="flex lg:justify-end gap-0.5 mt-1">
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button type="button" key={value} onClick={() => updateRating(applicant.id, value)} aria-label={`Rating ${value}`} className="p-0.5">
+                            <Star size={17} className={value <= applicant.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600'} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {applicant.stage !== 'hired' && applicant.stage !== 'rejected' && (
+                    <div className={`flex flex-wrap gap-2 mt-4 pt-3 border-t ${border}`}>
+                      {stage.next && stage.action && (
+                        <button type="button" onClick={() => moveApplicant(applicant.id, stage.next!)} className="rounded-lg bg-[#2563eb] px-3 py-2 text-xs font-semibold text-white hover:bg-[#1d4ed8]">{stage.action}</button>
+                      )}
+                      <button type="button" onClick={() => moveApplicant(applicant.id, 'rejected')} className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:hover:bg-red-950/30">Reject</button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
