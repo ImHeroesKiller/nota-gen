@@ -8,6 +8,7 @@ import {
   Settings,
   Wrench,
 } from 'lucide-react';
+import { documentTemplateEvents } from '../lib/documentTemplate';
 
 type DirectoryView = 'dashboard' | 'suites' | 'modules' | 'tools';
 
@@ -35,6 +36,10 @@ export function Sidebar({
   onNavigate,
   onToggleCollapse,
 }: SidebarProps) {
+  const openDocumentSettings = () => {
+    window.dispatchEvent(new Event(documentTemplateEvents.openSettings));
+  };
+
   return (
     <aside className={`erp-sidebar ${collapsed ? 'is-collapsed' : ''}`}>
       <div className="erp-sidebar-brand">
@@ -86,7 +91,12 @@ export function Sidebar({
       <div className="erp-sidebar-spacer" />
 
       <div className="erp-sidebar-footer">
-        <button type="button" className="erp-nav-item erp-nav-muted" title={collapsed ? 'Pengaturan' : undefined}>
+        <button
+          type="button"
+          className="erp-nav-item erp-nav-muted"
+          onClick={openDocumentSettings}
+          title={collapsed ? 'Pengaturan Template Dokumen' : 'Atur logo, kop surat, footer, dan template dokumen'}
+        >
           <Settings size={19} />
           <span>Pengaturan</span>
         </button>
