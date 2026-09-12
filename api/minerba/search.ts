@@ -1,6 +1,6 @@
 import { minerbaCors } from '../../server/minerba.js';
 import type { MinerbaSearchItem } from '../../server/minerba.js';
-import { searchMinerbaPublic } from '../../server/minerbaPublic.js';
+import { searchMinerbaPublicLite } from '../../server/minerbaSearchPublicLite.js';
 import { getMinerbaDetailPublicV2 } from '../../server/minerbaDetailPublic.js';
 import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
 
@@ -61,10 +61,13 @@ export default async function handler(req: any, res: any) {
   if (query.length > 120) return res.status(400).json({ error: 'Query too long' });
 
   try {
-    const publicResults = await searchMinerbaPublic(query);
+    // One lightweight public page only. No background pagination while typing.
+    const publicResults = await searchMinerbaPublicLite(query);
     const relevantPublicResults = rankPublicResults(publicResults, query);
     if (relevantPublicResults.length) return res.status(200).json(relevantPublicResults);
 
+    // Only run the JS-rendered fallback after an explicit Search action and only
+    // when the lightweight public response cannot resolve the query.
     try {
       const browserResults = await searchMinerbaV2(query);
       return res.status(200).json(sanitizeBrowserResults(browserResults));
