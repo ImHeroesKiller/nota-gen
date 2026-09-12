@@ -3,6 +3,7 @@ import type {
   MinerbaDireksi,
   MinerbaPerizinan,
   MinerbaSaham,
+  MinerbaSearchItem,
 } from './minerba.js';
 import { searchMinerbaPublic } from './minerbaPublic.js';
 
@@ -21,6 +22,7 @@ const USER_AGENTS = [
 
 type JsonRecord = Record<string, any>;
 type CacheEntry<T> = { value: T; expiresAt: number };
+type SearchResultWithId = MinerbaSearchItem & { id_badan_usaha?: string };
 type MinerbaDetailGlobal = typeof globalThis & {
   __minerbaPublicLastRequestAt?: number;
   __minerbaDetailPublicV2Cache?: Map<string, CacheEntry<MinerbaDetail>>;
@@ -213,10 +215,12 @@ const resolveBusiness = async (code: string) => {
     if (error?.status && error.status !== 404) throw error;
   }
 
-  const matches = await searchMinerbaPublic(code);
+  // The listing can expose a display/business code while the official detail route
+  // navigates with id_badan_usaha. Resolve that ID only after the user clicks detail.
+  const matches = await searchMinerbaPublic(code) as SearchResultWithId[];
   const exact = matches.find((item) => item.kode_badan_usaha === code || item.nama.toLowerCase() === code.toLowerCase());
   if (!exact) return null;
-  const id = exact.kode_badan_usaha;
+  const id = exact.id_badan_usaha || exact.kode_badan_usaha;
   const payload = await requestJson(`${PUBLIC_API}/${encodeURIComponent(id)}`);
   return { id, row: unwrapObject(payload) };
 };
