@@ -1,0 +1,300 @@
+/* =========================================================
+   PERADA Tools — Compact UI / regression fixes
+   Keeps the 2026 visual language while restoring higher density.
+   ========================================================= */
+
+/* Brand asset */
+.erp-brand-lockup {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.erp-brand-logo {
+  display: block;
+  width: 148px;
+  max-width: 100%;
+  height: 34px;
+  object-fit: contain;
+  object-position: left center;
+  color: var(--erp-text);
+}
+
+/* Compact shell */
+.erp-sidebar {
+  width: 216px;
+  min-width: 216px;
+}
+
+.erp-sidebar.is-collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+.erp-sidebar-brand {
+  height: 58px;
+  flex-basis: 58px;
+  padding: 7px 9px;
+  gap: 6px;
+}
+
+.erp-sidebar-toggle,
+.erp-icon-button,
+.erp-tool-shell-back {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.erp-sidebar-nav {
+  padding: 10px 8px;
+}
+
+.erp-sidebar-section-label {
+  padding: 0 9px 5px;
+  font-size: 8px;
+}
+
+.erp-nav-item {
+  min-height: 36px;
+  gap: 9px;
+  margin: 2px 0;
+  padding: 7px 9px;
+  border-radius: 9px;
+  font-size: 11px;
+}
+
+.erp-sidebar-footer {
+  padding: 8px;
+}
+
+.erp-topbar {
+  height: 56px;
+  flex-basis: 56px;
+  grid-template-columns: auto minmax(260px, 580px) 1fr;
+  gap: 12px;
+  padding-inline: 18px;
+}
+
+.erp-global-search {
+  height: 36px;
+  border-radius: 10px;
+  padding-inline: 10px;
+}
+
+.erp-global-search input {
+  font-size: 12px;
+}
+
+.erp-search-shortcut {
+  height: 21px;
+  padding-inline: 6px;
+  font-size: 9px;
+}
+
+.erp-user-menu {
+  gap: 7px;
+  padding: 3px 6px 3px 3px;
+  border-radius: 10px;
+}
+
+.erp-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 9px;
+}
+
+/* Brand already exists in the sidebar; don't repeat the app title in user meta. */
+.erp-user-copy small {
+  display: none;
+}
+
+.erp-user-copy strong {
+  font-size: 11px;
+}
+
+/* Denser content */
+.erp-page {
+  max-width: 1600px;
+  padding: 18px 20px 28px;
+}
+
+.erp-page-heading {
+  min-height: 54px;
+  margin-bottom: 12px;
+}
+
+.erp-page-heading h1,
+.erp-detail-head h1 {
+  font-size: clamp(21px, 2vw, 27px);
+}
+
+.erp-page-heading p,
+.erp-detail-head p,
+.erp-section-head p {
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.erp-section {
+  margin-top: 14px;
+}
+
+.erp-section-head {
+  margin-bottom: 9px;
+}
+
+.erp-section-head h2 {
+  font-size: 15px;
+}
+
+.erp-eyebrow {
+  margin-bottom: 3px;
+  font-size: 8px;
+}
+
+/* Dashboard no longer repeats the PERADA Tools product title already shown in the sidebar. */
+.erp-hero {
+  display: none;
+}
+
+.erp-suite-grid {
+  gap: 10px;
+}
+
+.erp-suite-card,
+.erp-suite-list-row,
+.erp-module-card,
+.erp-tool-card,
+.erp-search-result,
+.erp-detail-head,
+.erp-empty-state {
+  border-radius: 11px;
+}
+
+.erp-suite-card-header {
+  min-height: 62px;
+  padding: 11px 12px;
+}
+
+.erp-suite-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+}
+
+.erp-suite-heading strong,
+.erp-suite-list-copy strong,
+.erp-module-card-copy strong,
+.erp-tool-card-copy strong {
+  font-size: 12px;
+}
+
+.erp-suite-heading small,
+.erp-suite-list-copy small,
+.erp-module-card-copy small,
+.erp-tool-card-copy small {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.erp-module-row {
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
+.erp-module-card,
+.erp-tool-card,
+.erp-search-result {
+  padding: 10px 11px;
+}
+
+.erp-module-grid,
+.erp-tool-grid,
+.erp-search-results {
+  gap: 8px;
+}
+
+/* Tool workspace: keep navigation context compact; individual tool owns the page title. */
+.erp-tool-shellbar {
+  min-height: 50px;
+  padding: 6px 14px;
+}
+
+.erp-tool-shell-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.erp-tool-shell-breadcrumbs {
+  font-size: 9px;
+}
+
+.erp-tool-shell-copy p {
+  display: none;
+}
+
+.erp-tool-shell-copy h1 {
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.erp-tool-shell-module {
+  font-size: 9px;
+}
+
+.erp-tool-body {
+  padding: 0;
+}
+
+/* MinerbaOne contains its own title card; hide the outer duplicate tool title. */
+[data-tool-id="minerbaone-checker"] .erp-tool-shell-copy h1,
+[data-tool-id="minerbaone-checker"] .erp-tool-shell-copy p {
+  display: none;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage > div {
+  padding: 12px !important;
+  gap: 12px !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="rounded-2xl"] {
+  border-radius: 10px !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="p-5"] {
+  padding: 12px !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="p-4"] {
+  padding: 10px !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="h-12"] {
+  height: 40px !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="text-xl"] {
+  font-size: 1rem !important;
+  line-height: 1.35 !important;
+}
+
+[data-tool-id="minerbaone-checker"] .erp-tool-stage [class~="min-h-72"] {
+  min-height: 180px !important;
+}
+
+@media (max-width: 900px) {
+  .erp-sidebar {
+    width: 210px;
+    min-width: 210px;
+  }
+
+  .erp-topbar {
+    padding-inline: 12px;
+  }
+
+  .erp-page {
+    padding: 14px 12px 22px;
+  }
+}
