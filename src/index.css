@@ -3,6 +3,7 @@
 @import './styles/document-template.css';
 @import './styles/lifecycle-suite.css';
 @import './styles/phl-finance.css';
+@import './styles/ui-revamp.css';
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -28,8 +29,8 @@ body {
 
 html.dark,
 html.dark body {
-  background: #0b1220;
-  color: #e5edf8;
+  background: #070b12;
+  color: #f3f7fb;
 }
 
 * {

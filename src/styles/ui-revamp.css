@@ -1,0 +1,357 @@
+/* =========================================================
+   PERADA Tools — 2026 UI Refresh
+   Additive visual layer only; functionality and tool layouts stay intact.
+   ========================================================= */
+
+.erp-shell {
+  --erp-radius-sm: 10px;
+  --erp-radius-md: 12px;
+  --erp-radius-lg: 16px;
+  --erp-radius-xl: 20px;
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--erp-primary) 7%, transparent) 0, transparent 34%),
+    var(--erp-bg);
+}
+
+.erp-shell.is-dark {
+  --erp-bg: #070b12;
+  --erp-surface: #0d131d;
+  --erp-surface-muted: #111925;
+  --erp-surface-raised: #121b28;
+  --erp-border: #1f2a39;
+  --erp-border-strong: #2d3a4d;
+  --erp-text: #f3f7fb;
+  --erp-text-secondary: #95a5ba;
+  --erp-text-tertiary: #66788f;
+  --erp-primary: #60a5fa;
+  --erp-primary-hover: #8bc1ff;
+  --erp-primary-soft: rgba(59, 130, 246, .12);
+  --erp-shadow-xs: 0 1px 0 rgba(255,255,255,.02), 0 8px 24px rgba(0,0,0,.10);
+  --erp-shadow-sm: 0 1px 0 rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.16);
+  --erp-shadow-md: 0 1px 0 rgba(255,255,255,.03), 0 22px 60px rgba(0,0,0,.26);
+}
+
+.erp-sidebar {
+  width: 244px;
+  min-width: 244px;
+  border-right-color: color-mix(in srgb, var(--erp-border) 78%, transparent);
+  background: color-mix(in srgb, var(--erp-surface) 94%, transparent);
+  box-shadow: 12px 0 40px rgba(3, 7, 18, .03);
+  backdrop-filter: blur(22px) saturate(125%);
+}
+
+.erp-shell.is-dark .erp-sidebar {
+  background: rgba(9, 14, 22, .92);
+  box-shadow: 14px 0 42px rgba(0, 0, 0, .18);
+}
+
+.erp-sidebar-brand {
+  height: 72px;
+  flex-basis: 72px;
+  padding-inline: 12px;
+  border-bottom-color: color-mix(in srgb, var(--erp-border) 72%, transparent);
+}
+
+.erp-brand-mark,
+.erp-avatar {
+  border: 1px solid rgba(255,255,255,.16);
+  background: linear-gradient(145deg, #2563eb 0%, #0ea5e9 50%, #10b981 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 20px rgba(37,99,235,.18);
+}
+
+.erp-brand-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.erp-brand-copy strong {
+  font-size: 13px;
+  font-weight: 760;
+  letter-spacing: -.025em;
+}
+
+.erp-sidebar-nav { padding: 18px 10px; }
+.erp-sidebar-section-label {
+  padding: 0 10px 9px;
+  font-size: 9px;
+  letter-spacing: .15em;
+  opacity: .72;
+}
+
+.erp-nav-item {
+  min-height: 44px;
+  position: relative;
+  gap: 12px;
+  margin: 3px 0;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 670;
+  transition: transform 160ms ease, background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.erp-nav-item:hover {
+  transform: translateX(2px);
+  border-color: color-mix(in srgb, var(--erp-border) 70%, transparent);
+  background: color-mix(in srgb, var(--erp-surface-muted) 86%, transparent);
+}
+
+.erp-nav-item.is-active {
+  border-color: color-mix(in srgb, var(--erp-primary) 26%, var(--erp-border));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--erp-primary) 16%, transparent), color-mix(in srgb, var(--erp-primary) 7%, transparent));
+  box-shadow: inset 3px 0 0 var(--erp-primary);
+}
+
+.erp-nav-item.is-active::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--erp-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--erp-primary) 12%, transparent);
+}
+
+.erp-sidebar-company {
+  margin-top: 10px;
+  padding: 12px 10px 6px;
+  border-top: 1px solid color-mix(in srgb, var(--erp-border) 62%, transparent);
+}
+
+.erp-topbar {
+  height: 72px;
+  flex-basis: 72px;
+  grid-template-columns: auto minmax(300px, 660px) 1fr;
+  padding-inline: 26px;
+  border-bottom-color: color-mix(in srgb, var(--erp-border) 72%, transparent);
+  background: color-mix(in srgb, var(--erp-surface) 78%, transparent);
+  backdrop-filter: blur(24px) saturate(135%);
+}
+
+.erp-shell.is-dark .erp-topbar {
+  background: rgba(7, 11, 18, .78);
+}
+
+.erp-global-search {
+  height: 44px;
+  border-radius: 14px;
+  border-color: color-mix(in srgb, var(--erp-border) 90%, transparent);
+  background: color-mix(in srgb, var(--erp-surface-muted) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.erp-global-search:focus-within {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--erp-primary) 55%, var(--erp-border));
+  background: var(--erp-surface-raised);
+  box-shadow: var(--erp-focus), 0 12px 30px rgba(0,0,0,.08);
+}
+
+.erp-icon-button,
+.erp-tool-shell-back {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.erp-icon-button:hover,
+.erp-tool-shell-back:hover {
+  border-color: var(--erp-border);
+  background: var(--erp-surface-muted);
+}
+
+.erp-user-menu {
+  padding: 5px 8px 5px 5px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  transition: 160ms ease;
+}
+
+.erp-user-menu:hover {
+  border-color: var(--erp-border);
+  background: var(--erp-surface-muted);
+}
+
+.erp-page {
+  max-width: 1680px;
+  padding: 30px 30px 44px;
+}
+
+.erp-page-heading {
+  min-height: 82px;
+  margin-bottom: 22px;
+}
+
+.erp-page-heading h1,
+.erp-detail-head h1 {
+  font-size: clamp(26px, 2.5vw, 34px);
+  font-weight: 760;
+  letter-spacing: -.045em;
+}
+
+.erp-eyebrow {
+  letter-spacing: .16em;
+  opacity: .92;
+}
+
+.erp-hero {
+  min-height: 224px;
+  border-radius: 22px;
+  border-color: color-mix(in srgb, var(--erp-primary) 16%, var(--erp-border));
+  background:
+    linear-gradient(112deg, rgba(255,255,255,.97) 0%, rgba(241,247,255,.94) 48%, rgba(230,240,255,.92) 100%);
+  box-shadow: 0 24px 70px rgba(37,99,235,.07), var(--erp-shadow-xs);
+}
+
+.erp-shell.is-dark .erp-hero {
+  border-color: rgba(96,165,250,.18);
+  background:
+    radial-gradient(circle at 80% 20%, rgba(14,165,233,.15), transparent 28%),
+    radial-gradient(circle at 55% 120%, rgba(16,185,129,.10), transparent 32%),
+    linear-gradient(112deg, #0d131d 0%, #0d1726 48%, #0c2030 100%);
+  box-shadow: 0 28px 80px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+.erp-hero-content { padding: 34px 40px; }
+.erp-hero h1 {
+  font-size: clamp(40px, 4vw, 58px);
+  font-weight: 780;
+  letter-spacing: -.06em;
+}
+.erp-hero p { max-width: 720px; font-size: 13px; line-height: 1.75; }
+.erp-hero-badges { margin-top: 20px; }
+.erp-hero-badges span {
+  padding: 6px 11px;
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+.erp-suite-grid { gap: 16px; }
+
+.erp-suite-card,
+.erp-suite-list-row,
+.erp-module-card,
+.erp-tool-card,
+.erp-search-result,
+.erp-detail-head,
+.erp-empty-state {
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--erp-border) 88%, transparent);
+  box-shadow: 0 1px 0 rgba(255,255,255,.018), 0 8px 24px rgba(2,6,23,.025);
+}
+
+.erp-shell.is-dark .erp-suite-card,
+.erp-shell.is-dark .erp-suite-list-row,
+.erp-shell.is-dark .erp-module-card,
+.erp-shell.is-dark .erp-tool-card,
+.erp-shell.is-dark .erp-search-result,
+.erp-shell.is-dark .erp-detail-head,
+.erp-shell.is-dark .erp-empty-state {
+  background: linear-gradient(180deg, rgba(18,27,40,.96), rgba(13,19,29,.96));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 14px 34px rgba(0,0,0,.12);
+}
+
+.erp-suite-card,
+.erp-module-card,
+.erp-tool-card,
+.erp-search-result {
+  transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
+}
+
+.erp-suite-card:hover,
+.erp-module-card:hover,
+.erp-tool-card:hover,
+.erp-search-result:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--suite-accent, var(--erp-primary)) 36%, var(--erp-border));
+  box-shadow: 0 18px 44px rgba(2,6,23,.08);
+}
+
+.erp-shell.is-dark .erp-suite-card:hover,
+.erp-shell.is-dark .erp-module-card:hover,
+.erp-shell.is-dark .erp-tool-card:hover,
+.erp-shell.is-dark .erp-search-result:hover {
+  background: linear-gradient(180deg, rgba(22,33,49,.98), rgba(14,21,32,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 20px 48px rgba(0,0,0,.22);
+}
+
+.erp-suite-icon,
+.erp-module-card-icon,
+.erp-tool-icon,
+.erp-search-result-icon,
+.erp-tool-shell-icon {
+  border-radius: 12px !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.erp-module-row {
+  min-height: 46px;
+  border-radius: 10px;
+}
+
+.erp-view-toggle {
+  border-radius: 12px;
+  padding: 3px;
+  background: var(--erp-surface-muted);
+}
+
+.erp-tool-workspace-frame {
+  background: var(--erp-bg);
+}
+
+.erp-tool-shellbar {
+  min-height: 78px;
+  border-bottom-color: color-mix(in srgb, var(--erp-border) 76%, transparent);
+  background: color-mix(in srgb, var(--erp-surface) 82%, transparent);
+  backdrop-filter: blur(22px) saturate(130%);
+}
+
+.erp-shell.is-dark .erp-tool-shellbar {
+  background: rgba(8, 13, 21, .84);
+}
+
+.erp-tool-shell-copy h1 {
+  letter-spacing: -.03em;
+}
+
+.erp-tool-body {
+  background:
+    radial-gradient(circle at 50% -10%, color-mix(in srgb, var(--suite-accent, var(--erp-primary)) 6%, transparent), transparent 35%),
+    var(--erp-bg);
+}
+
+.erp-tool-stage {
+  max-width: 1720px;
+  margin-inline: auto;
+}
+
+@media (max-width: 1100px) {
+  .erp-topbar { grid-template-columns: auto minmax(260px, 1fr) auto; padding-inline: 18px; }
+  .erp-user-copy { display: none; }
+  .erp-page { padding: 24px 20px 34px; }
+  .erp-hero { grid-template-columns: 1fr; }
+  .erp-hero-visual { display: none; }
+}
+
+@media (max-width: 760px) {
+  .erp-sidebar { width: 78px; min-width: 78px; }
+  .erp-sidebar .erp-brand-copy,
+  .erp-sidebar .erp-company-copy,
+  .erp-sidebar .erp-sidebar-section-label,
+  .erp-sidebar .erp-nav-item span { display: none; }
+  .erp-sidebar .erp-brand-lockup { display: none; }
+  .erp-sidebar .erp-nav-item,
+  .erp-sidebar .erp-sidebar-company { justify-content: center; }
+  .erp-topbar { height: 64px; flex-basis: 64px; padding-inline: 12px; gap: 8px; }
+  .erp-topbar-actions .erp-topbar-divider,
+  .erp-topbar-actions .erp-user-menu { display: none; }
+  .erp-global-search { height: 40px; border-radius: 12px; }
+  .erp-search-shortcut { display: none; }
+  .erp-page { padding: 18px 14px 28px; }
+  .erp-hero { min-height: 190px; border-radius: 18px; }
+  .erp-hero-content { padding: 26px 22px; }
+  .erp-hero h1 { font-size: 38px; }
+}
