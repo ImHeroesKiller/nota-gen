@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/minerba/*.ts": {
+      "maxDuration": 60
+    }
+  }
+}
