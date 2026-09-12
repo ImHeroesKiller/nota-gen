@@ -1,7 +1,6 @@
-import { minerbaCors } from '../../server/minerba.js';
+import { minerbaCors } from '../../server/minerbaHttp.js';
 import type { MinerbaSearchItem } from '../../server/minerba.js';
 import { searchMinerbaPublicLite } from '../../server/minerbaSearchPublicLite.js';
-import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
 
 const normalize = (value: unknown) => String(value ?? '')
   .trim()
@@ -43,6 +42,11 @@ const sanitizeBrowserResults = (items: MinerbaSearchItem[]) => items
   .filter((item) => item.kode_badan_usaha && item.nama)
   .slice(0, 25);
 
+const browserFallback = async (query: string) => {
+  const { searchMinerbaV2 } = await import('../../server/minerbaSearchV2.js');
+  return searchMinerbaV2(query);
+};
+
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -59,10 +63,10 @@ export default async function handler(req: any, res: any) {
     const relevantPublicResults = rankPublicResults(publicResults, query);
     if (relevantPublicResults.length) return res.status(200).json(relevantPublicResults);
 
-    // Only run the JS-rendered fallback after an explicit Search action and only
-    // when the lightweight public response cannot resolve the query.
+    // Load Chromium/Puppeteer only when the lightweight public response cannot
+    // resolve an explicit Search action. This keeps the normal path fast and quiet.
     try {
-      const browserResults = await searchMinerbaV2(query);
+      const browserResults = await browserFallback(query);
       return res.status(200).json(sanitizeBrowserResults(browserResults));
     } catch (browserError) {
       console.warn('Minerba browser fallback unavailable', browserError);
@@ -71,7 +75,7 @@ export default async function handler(req: any, res: any) {
   } catch (publicError) {
     console.warn('Minerba public API search failed, using browser fallback', publicError);
     try {
-      const browserResults = await searchMinerbaV2(query);
+      const browserResults = await browserFallback(query);
       return res.status(200).json(sanitizeBrowserResults(browserResults));
     } catch (browserError) {
       console.error('Minerba search failed', browserError);
