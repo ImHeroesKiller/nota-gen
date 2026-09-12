@@ -6,8 +6,8 @@ import {
   CheckCircle,
   ClipboardList,
   FileCheck2,
+  FileText,
   Hash,
-  ReceiptText,
   Shield,
   TrendingUp,
   Truck,
@@ -48,7 +48,7 @@ const flow = [
   { title: 'Attendance', detail: 'Hari kerja aktual', Icon: Calendar },
   { title: 'Timesheet', detail: 'Rekap hari & lembur', Icon: ClipboardList },
   { title: 'Payroll', detail: 'Hari hadir × rate harian', Icon: Banknote },
-  { title: 'Invoice', detail: 'Payroll base → client billing', Icon: ReceiptText },
+  { title: 'Invoice', detail: 'Payroll base → client billing', Icon: FileText },
   { title: 'AR', detail: 'Outstanding, aging & collection', Icon: TrendingUp },
 ];
 

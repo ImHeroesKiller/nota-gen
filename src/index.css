@@ -2,6 +2,7 @@
 @import './styles/perada-erp.css';
 @import './styles/document-template.css';
 @import './styles/lifecycle-suite.css';
+@import './styles/phl-finance.css';
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

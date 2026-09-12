@@ -1,0 +1,52 @@
+/* PHL Invoice + AR polish. Scoped to the two finance tools only. */
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .erp-tool-stage > .phl-finance-page {
+  padding: 20px 24px 28px;
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page > section,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page > section {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page table,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page table {
+  border-spacing: 0;
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page thead,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page input,
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page select,
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page textarea,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page input,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page select,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page textarea {
+  min-width: 0;
+}
+
+.erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page button,
+.erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page button {
+  touch-action: manipulation;
+}
+
+@media (max-width: 760px) {
+  .erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .erp-tool-stage > .phl-finance-page {
+    padding: 14px 12px 22px;
+  }
+
+  .erp-tool-workspace-frame[data-tool-id="phl-invoice-billing"] .phl-finance-page,
+  .erp-tool-workspace-frame[data-tool-id="phl-ar-monitoring"] .phl-finance-page {
+    gap: 14px;
+  }
+}
