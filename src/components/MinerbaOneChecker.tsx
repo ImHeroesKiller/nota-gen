@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Building2,
@@ -53,7 +53,6 @@ type Detail = {
 };
 
 const SOURCE_URL = 'https://minerbaone.esdm.go.id/publik/badan-usaha';
-
 const emptyText = (value: string | undefined) => value?.trim() || '-';
 
 export default function MinerbaOneChecker() {
@@ -65,40 +64,32 @@ export default function MinerbaOneChecker() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  useEffect(() => {
+  const runSearch = async () => {
     const q = query.trim();
-    if (q.length < 2) {
+    if (q.length < 2 || searching) return;
+
+    setSearching(true);
+    setHasSearched(true);
+    setResults([]);
+    setSelected(null);
+    setDetail(null);
+    setError('');
+    setOpen(true);
+
+    try {
+      const response = await fetch(`/api/minerba/search?q=${encodeURIComponent(q)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || 'Gagal mencari data MinerbaOne.');
+      setResults(Array.isArray(data) ? data : []);
+    } catch (err: any) {
       setResults([]);
+      setError(err?.message || 'Gagal mencari data MinerbaOne.');
+    } finally {
       setSearching(false);
-      return;
     }
-
-    const timer = window.setTimeout(async () => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setSearching(true);
-      setError('');
-      try {
-        const response = await fetch(`/api/minerba/search?q=${encodeURIComponent(q)}`, { signal: controller.signal });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.error || 'Gagal mencari data MinerbaOne.');
-        setResults(Array.isArray(data) ? data : []);
-        setOpen(true);
-      } catch (err: any) {
-        if (err?.name !== 'AbortError') {
-          setResults([]);
-          setError(err?.message || 'Gagal mencari data MinerbaOne.');
-        }
-      } finally {
-        if (!controller.signal.aborted) setSearching(false);
-      }
-    }, 450);
-
-    return () => window.clearTimeout(timer);
-  }, [query]);
+  };
 
   const loadDetail = async (item: SearchItem) => {
     setSelected(item);
@@ -141,7 +132,7 @@ export default function MinerbaOneChecker() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-600">Public MinerbaOne Data</p>
                 <h2 className="mt-1 text-xl font-bold tracking-tight">MinerbaOne Business Checker</h2>
                 <p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  Cari badan usaha berdasarkan Nama Badan Usaha, Nomor Izin, atau Kode WIUP. Data ditarik hanya dari halaman publik MinerbaOne ESDM.
+                  Isi Nama Badan Usaha, Nomor Izin, atau Kode WIUP lalu klik Cari. Detail baru diambil setelah hasil dipilih.
                 </p>
               </div>
             </div>
@@ -156,27 +147,46 @@ export default function MinerbaOneChecker() {
           </div>
         </div>
 
-        <div className="relative p-5">
+        <form
+          className="relative p-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void runSearch();
+          }}
+        >
           <label className="block text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">Search public registry</label>
-          <div className="relative mt-2">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setSelected(null);
-                setDetail(null);
-                setOpen(true);
-              }}
-              onFocus={() => results.length > 0 && setOpen(true)}
-              placeholder="Nama Badan Usaha / Nomor Izin / Kode WIUP"
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-11 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-            />
-            {searching && <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-emerald-600" size={18} />}
+          <div className="mt-2 flex gap-2">
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setResults([]);
+                  setSelected(null);
+                  setDetail(null);
+                  setError('');
+                  setOpen(false);
+                  setHasSearched(false);
+                }}
+                onFocus={() => results.length > 0 && setOpen(true)}
+                placeholder="Nama Badan Usaha / Nomor Izin / Kode WIUP"
+                className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={query.trim().length < 2 || searching}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+              {searching ? 'Mencari...' : 'Cari'}
+            </button>
           </div>
+          <p className="mt-2 text-[10px] text-slate-400">Tidak ada request saat mengetik. Search hanya dijalankan saat tombol Cari ditekan atau Enter.</p>
 
-          {open && query.trim().length >= 2 && (
-            <div className="absolute left-5 right-5 top-[112px] z-30 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+          {open && hasSearched && (
+            <div className="absolute left-5 right-5 top-[142px] z-30 max-h-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
               {searching ? (
                 <div className="flex items-center gap-2 p-3 text-xs text-slate-500"><Loader2 size={14} className="animate-spin" /> Mencari data publik...</div>
               ) : results.length === 0 ? (
@@ -185,7 +195,7 @@ export default function MinerbaOneChecker() {
                 <button
                   key={item.kode_badan_usaha}
                   type="button"
-                  onClick={() => loadDetail(item)}
+                  onClick={() => void loadDetail(item)}
                   className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"><Building2 size={16} /></span>
@@ -193,11 +203,12 @@ export default function MinerbaOneChecker() {
                     <strong className="block truncate text-xs">{item.nama}</strong>
                     <span className="mt-0.5 block truncate text-[10px] text-slate-500">Kode {item.kode_badan_usaha}{item.jenis ? ` · ${item.jenis}` : ''}</span>
                   </span>
+                  <span className="rounded-lg border border-slate-200 px-2 py-1 text-[9px] font-bold text-slate-500 dark:border-slate-700">Lihat Detail</span>
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </form>
       </section>
 
       {error && (
@@ -208,7 +219,7 @@ export default function MinerbaOneChecker() {
 
       {loadingDetail && (
         <section className="grid min-h-72 place-items-center rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-          <div className="text-center"><Loader2 size={28} className="mx-auto animate-spin text-emerald-600" /><p className="mt-3 text-xs text-slate-500">Mengambil detail badan usaha...</p></div>
+          <div className="text-center"><Loader2 size={28} className="mx-auto animate-spin text-emerald-600" /><p className="mt-3 text-xs text-slate-500">Mengambil detail badan usaha yang dipilih...</p></div>
         </section>
       )}
 
@@ -306,9 +317,9 @@ export default function MinerbaOneChecker() {
         </>
       )}
 
-      {!detail && !loadingDetail && selected === null && query.trim().length < 2 && (
+      {!detail && !loadingDetail && selected === null && !hasSearched && (
         <section className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
-          <div><Search size={30} className="mx-auto text-slate-300" /><strong className="mt-3 block text-sm">Cari data badan usaha MinerbaOne</strong><p className="mt-1 text-xs text-slate-500">Ketik minimal 2 karakter pada kolom pencarian.</p></div>
+          <div><Search size={30} className="mx-auto text-slate-300" /><strong className="mt-3 block text-sm">Cari data badan usaha MinerbaOne</strong><p className="mt-1 text-xs text-slate-500">Isi kata kunci lalu klik Cari. Detail tidak akan diambil sebelum Anda memilih hasil.</p></div>
         </section>
       )}
     </div>
