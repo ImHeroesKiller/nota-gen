@@ -2,6 +2,12 @@ const TARGETS: Record<string, string> = {
   list: 'https://minerbaone.esdm.go.id/publik/badan-usaha',
   detail: 'https://minerbaone.esdm.go.id/publik/badan-usaha/14357/detail',
   bundle: 'https://minerbaone.esdm.go.id/assets/index-bf6e78b7.js',
+  apiSearch: 'https://minerbaone.esdm.go.id/api/common/v2/badan-usaha?search=3G%20TRUST&page=1&limit=25',
+  apiDetail: 'https://minerbaone.esdm.go.id/api/common/v2/badan-usaha/14357',
+  apiDireksi: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/direksi',
+  apiSaham: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/pemegang-saham',
+  apiIzin: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/izin',
+  apiWiup: 'https://minerbaone.esdm.go.id/api/perizinan/v2/badan-usaha/14357/wiup',
 };
 
 const snippets = (text: string, pattern: RegExp, max = 60) => {
@@ -19,12 +25,15 @@ export default async function handler(req: any, res: any) {
   const target = String(req.query?.target || 'list');
   const url = TARGETS[target] || TARGETS.list;
   try {
+    const isApi = target.startsWith('api');
     const response = await fetch(url, {
       redirect: 'follow',
       headers: {
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
-        accept: target === 'bundle' ? '*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        accept: isApi ? 'application/json, text/plain, */*' : target === 'bundle' ? '*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'accept-language': 'id-ID,id;q=0.9,en-US;q=0.7,en;q=0.6',
+        ...(isApi ? { 'x-api-key': 'qwe' } : {}),
+        referer: 'https://minerbaone.esdm.go.id/publik/badan-usaha',
       },
     });
     const text = await response.text();
@@ -46,11 +55,11 @@ export default async function handler(req: any, res: any) {
         ].slice(0, 80)
       : [];
     return res.status(200).json({
-      status: response.status,
+      upstreamStatus: response.status,
       url: response.url,
       contentType: response.headers.get('content-type'),
       length: text.length,
-      sample: target === 'bundle' ? text.slice(0, 300) : text.slice(0, 3000),
+      sample: text.slice(0, isApi ? 12000 : target === 'bundle' ? 300 : 3000),
       scripts,
       links,
       routeSnippets,
