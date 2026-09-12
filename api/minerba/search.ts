@@ -1,7 +1,6 @@
 import { minerbaCors } from '../../server/minerba.js';
 import type { MinerbaSearchItem } from '../../server/minerba.js';
 import { searchMinerbaPublicLite } from '../../server/minerbaSearchPublicLite.js';
-import { getMinerbaDetailPublicV2 } from '../../server/minerbaDetailPublic.js';
 import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
 
 const normalize = (value: unknown) => String(value ?? '')
@@ -48,12 +47,6 @@ export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
-  const probeKode = Array.isArray(req.query?.__detail_probe) ? req.query.__detail_probe[0] : req.query?.__detail_probe;
-  if (probeKode) {
-    const detail = await getMinerbaDetailPublicV2(String(probeKode));
-    return detail ? res.status(200).json(detail) : res.status(404).json({ error: 'Tidak ada data.' });
-  }
 
   const q = Array.isArray(req.query?.q) ? req.query.q[0] : req.query?.q;
   const query = String(q || '').trim();
