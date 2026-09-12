@@ -1,5 +1,10 @@
-import { getMinerbaDetail, minerbaCors } from '../../server/minerba.js';
+import { minerbaCors } from '../../server/minerbaHttp.js';
 import { getMinerbaDetailPublicV2 } from '../../server/minerbaDetailPublic.js';
+
+const browserFallback = async (kode: string) => {
+  const { getMinerbaDetail } = await import('../../server/minerba.js');
+  return getMinerbaDetail(kode);
+};
 
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
@@ -12,12 +17,13 @@ export default async function handler(req: any, res: any) {
   if (!/^[A-Za-z0-9._-]{1,64}$/.test(kode)) return res.status(400).json({ error: 'Kode badan usaha tidak valid.' });
 
   try {
-    // Detail is intentionally fetched only after the user selects a search result.
+    // Normal path: public JSON only. Chromium/Puppeteer stays unloaded unless the
+    // public detail adapter cannot resolve the company selected by the user.
     const publicDetail = await getMinerbaDetailPublicV2(kode);
     if (publicDetail) return res.status(200).json(publicDetail);
 
     try {
-      const browserDetail = await getMinerbaDetail(kode);
+      const browserDetail = await browserFallback(kode);
       if (!browserDetail) return res.status(404).json({ error: 'Tidak ada data.' });
       return res.status(200).json(browserDetail);
     } catch (browserError) {
@@ -27,7 +33,7 @@ export default async function handler(req: any, res: any) {
   } catch (publicError) {
     console.warn('Minerba public detail API failed, using browser fallback', publicError);
     try {
-      const browserDetail = await getMinerbaDetail(kode);
+      const browserDetail = await browserFallback(kode);
       if (!browserDetail) return res.status(404).json({ error: 'Tidak ada data.' });
       return res.status(200).json(browserDetail);
     } catch (browserError) {
