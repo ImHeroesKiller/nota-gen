@@ -1,4 +1,4 @@
-import { getMinerbaDetail, minerbaCors } from '../../server/minerba';
+import { getMinerbaDetail, minerbaCors } from '../../server/minerba.js';
 
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
