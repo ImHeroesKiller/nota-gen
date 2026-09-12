@@ -1,4 +1,5 @@
-import { minerbaCors, searchMinerba } from '../../server/minerba.js';
+import { minerbaCors } from '../../server/minerba.js';
+import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
 
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
@@ -11,7 +12,7 @@ export default async function handler(req: any, res: any) {
   if (query.length > 120) return res.status(400).json({ error: 'Query too long' });
 
   try {
-    const results = await searchMinerba(query);
+    const results = await searchMinerbaV2(query);
     return res.status(200).json(results);
   } catch (error) {
     console.error('Minerba search failed', error);
