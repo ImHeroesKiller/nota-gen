@@ -1,5 +1,5 @@
 import { getMinerbaDetail, minerbaCors } from '../../server/minerba.js';
-import { getMinerbaDetailPublic } from '../../server/minerbaPublic.js';
+import { getMinerbaDetailPublicV2 } from '../../server/minerbaDetailPublic.js';
 
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
@@ -12,7 +12,8 @@ export default async function handler(req: any, res: any) {
   if (!/^[A-Za-z0-9._-]{1,64}$/.test(kode)) return res.status(400).json({ error: 'Kode badan usaha tidak valid.' });
 
   try {
-    const publicDetail = await getMinerbaDetailPublic(kode);
+    // Detail is intentionally fetched only after the user selects a search result.
+    const publicDetail = await getMinerbaDetailPublicV2(kode);
     if (publicDetail) return res.status(200).json(publicDetail);
 
     try {
