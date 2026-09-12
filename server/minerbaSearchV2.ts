@@ -4,7 +4,7 @@ import type { MinerbaSearchItem } from './minerba.js';
 
 const BASE_URL = 'https://minerbaone.esdm.go.id';
 const LIST_URL = `${BASE_URL}/publik/badan-usaha`;
-const MAX_SEARCH_PAGES = Number(process.env.MINERBA_MAX_SEARCH_PAGES || 10);
+const MAX_SEARCH_PAGES = Number(process.env.MINERBA_BROWSER_SEARCH_PAGES || 1);
 const MIN_DELAY_MS = 2000;
 
 const USER_AGENTS = [
@@ -170,7 +170,7 @@ export const searchMinerbaV2 = async (rawQuery: string): Promise<MinerbaSearchIt
 
     for (let pageIndex = 0; pageIndex < MAX_SEARCH_PAGES; pageIndex += 1) {
       for (const item of await extractFromDom(page)) apiResults.set(item.kode_badan_usaha, item);
-      if (apiResults.size >= 25 && pageIndex > 0) break;
+      if (pageIndex >= MAX_SEARCH_PAGES - 1) break;
 
       const clicked = await page.evaluate(() => {
         const candidates = Array.from(document.querySelectorAll('button,a')) as HTMLElement[];
