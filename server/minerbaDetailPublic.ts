@@ -1,11 +1,10 @@
 import type {
   MinerbaDetail,
   MinerbaDireksi,
-  MinerbaPerizinan,
   MinerbaSaham,
   MinerbaSearchItem,
 } from './minerba.js';
-import { classifyMinerbaCncStatus, type MinerbaCncMeta } from './minerbaCnc.js';
+import { classifyMinerbaCncStatus } from './minerbaCnc.js';
 import { searchMinerbaPublic } from './minerbaPublic.js';
 
 const BASE_URL = 'https://minerbaone.esdm.go.id';
@@ -24,14 +23,6 @@ const USER_AGENTS = [
 type JsonRecord = Record<string, any>;
 type CacheEntry<T> = { value: T; expiresAt: number };
 type SearchResultWithId = MinerbaSearchItem & { id_badan_usaha?: string };
-type MinerbaPerizinanWithMeta = MinerbaPerizinan & {
-  status_cnc_badge: {
-    color: 'green' | 'amber' | 'red' | 'gray';
-    label: string;
-    description: string;
-  };
-  status_cnc_meta: MinerbaCncMeta;
-};
 type MinerbaDetailGlobal = typeof globalThis & {
   __minerbaPublicLastRequestAt?: number;
   __minerbaDetailPublicV2Cache?: Map<string, CacheEntry<MinerbaDetail>>;
@@ -196,7 +187,7 @@ const mapSaham = (row: JsonRecord): MinerbaSaham => ({
   persentase_saham: pick(row, 'persentase_saham', 'persentase', 'persen_saham'),
 });
 
-const mapPerizinan = (row: JsonRecord): MinerbaPerizinanWithMeta => {
+const mapPerizinan = (row: JsonRecord): any => {
   const status = pick(row, 'status_cnc.status_cnc', 'status_cnc', 'cnc');
   const meta = classifyMinerbaCncStatus(status);
   return {
