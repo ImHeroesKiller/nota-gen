@@ -4,6 +4,7 @@
 @import './styles/lifecycle-suite.css';
 @import './styles/phl-finance.css';
 @import './styles/ui-revamp.css';
+@import './styles/ui-compact-fixes.css';
 
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
