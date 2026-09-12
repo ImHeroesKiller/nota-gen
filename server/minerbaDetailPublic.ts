@@ -1,10 +1,10 @@
 import type {
   MinerbaDetail,
   MinerbaDireksi,
-  MinerbaPerizinan,
   MinerbaSaham,
   MinerbaSearchItem,
 } from './minerba.js';
+import { classifyMinerbaCncStatus } from './minerbaCnc.js';
 import { searchMinerbaPublic } from './minerbaPublic.js';
 
 const BASE_URL = 'https://minerbaone.esdm.go.id';
@@ -187,9 +187,9 @@ const mapSaham = (row: JsonRecord): MinerbaSaham => ({
   persentase_saham: pick(row, 'persentase_saham', 'persentase', 'persen_saham'),
 });
 
-const mapPerizinan = (row: JsonRecord): MinerbaPerizinan => {
+const mapPerizinan = (row: JsonRecord): any => {
   const status = pick(row, 'status_cnc.status_cnc', 'status_cnc', 'cnc');
-  const valid = status.toUpperCase() === 'CNC';
+  const meta = classifyMinerbaCncStatus(status);
   return {
     nomor_izin: pick(row, 'nomor_izin'),
     jenis_izin: pick(row, 'jenis_perizinan.jenis_perizinan', 'jenis_izin', 'jenis_perizinan'),
@@ -200,7 +200,12 @@ const mapPerizinan = (row: JsonRecord): MinerbaPerizinan => {
     tanggal_berlaku: pick(row, 'tanggal_berlaku', 'tanggal_penetapan'),
     tanggal_berakhir: pick(row, 'tanggal_berakhir'),
     status_cnc: status,
-    status_cnc_badge: valid ? { color: 'green', label: 'CnC Valid' } : { color: 'red', label: 'Non-CnC' },
+    status_cnc_badge: {
+      color: meta.tone,
+      label: meta.short_label,
+      description: meta.description,
+    },
+    status_cnc_meta: meta,
     lokasi: pick(row, 'lokasi_perizinan', 'lokasi'),
     kode_wiup: pick(row, 'wiup.nomor_wiup', 'wiup.kode_wiup', 'nomor_wiup', 'kode_wiup'),
   };
