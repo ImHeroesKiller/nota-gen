@@ -1,71 +1,67 @@
-const TARGETS: Record<string, string> = {
-  list: 'https://minerbaone.esdm.go.id/publik/badan-usaha',
-  detail: 'https://minerbaone.esdm.go.id/publik/badan-usaha/14357/detail',
-  bundle: 'https://minerbaone.esdm.go.id/assets/index-bf6e78b7.js',
-  apiSearch: 'https://minerbaone.esdm.go.id/api/common/v2/badan-usaha?search=3G%20TRUST&page=1&limit=25',
-  apiDetail: 'https://minerbaone.esdm.go.id/api/common/v2/badan-usaha/14357',
-  apiDireksi: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/direksi',
-  apiSaham: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/pemegang-saham',
-  apiIzin: 'https://minerbaone.esdm.go.id/api/common/v3/badan-usaha/14357/izin',
-  apiWiup: 'https://minerbaone.esdm.go.id/api/perizinan/v2/badan-usaha/14357/wiup',
+const BASE = 'https://minerbaone.esdm.go.id';
+const BUNDLE = `${BASE}/assets/index-bf6e78b7.js`;
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36';
+
+const headers = {
+  'user-agent': UA,
+  accept: 'application/json, text/plain, */*',
+  'accept-language': 'id-ID,id;q=0.9,en-US;q=0.7,en;q=0.6',
+  'x-api-key': 'qwe',
+  referer: `${BASE}/publik/badan-usaha`,
 };
 
-const snippets = (text: string, pattern: RegExp, max = 60) => {
-  const found: string[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(text)) && found.length < max) {
-    const start = Math.max(0, match.index - 300);
-    const end = Math.min(text.length, match.index + match[0].length + 500);
-    found.push(text.slice(start, end));
+const brief = async (url: string) => {
+  try {
+    const response = await fetch(url, { redirect: 'follow', headers });
+    const text = await response.text();
+    return { url, status: response.status, contentType: response.headers.get('content-type'), sample: text.slice(0, 5000) };
+  } catch (error: any) {
+    return { url, status: 0, sample: error?.message || String(error) };
   }
-  return found;
+};
+
+const contextAround = (text: string, needle: string, before = 1200, after = 1800) => {
+  const index = text.toLowerCase().indexOf(needle.toLowerCase());
+  if (index < 0) return '';
+  return text.slice(Math.max(0, index - before), Math.min(text.length, index + needle.length + after));
 };
 
 export default async function handler(req: any, res: any) {
-  const target = String(req.query?.target || 'list');
-  const url = TARGETS[target] || TARGETS.list;
-  try {
-    const isApi = target.startsWith('api');
-    const response = await fetch(url, {
-      redirect: 'follow',
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36',
-        accept: isApi ? 'application/json, text/plain, */*' : target === 'bundle' ? '*/*' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'accept-language': 'id-ID,id;q=0.9,en-US;q=0.7,en;q=0.6',
-        ...(isApi ? { 'x-api-key': 'qwe' } : {}),
-        referer: 'https://minerbaone.esdm.go.id/publik/badan-usaha',
-      },
-    });
-    const text = await response.text();
-    const scripts = [...text.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]).slice(0, 30);
-    const links = [...text.matchAll(/<link[^>]+href=["']([^"']+)["']/gi)].map((m) => m[1]).slice(0, 30);
-    const routeSnippets = target === 'bundle'
-      ? [
-          ...snippets(text, /badan-usaha/gi, 30),
-          ...snippets(text, /kode_wiup/gi, 10),
-          ...snippets(text, /nomor_izin/gi, 10),
-        ].slice(0, 50)
-      : [];
-    const configSnippets = target === 'bundle'
-      ? [
-          ...snippets(text, /cmn\s*:/gi, 20),
-          ...snippets(text, /prz\s*:/gi, 20),
-          ...snippets(text, /j0\s*=/gi, 20),
-          ...snippets(text, /https:\/\/[A-Za-z0-9._:/?=&-]+/gi, 30),
-        ].slice(0, 80)
-      : [];
-    return res.status(200).json({
-      upstreamStatus: response.status,
-      url: response.url,
-      contentType: response.headers.get('content-type'),
-      length: text.length,
-      sample: text.slice(0, isApi ? 12000 : target === 'bundle' ? 300 : 3000),
-      scripts,
-      links,
-      routeSnippets,
-      configSnippets,
-    });
-  } catch (error: any) {
-    return res.status(500).json({ error: error?.message || String(error) });
+  const target = String(req.query?.target || 'variants');
+
+  if (target === 'variants') {
+    const q = encodeURIComponent('3G TRUST');
+    const urls = [
+      `${BASE}/api/common/v2/badan-usaha?search=${q}`,
+      `${BASE}/api/common/v2/badan-usaha?search=${q}&page=1`,
+      `${BASE}/api/common/v2/badan-usaha?search=${q}&page=1&per_page=25`,
+      `${BASE}/api/common/v2/badan-usaha?search=${q}&page=1&page_size=25`,
+      `${BASE}/api/common/v2/badan-usaha?search=${q}&page=1&length=25`,
+      `${BASE}/api/common/v2/badan-usaha?filter[nama_badan_usaha]=${q}&page=1`,
+      `${BASE}/api/common/v2/badan-usaha?q=${q}&page=1`,
+      `${BASE}/api/common/v2/badan-usaha?nama_badan_usaha=${q}&page=1`,
+    ];
+    const results = [];
+    for (const url of urls) results.push(await brief(url));
+    return res.status(200).json({ results });
   }
+
+  if (target === 'public-route') {
+    const response = await fetch(BUNDLE, { headers: { ...headers, accept: '*/*' } });
+    const text = await response.text();
+    const needles = [
+      '/publik/badan-usaha',
+      'publik-badan-usaha',
+      'nama_badan_usaha',
+      'nomor_izin',
+      'kode_wiup',
+      'getListBadanUsaha',
+    ];
+    return res.status(200).json({
+      status: response.status,
+      contexts: Object.fromEntries(needles.map((needle) => [needle, contextAround(text, needle)])),
+    });
+  }
+
+  return res.status(400).json({ error: 'Unknown target' });
 }
