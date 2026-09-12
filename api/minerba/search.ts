@@ -1,6 +1,7 @@
 import { minerbaCors } from '../../server/minerba.js';
 import type { MinerbaSearchItem } from '../../server/minerba.js';
-import { getMinerbaDetailPublic, searchMinerbaPublic } from '../../server/minerbaPublic.js';
+import { searchMinerbaPublic } from '../../server/minerbaPublic.js';
+import { getMinerbaDetailPublicV2 } from '../../server/minerbaDetailPublic.js';
 import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
 
 const normalize = (value: unknown) => String(value ?? '')
@@ -50,7 +51,7 @@ export default async function handler(req: any, res: any) {
 
   const probeKode = Array.isArray(req.query?.__detail_probe) ? req.query.__detail_probe[0] : req.query?.__detail_probe;
   if (probeKode) {
-    const detail = await getMinerbaDetailPublic(String(probeKode));
+    const detail = await getMinerbaDetailPublicV2(String(probeKode));
     return detail ? res.status(200).json(detail) : res.status(404).json({ error: 'Tidak ada data.' });
   }
 
