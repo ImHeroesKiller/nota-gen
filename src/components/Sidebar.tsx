@@ -58,7 +58,7 @@ export function Sidebar({
           onClick={() => onNavigate('dashboard')}
           aria-label="PERADA Tools Dashboard"
         >
-          <img src="/perada-tools-icon.svg" alt="" aria-hidden="true" className="erp-brand-icon-image" />
+          <img src="/perada-tools-icon.svg" alt="" aria-hidden="true" className="erp-brand-mark" />
           <span className="erp-brand-copy">
             <strong>PERADA Tools</strong>
             <small>Enterprise Operations Suite</small>
