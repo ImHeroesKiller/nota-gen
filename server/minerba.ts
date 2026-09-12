@@ -16,15 +16,6 @@ const USER_AGENTS = [
 ];
 
 type CacheEntry<T> = { value: T; expiresAt: number };
-type GlobalMinerbaCache = typeof globalThis & {
-  __minerbaDetailCache?: Map<string, CacheEntry<MinerbaDetail>>;
-  __minerbaSearchCache?: Map<string, CacheEntry<MinerbaSearchItem[]>>;
-  __minerbaLastRequestAt?: number;
-};
-
-const globalCache = globalThis as GlobalMinerbaCache;
-const detailCache = globalCache.__minerbaDetailCache ??= new Map();
-const searchCache = globalCache.__minerbaSearchCache ??= new Map();
 
 export interface MinerbaSearchItem {
   kode_badan_usaha: string;
@@ -74,19 +65,31 @@ export interface MinerbaDetail {
   perizinan: MinerbaPerizinan[];
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const clean = (value: string | undefined | null) => String(value ?? '').replace(/\s+/g, ' ').trim();
-const normalize = (value: string) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+type MinerbaGlobal = typeof globalThis & {
+  __minerbaDetailCache?: Map<string, CacheEntry<MinerbaDetail>>;
+  __minerbaSearchCache?: Map<string, CacheEntry<MinerbaSearchItem[]>>;
+  __minerbaLastRequestAt?: number;
+};
+
+const globalState = globalThis as MinerbaGlobal;
+const detailCache: Map<string, CacheEntry<MinerbaDetail>> = globalState.__minerbaDetailCache || new Map<string, CacheEntry<MinerbaDetail>>();
+const searchCache: Map<string, CacheEntry<MinerbaSearchItem[]>> = globalState.__minerbaSearchCache || new Map<string, CacheEntry<MinerbaSearchItem[]>>();
+globalState.__minerbaDetailCache = detailCache;
+globalState.__minerbaSearchCache = searchCache;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const clean = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
+const normalize = (value: unknown) => clean(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
 const randomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 
 const cacheGet = <T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined => {
-  const hit = cache.get(key);
-  if (!hit) return undefined;
-  if (hit.expiresAt <= Date.now()) {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (entry.expiresAt <= Date.now()) {
     cache.delete(key);
     return undefined;
   }
-  return hit.value;
+  return entry.value;
 };
 
 const cacheSet = <T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttl: number) => {
@@ -94,99 +97,89 @@ const cacheSet = <T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, t
 };
 
 const throttle = async () => {
-  const last = globalCache.__minerbaLastRequestAt ?? 0;
-  const wait = Math.max(0, MIN_DELAY_MS - (Date.now() - last));
-  if (wait > 0) await sleep(wait);
-  globalCache.__minerbaLastRequestAt = Date.now();
+  const elapsed = Date.now() - (globalState.__minerbaLastRequestAt || 0);
+  if (elapsed < MIN_DELAY_MS) await sleep(MIN_DELAY_MS - elapsed);
+  globalState.__minerbaLastRequestAt = Date.now();
 };
 
 const fetchHtml = async (url: string) => {
   await throttle();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20_000);
+  const timer = setTimeout(() => controller.abort(), 20_000);
   try {
     const response = await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
       headers: {
         'user-agent': randomUserAgent(),
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'accept-language': 'id-ID,id;q=0.9,en-US;q=0.7,en;q=0.6',
         referer: `${BASE_URL}${LIST_PATH}`,
       },
-      redirect: 'follow',
-      signal: controller.signal,
     });
     if (!response.ok) throw new Error(`MinerbaOne responded ${response.status}`);
     return await response.text();
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timer);
   }
 };
 
-const findHeaderIndex = (headers: string[], aliases: string[]) => {
+const headerIndex = (headers: string[], aliases: string[]) => {
   const normalizedAliases = aliases.map(normalize);
   return headers.findIndex((header) => normalizedAliases.some((alias) => normalize(header).includes(alias)));
 };
 
-const parseTableRows = ($: ReturnType<typeof load>, table: any) => {
-  const headers = $(table).find('thead th').map((_: number, th: any) => clean($(th).text())).get();
-  const rows = $(table).find('tbody tr').map((_: number, tr: any) => {
-    const cells = $(tr).find('td').map((__: number, td: any) => clean($(td).text())).get();
-    return { row: tr, cells };
-  }).get();
+const tableRows = ($: ReturnType<typeof load>, table: any) => {
+  const headers = $(table).find('thead th').map((_: number, th: any) => clean($(th).text())).get() as string[];
+  const rows = $(table).find('tbody tr').map((_: number, tr: any) => ({
+    row: tr,
+    cells: $(tr).find('td').map((__: number, td: any) => clean($(td).text())).get() as string[],
+  })).get() as Array<{ row: any; cells: string[] }>;
   return { headers, rows };
-};
-
-const inferSearchRow = ($: ReturnType<typeof load>, tr: any, headers: string[], cells: string[]): MinerbaSearchItem | null => {
-  if (!cells.length || cells.join(' ').toLowerCase().includes('tidak ada data')) return null;
-  const anchor = $(tr).find('a[href*="/publik/badan-usaha/"][href*="/detail"]').first();
-  const href = anchor.attr('href') || '';
-  const kodeFromHref = href.match(/\/publik\/badan-usaha\/([^/]+)\/detail/i)?.[1] || '';
-  const kodeIndex = findHeaderIndex(headers, ['kode badan usaha', 'kode']);
-  const namaIndex = findHeaderIndex(headers, ['nama badan usaha', 'nama']);
-  const jenisIndex = findHeaderIndex(headers, ['jenis badan usaha', 'jenis']);
-  const kode = clean(kodeIndex >= 0 ? cells[kodeIndex] : kodeFromHref) || kodeFromHref;
-  const nama = clean(namaIndex >= 0 ? cells[namaIndex] : anchor.text()) || clean(cells.find((cell) => /[a-z]/i.test(cell)));
-  const knownTypes = /^(pt|cv|koperasi|perum|persero|firma|bumd|bumn|perorangan)$/i;
-  const jenis = clean(jenisIndex >= 0 ? cells[jenisIndex] : cells.find((cell) => knownTypes.test(cell)));
-  if (!kode || !nama) return null;
-  return { kode_badan_usaha: kode, nama, jenis };
 };
 
 const parseSearchHtml = (html: string): MinerbaSearchItem[] => {
   const $ = load(html);
-  const results: MinerbaSearchItem[] = [];
+  const found = new Map<string, MinerbaSearchItem>();
+
   $('table').each((_: number, table: any) => {
-    const { headers, rows } = parseTableRows($, table);
-    rows.forEach(({ row, cells }: any) => {
-      const item = inferSearchRow($, row, headers, cells);
-      if (item) results.push(item);
+    const { headers, rows } = tableRows($, table);
+    const kodeIdx = headerIndex(headers, ['kode badan usaha', 'kode']);
+    const namaIdx = headerIndex(headers, ['nama badan usaha', 'nama']);
+    const jenisIdx = headerIndex(headers, ['jenis badan usaha', 'jenis']);
+
+    rows.forEach(({ row, cells }) => {
+      if (!cells.length || cells.join(' ').toLowerCase().includes('tidak ada data')) return;
+      const anchor = $(row).find('a[href*="/publik/badan-usaha/"][href*="/detail"]').first();
+      const href = anchor.attr('href') || '';
+      const codeFromHref = href.match(/\/publik\/badan-usaha\/([^/]+)\/detail/i)?.[1] || '';
+      const kode = clean(kodeIdx >= 0 ? cells[kodeIdx] : codeFromHref) || codeFromHref;
+      const nama = clean(namaIdx >= 0 ? cells[namaIdx] : anchor.text()) || clean(cells.find((cell) => /[A-Za-z]/.test(cell)));
+      const jenis = clean(jenisIdx >= 0 ? cells[jenisIdx] : cells.find((cell) => /^(PT|CV|Koperasi|Perum|Persero|Firma|BUMD|BUMN|Perorangan)$/i.test(cell)));
+      if (kode && nama) found.set(kode, { kode_badan_usaha: kode, nama, jenis });
     });
   });
-  const dedup = new Map(results.map((item) => [item.kode_badan_usaha, item]));
-  return [...dedup.values()];
+
+  return [...found.values()];
 };
 
 const maskNpwp = (raw: string) => {
   const value = clean(raw);
-  if (!value) return '';
-  if (value.includes('*')) return value;
+  if (!value || value.includes('*')) return value;
   const digits = value.replace(/\D/g, '');
   if (digits.length <= 8) return value;
   return `${digits.slice(0, 8)}${'*'.repeat(digits.length - 8)}`;
 };
 
-const valueByAliases = (row: Record<string, string>, aliases: string[]) => {
+const objectRow = (headers: string[], cells: string[]) => Object.fromEntries(headers.map((header, index) => [header || `col${index}`, clean(cells[index])]));
+
+const valueFrom = (row: Record<string, string>, aliases: string[]) => {
   for (const alias of aliases) {
-    const normalizedAlias = normalize(alias);
-    const found = Object.entries(row).find(([key]) => normalize(key).includes(normalizedAlias));
-    if (found) return clean(found[1]);
+    const match = Object.entries(row).find(([key]) => normalize(key).includes(normalize(alias)));
+    if (match) return clean(match[1]);
   }
   return '';
 };
-
-const rowObject = (headers: string[], cells: string[]) => Object.fromEntries(
-  headers.map((header, index) => [header || `col${index}`, clean(cells[index])]),
-);
 
 const parseDetailHtml = (html: string, requestedCode: string): MinerbaDetail | null => {
   const $ = load(html);
@@ -196,99 +189,91 @@ const parseDetailHtml = (html: string, requestedCode: string): MinerbaDetail | n
   const perizinan: MinerbaPerizinan[] = [];
 
   $('table').each((_: number, table: any) => {
-    const { headers, rows } = parseTableRows($, table);
-    const headerText = headers.join(' ').toLowerCase();
+    const { headers, rows } = tableRows($, table);
+    const headerText = normalize(headers.join(' '));
 
     if (!headers.length || headers.length <= 2) {
       $(table).find('tr').each((__: number, tr: any) => {
-        const cells = $(tr).find('th,td').map((___: number, cell: any) => clean($(cell).text())).get();
-        if (cells.length >= 2 && cells[0]) infoMap[normalize(cells[0])] = cells.slice(1).join(' ').trim();
+        const cells = $(tr).find('th,td').map((___: number, cell: any) => clean($(cell).text())).get() as string[];
+        if (cells.length >= 2 && cells[0]) infoMap[normalize(cells[0])] = clean(cells.slice(1).join(' '));
       });
     }
 
     if (headerText.includes('direksi') || (headerText.includes('jabatan') && headerText.includes('menjabat'))) {
-      rows.forEach(({ cells }: any) => {
-        const row = rowObject(headers, cells);
-        const nama = valueByAliases(row, ['nama direksi', 'nama']);
-        if (!nama || nama.toLowerCase().includes('tidak ada data')) return;
+      rows.forEach(({ cells }) => {
+        const row = objectRow(headers, cells);
+        const nama = valueFrom(row, ['nama direksi', 'nama']);
+        if (!nama || normalize(nama).includes('tidakadata')) return;
         direksi.push({
           nama,
-          jabatan: valueByAliases(row, ['jabatan']),
-          mulai_menjabat: valueByAliases(row, ['mulai menjabat', 'mulai']),
-          akhir_menjabat: valueByAliases(row, ['akhir menjabat', 'akhir']),
+          jabatan: valueFrom(row, ['jabatan']),
+          mulai_menjabat: valueFrom(row, ['mulai menjabat', 'mulai']),
+          akhir_menjabat: valueFrom(row, ['akhir menjabat', 'akhir']),
         });
       });
     }
 
-    if (headerText.includes('kepemilikan') || headerText.includes('persentase saham')) {
-      rows.forEach(({ cells }: any) => {
-        const row = rowObject(headers, cells);
-        const nama = valueByAliases(row, ['nama']);
-        if (!nama || nama.toLowerCase().includes('tidak ada data')) return;
+    if (headerText.includes('kepemilikan') || headerText.includes('persentasesaham')) {
+      rows.forEach(({ cells }) => {
+        const row = objectRow(headers, cells);
+        const nama = valueFrom(row, ['nama']);
+        if (!nama || normalize(nama).includes('tidakadata')) return;
         saham.push({
-          jenis_kepemilikan: valueByAliases(row, ['jenis kepemilikan']),
+          jenis_kepemilikan: valueFrom(row, ['jenis kepemilikan']),
           nama,
-          kewarganegaraan: valueByAliases(row, ['kewarganegaraan']),
-          persentase_saham: valueByAliases(row, ['persentase saham', 'persentase']),
+          kewarganegaraan: valueFrom(row, ['kewarganegaraan']),
+          persentase_saham: valueFrom(row, ['persentase saham', 'persentase']),
         });
       });
     }
 
-    if (headerText.includes('nomor izin') || headerText.includes('kode wiup')) {
-      rows.forEach(({ cells }: any) => {
-        const row = rowObject(headers, cells);
-        const nomorIzin = valueByAliases(row, ['nomor izin']);
-        if (!nomorIzin || nomorIzin.toLowerCase().includes('tidak ada data')) return;
-        const status = valueByAliases(row, ['status cnc', 'cnc']);
-        const cncValid = status.trim().toUpperCase() === 'CNC';
+    if (headerText.includes('nomorizin') || headerText.includes('kodewiup')) {
+      rows.forEach(({ cells }) => {
+        const row = objectRow(headers, cells);
+        const nomor = valueFrom(row, ['nomor izin']);
+        if (!nomor || normalize(nomor).includes('tidakadata')) return;
+        const status = valueFrom(row, ['status cnc', 'cnc']);
+        const valid = status.trim().toUpperCase() === 'CNC';
         perizinan.push({
-          nomor_izin: nomorIzin,
-          jenis_izin: valueByAliases(row, ['jenis izin']),
-          tahap_kegiatan: valueByAliases(row, ['tahap kegiatan']),
-          golongan: valueByAliases(row, ['golongan']),
-          komoditas: valueByAliases(row, ['komoditas']),
-          luas_ha: valueByAliases(row, ['luas ha', 'luas']),
-          tanggal_berlaku: valueByAliases(row, ['tanggal berlaku', 'berlaku']),
-          tanggal_berakhir: valueByAliases(row, ['tanggal berakhir', 'berakhir']),
+          nomor_izin: nomor,
+          jenis_izin: valueFrom(row, ['jenis izin']),
+          tahap_kegiatan: valueFrom(row, ['tahap kegiatan']),
+          golongan: valueFrom(row, ['golongan']),
+          komoditas: valueFrom(row, ['komoditas']),
+          luas_ha: valueFrom(row, ['luas ha', 'luas']),
+          tanggal_berlaku: valueFrom(row, ['tanggal berlaku', 'berlaku']),
+          tanggal_berakhir: valueFrom(row, ['tanggal berakhir', 'berakhir']),
           status_cnc: status,
-          status_cnc_badge: cncValid
-            ? { color: 'green', label: 'CnC Valid' }
-            : { color: 'red', label: 'Non-CnC' },
-          lokasi: valueByAliases(row, ['lokasi']),
-          kode_wiup: valueByAliases(row, ['kode wiup', 'wiup']),
+          status_cnc_badge: valid ? { color: 'green', label: 'CnC Valid' } : { color: 'red', label: 'Non-CnC' },
+          lokasi: valueFrom(row, ['lokasi']),
+          kode_wiup: valueFrom(row, ['kode wiup', 'wiup']),
         });
       });
     }
   });
 
-  // Some MinerbaOne detail cards render label/value blocks without a table.
-  $('dt, .label, .form-label, strong').each((_: number, label: any) => {
-    const key = normalize($(label).text());
+  $('dt, .label, .form-label, strong').each((_: number, element: any) => {
+    const key = normalize($(element).text());
     if (!['namabadanusaha', 'kodebadanusaha', 'jenisbadanusaha', 'alamat', 'npwp'].some((known) => key.includes(known))) return;
-    const candidate = clean($(label).next('dd, span, div, p').first().text()) || clean($(label).parent().children().last().text());
-    if (candidate) infoMap[key] = candidate;
+    const next = clean($(element).next('dd, span, div, p').first().text()) || clean($(element).parent().children().last().text());
+    if (next) infoMap[key] = next;
   });
 
-  const infoValue = (aliases: string[]) => {
+  const info = (aliases: string[]) => {
     for (const alias of aliases) {
-      const normalizedAlias = normalize(alias);
-      const found = Object.entries(infoMap).find(([key]) => key.includes(normalizedAlias));
-      if (found) return clean(found[1]);
+      const match = Object.entries(infoMap).find(([key]) => key.includes(normalize(alias)));
+      if (match) return clean(match[1]);
     }
     return '';
   };
 
-  const nama = infoValue(['nama badan usaha', 'nama']);
-  const kode = infoValue(['kode badan usaha', 'kode']) || requestedCode;
-  const jenis = infoValue(['jenis badan usaha', 'jenis']);
-  const alamat = infoValue(['alamat']);
-  const npwp = maskNpwp(infoValue(['npwp']));
+  const nama = info(['nama badan usaha', 'nama']);
+  const kode = info(['kode badan usaha', 'kode']) || requestedCode;
+  const jenis = info(['jenis badan usaha', 'jenis']);
+  const alamat = info(['alamat']);
+  const npwp = maskNpwp(info(['npwp']));
 
-  const bodyText = clean($('body').text()).toLowerCase();
-  if (!nama && !direksi.length && !saham.length && !perizinan.length) {
-    if (bodyText.includes('tidak ada data') || bodyText.includes('data tidak ditemukan')) return null;
-    return null;
-  }
+  if (!nama && !direksi.length && !saham.length && !perizinan.length) return null;
 
   return {
     informasi: {
@@ -314,7 +299,7 @@ const launchBrowser = async () => {
   });
 };
 
-const scrapeSearchWithBrowser = async (query: string) => {
+const scrapeSearchWithBrowser = async (query: string): Promise<MinerbaSearchItem[]> => {
   const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
@@ -323,73 +308,77 @@ const scrapeSearchWithBrowser = async (query: string) => {
     await page.goto(`${BASE_URL}${LIST_PATH}?q=${encodeURIComponent(query)}`, { waitUntil: 'networkidle2', timeout: 35_000 });
     await sleep(1200);
 
-    // Support both query-string filtering and a client-side search input.
-    const inputSelector = await page.evaluate(() => {
-      const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
-      const input = inputs.find((element) => {
-        const haystack = `${element.placeholder} ${element.name} ${element.id}`.toLowerCase();
+    const selector = await page.evaluate(() => {
+      const input = Array.from(document.querySelectorAll('input')).find((element) => {
+        const haystack = `${element.getAttribute('placeholder') || ''} ${element.getAttribute('name') || ''} ${element.id || ''}`.toLowerCase();
         return haystack.includes('badan usaha') || haystack.includes('nomor izin') || haystack.includes('wiup') || haystack.includes('search');
-      });
+      }) as HTMLInputElement | undefined;
       if (!input) return '';
-      return input.id ? `#${CSS.escape(input.id)}` : input.name ? `input[name="${input.name}"]` : '';
+      if (input.id) return `#${CSS.escape(input.id)}`;
+      if (input.name) return `input[name="${input.name}"]`;
+      return '';
     });
-    if (inputSelector) {
-      await page.focus(inputSelector).catch(() => undefined);
-      await page.evaluate((selector, value) => {
-        const input = document.querySelector(selector) as HTMLInputElement | null;
+
+    if (selector) {
+      await page.evaluate((cssSelector, value) => {
+        const input = document.querySelector(cssSelector) as HTMLInputElement | null;
         if (!input) return;
         input.value = value;
         input.dispatchEvent(new Event('input', { bubbles: true }));
         input.dispatchEvent(new Event('change', { bubbles: true }));
-      }, inputSelector, query);
+      }, selector, query);
+      await page.focus(selector).catch(() => undefined);
       await page.keyboard.press('Enter').catch(() => undefined);
       await sleep(2000);
     }
 
-    const all = new Map<string, MinerbaSearchItem>();
-    let previousSignature = '';
+    const results = new Map<string, MinerbaSearchItem>();
+    let previous = '';
+
     for (let pageNo = 0; pageNo < MAX_SEARCH_PAGES; pageNo += 1) {
-      const html = await page.content();
-      const items = parseSearchHtml(html);
-      items.forEach((item) => all.set(item.kode_badan_usaha, item));
+      const items = parseSearchHtml(await page.content());
+      items.forEach((item) => results.set(item.kode_badan_usaha, item));
       const signature = items.map((item) => item.kode_badan_usaha).join('|');
-      if (pageNo > 0 && signature && signature === previousSignature) break;
-      previousSignature = signature;
+      if (pageNo > 0 && signature && signature === previous) break;
+      previous = signature;
 
       const clicked = await page.evaluate(() => {
-        const candidates = Array.from(document.querySelectorAll('a,button')) as HTMLElement[];
-        const next = candidates.find((element) => {
-          const text = (element.textContent || '').trim().toLowerCase();
-          const aria = (element.getAttribute('aria-label') || '').toLowerCase();
-          const cls = element.className || '';
-          const disabled = element.getAttribute('disabled') !== null
-            || element.getAttribute('aria-disabled') === 'true'
-            || element.closest('.disabled');
+        const nodes = Array.from(document.querySelectorAll('a,button')) as HTMLElement[];
+        const next = nodes.find((element) => {
+          const text = cleanDom(element.textContent);
+          const aria = cleanDom(element.getAttribute('aria-label'));
+          const className = String(element.className || '').toLowerCase();
+          const disabled = element.hasAttribute('disabled') || element.getAttribute('aria-disabled') === 'true' || Boolean(element.closest('.disabled'));
           if (disabled) return false;
-          return aria.includes('next') || text === 'next' || text === 'selanjutnya' || text === '›' || text === '»' || String(cls).includes('next');
+          return aria.includes('next') || text === 'next' || text === 'selanjutnya' || text === '›' || text === '»' || className.includes('next');
         });
         if (!next) return false;
         next.click();
         return true;
+
+        function cleanDom(value: string | null) {
+          return String(value || '').trim().toLowerCase();
+        }
       });
+
       if (!clicked) break;
       await throttle();
       await sleep(1200);
     }
-    return [...all.values()];
+
+    return [...results.values()];
   } finally {
     await browser.close();
   }
 };
 
-const scrapeDetailWithBrowser = async (code: string) => {
+const scrapeDetailWithBrowser = async (code: string): Promise<MinerbaDetail | null> => {
   const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setUserAgent(randomUserAgent());
     await throttle();
-    const url = `${BASE_URL}${LIST_PATH}/${encodeURIComponent(code)}/detail`;
-    await page.goto(url, { waitUntil: 'networkidle2', timeout: 35_000 });
+    await page.goto(`${BASE_URL}${LIST_PATH}/${encodeURIComponent(code)}/detail`, { waitUntil: 'networkidle2', timeout: 35_000 });
     await sleep(1500);
     return parseDetailHtml(await page.content(), code);
   } finally {
@@ -401,37 +390,35 @@ export const searchMinerba = async (query: string): Promise<MinerbaSearchItem[]>
   const q = clean(query);
   if (!q) return [];
   const cacheKey = q.toLowerCase();
-  const cached = cacheGet(searchCache, cacheKey);
+  const cached = cacheGet<MinerbaSearchItem[]>(searchCache, cacheKey);
   if (cached) return cached;
 
-  const url = `${BASE_URL}${LIST_PATH}?q=${encodeURIComponent(q)}`;
   let results: MinerbaSearchItem[] = [];
   try {
-    results = parseSearchHtml(await fetchHtml(url));
+    results = parseSearchHtml(await fetchHtml(`${BASE_URL}${LIST_PATH}?q=${encodeURIComponent(q)}`));
   } catch {
     // Browser fallback below.
   }
   if (!results.length) results = await scrapeSearchWithBrowser(q);
 
-  cacheSet(searchCache, cacheKey, results, SEARCH_CACHE_TTL_MS);
+  cacheSet<MinerbaSearchItem[]>(searchCache, cacheKey, results, SEARCH_CACHE_TTL_MS);
   return results;
 };
 
 export const getMinerbaDetail = async (code: string): Promise<MinerbaDetail | null> => {
   const safeCode = clean(code).replace(/[^a-zA-Z0-9._-]/g, '');
   if (!safeCode) return null;
-  const cached = cacheGet(detailCache, safeCode);
+  const cached = cacheGet<MinerbaDetail>(detailCache, safeCode);
   if (cached) return cached;
 
-  const url = `${BASE_URL}${LIST_PATH}/${encodeURIComponent(safeCode)}/detail`;
   let detail: MinerbaDetail | null = null;
   try {
-    detail = parseDetailHtml(await fetchHtml(url), safeCode);
+    detail = parseDetailHtml(await fetchHtml(`${BASE_URL}${LIST_PATH}/${encodeURIComponent(safeCode)}/detail`), safeCode);
   } catch {
     // Browser fallback below.
   }
   if (!detail) detail = await scrapeDetailWithBrowser(safeCode);
-  if (detail) cacheSet(detailCache, safeCode, detail, CACHE_TTL_MS);
+  if (detail) cacheSet<MinerbaDetail>(detailCache, safeCode, detail, CACHE_TTL_MS);
   return detail;
 };
 
