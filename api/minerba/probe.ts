@@ -4,12 +4,12 @@ const TARGETS: Record<string, string> = {
   bundle: 'https://minerbaone.esdm.go.id/assets/index-bf6e78b7.js',
 };
 
-const snippets = (text: string, pattern: RegExp) => {
+const snippets = (text: string, pattern: RegExp, max = 60) => {
   const found: string[] = [];
   let match: RegExpExecArray | null;
-  while ((match = pattern.exec(text)) && found.length < 60) {
-    const start = Math.max(0, match.index - 220);
-    const end = Math.min(text.length, match.index + match[0].length + 320);
+  while ((match = pattern.exec(text)) && found.length < max) {
+    const start = Math.max(0, match.index - 300);
+    const end = Math.min(text.length, match.index + match[0].length + 500);
     found.push(text.slice(start, end));
   }
   return found;
@@ -32,9 +32,17 @@ export default async function handler(req: any, res: any) {
     const links = [...text.matchAll(/<link[^>]+href=["']([^"']+)["']/gi)].map((m) => m[1]).slice(0, 30);
     const routeSnippets = target === 'bundle'
       ? [
-          ...snippets(text, /badan-usaha/gi),
-          ...snippets(text, /kode_wiup/gi),
-          ...snippets(text, /nomor_izin/gi),
+          ...snippets(text, /badan-usaha/gi, 30),
+          ...snippets(text, /kode_wiup/gi, 10),
+          ...snippets(text, /nomor_izin/gi, 10),
+        ].slice(0, 50)
+      : [];
+    const configSnippets = target === 'bundle'
+      ? [
+          ...snippets(text, /cmn\s*:/gi, 20),
+          ...snippets(text, /prz\s*:/gi, 20),
+          ...snippets(text, /j0\s*=/gi, 20),
+          ...snippets(text, /https:\/\/[A-Za-z0-9._:/?=&-]+/gi, 30),
         ].slice(0, 80)
       : [];
     return res.status(200).json({
@@ -46,6 +54,7 @@ export default async function handler(req: any, res: any) {
       scripts,
       links,
       routeSnippets,
+      configSnippets,
     });
   } catch (error: any) {
     return res.status(500).json({ error: error?.message || String(error) });
