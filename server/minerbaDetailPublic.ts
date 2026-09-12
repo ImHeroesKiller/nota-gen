@@ -33,7 +33,10 @@ const cache = state.__minerbaDetailPublicV2Cache || new Map<string, CacheEntry<M
 state.__minerbaDetailPublicV2Cache = cache;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-const clean = (value: unknown) => String(value ?? '').replace(/\s+/g, ' ').trim();
+const clean = (value: unknown) => {
+  if (value === undefined || value === null || typeof value === 'object') return '';
+  return String(value).replace(/\s+/g, ' ').trim();
+};
 const randomUserAgent = () => USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
 const asRecord = (value: unknown): JsonRecord => value && typeof value === 'object' && !Array.isArray(value) ? value as JsonRecord : {};
 const asArray = (value: unknown): JsonRecord[] => Array.isArray(value) ? value.map(asRecord) : [];
@@ -42,9 +45,20 @@ const nested = (row: JsonRecord, path: string) => path.split('.').reduce<any>((v
 const pick = (row: JsonRecord, ...paths: string[]) => {
   for (const path of paths) {
     const value = nested(row, path);
-    if (value !== undefined && value !== null && clean(value)) return clean(value);
+    const normalized = clean(value);
+    if (normalized) return normalized;
   }
   return '';
+};
+
+const uniqueBy = <T>(items: T[], keyOf: (item: T) => string): T[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = keyOf(item).toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };
 
 const cacheGet = (key: string) => {
@@ -87,7 +101,8 @@ const requestJson = async (path: string) => {
     let json: any = null;
     try { json = JSON.parse(text); } catch { /* handled below */ }
     if (!response.ok || !json || Number(json.code || response.status) >= 400) {
-      const error = new Error(`MinerbaOne public API ${response.status}: ${clean(json?.message || text).slice(0, 180)}`) as Error & { status?: number };
+      const message = typeof json?.message === 'string' ? json.message : text;
+      const error = new Error(`MinerbaOne public API ${response.status}: ${String(message || '').replace(/\s+/g, ' ').trim().slice(0, 180)}`) as Error & { status?: number };
       error.status = response.status;
       throw error;
     }
@@ -181,21 +196,21 @@ const mapDireksi = (row: JsonRecord): MinerbaDireksi => ({
 });
 
 const mapSaham = (row: JsonRecord): MinerbaSaham => ({
-  jenis_kepemilikan: pick(row, 'jenis_kepemilikan.jenis_kepemilikan', 'jenis_kepemilikan', 'tipe_kepemilikan'),
+  jenis_kepemilikan: pick(row, 'jenis_kepemilikan.jenis_kepemilikan', 'jenis_kepemilikan.nama_jenis_kepemilikan', 'jenis_kepemilikan.nama', 'jenis_kepemilikan', 'tipe_kepemilikan'),
   nama: pick(row, 'nama_pemegang_saham', 'nama_pemilik', 'nama'),
-  kewarganegaraan: pick(row, 'kewarganegaraan.nama_negara', 'kewarganegaraan', 'negara'),
+  kewarganegaraan: pick(row, 'kewarganegaraan.nama_negara', 'kewarganegaraan.nama', 'kewarganegaraan', 'negara'),
   persentase_saham: pick(row, 'persentase_saham', 'persentase', 'persen_saham'),
 });
 
 const mapPerizinan = (row: JsonRecord): any => {
-  const status = pick(row, 'status_cnc.status_cnc', 'status_cnc', 'cnc');
+  const status = pick(row, 'status_cnc.status_cnc', 'status_cnc.nama_status_cnc', 'status_cnc.nama', 'status_cnc', 'cnc');
   const meta = classifyMinerbaCncStatus(status);
   return {
     nomor_izin: pick(row, 'nomor_izin'),
-    jenis_izin: pick(row, 'jenis_perizinan.jenis_perizinan', 'jenis_izin', 'jenis_perizinan'),
-    tahap_kegiatan: pick(row, 'tahap_kegiatan.nama_tahap_kegiatan', 'tahap_kegiatan'),
-    golongan: pick(row, 'komoditas.golongan.nama_golongan', 'golongan.nama_golongan', 'golongan'),
-    komoditas: pick(row, 'komoditas.nama_komoditas', 'nama_komoditas', 'komoditas'),
+    jenis_izin: pick(row, 'jenis_perizinan.jenis_perizinan', 'jenis_perizinan.nama_jenis_perizinan', 'jenis_perizinan.nama', 'jenis_izin', 'jenis_perizinan'),
+    tahap_kegiatan: pick(row, 'tahap_kegiatan.nama_tahap_kegiatan', 'tahap_kegiatan.nama', 'tahap_kegiatan'),
+    golongan: pick(row, 'komoditas.golongan.nama_golongan', 'golongan.nama_golongan', 'golongan.nama', 'golongan'),
+    komoditas: pick(row, 'komoditas.nama_komoditas', 'komoditas.nama', 'nama_komoditas', 'komoditas'),
     luas_ha: pick(row, 'luas_ha', 'luas'),
     tanggal_berlaku: pick(row, 'tanggal_berlaku', 'tanggal_penetapan'),
     tanggal_berakhir: pick(row, 'tanggal_berakhir'),
@@ -245,17 +260,41 @@ export const getMinerbaDetailPublicV2 = async (rawCode: string): Promise<Minerba
   const sahamRaw = await safePaged('kepemilikan saham', `${base}/list-kepemilikan-saham`);
   const izinRaw = await safePaged('perizinan', `${base}/list-perizinan`);
 
+  const direksi = uniqueBy(
+    direksiRaw.map(mapDireksi).filter((item) => item.nama),
+    (item) => `${item.nama}|${item.jabatan}|${item.mulai_menjabat}|${item.akhir_menjabat}`,
+  );
+  const saham = uniqueBy(
+    sahamRaw.map(mapSaham).filter((item) => item.nama),
+    (item) => `${item.nama}|${item.jenis_kepemilikan || ''}|${item.kewarganegaraan || ''}|${item.persentase_saham}`,
+  );
+  const perizinan = uniqueBy(
+    izinRaw.map(mapPerizinan).filter((item) => item.nomor_izin),
+    (item) => `${item.nomor_izin}|${item.kode_wiup || ''}|${item.tahap_kegiatan || ''}`,
+  );
+
+  const jenisBadanUsaha = pick(
+    row,
+    'jenis_badan_usaha.nama_jenis_badan_usaha',
+    'jenis_badan_usaha.jenis_badan_usaha',
+    'jenis_badan_usaha.nama',
+    'jenis_badan_usaha.label',
+    'nama_jenis_badan_usaha',
+    'jenis_badan_usaha',
+    'jenis',
+  );
+
   const detail: MinerbaDetail = {
     informasi: {
       nama_badan_usaha: pick(row, 'nama_badan_usaha', 'nama'),
       kode_badan_usaha: pick(row, 'kode_badan_usaha', 'kode', 'modi_id', 'id_badan_usaha', 'id') || code,
-      jenis_badan_usaha: pick(row, 'jenis_badan_usaha', 'jenis'),
+      jenis_badan_usaha: jenisBadanUsaha,
       alamat: pick(row, 'alamat', 'alamat_badan_usaha'),
       ...(pick(row, 'npwp') ? { npwp: maskNpwp(pick(row, 'npwp')) } : {}),
     },
-    direksi: direksiRaw.map(mapDireksi).filter((item) => item.nama),
-    saham: sahamRaw.map(mapSaham).filter((item) => item.nama),
-    perizinan: izinRaw.map(mapPerizinan).filter((item) => item.nomor_izin),
+    direksi,
+    saham,
+    perizinan,
   };
 
   if (!detail.informasi.nama_badan_usaha && !detail.direksi.length && !detail.saham.length && !detail.perizinan.length) return null;
