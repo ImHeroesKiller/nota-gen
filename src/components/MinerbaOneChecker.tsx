@@ -46,14 +46,126 @@ type Detail = {
     tanggal_berlaku: string;
     tanggal_berakhir: string;
     status_cnc: string;
-    status_cnc_badge?: { color: 'green' | 'red'; label: string };
+    status_cnc_badge?: { color: 'green' | 'amber' | 'red' | 'gray'; label: string; description?: string };
     lokasi: string;
     kode_wiup: string;
   }>;
 };
 
+type CncCategory = 'cnc' | 'cnc-batch' | 'registered' | 'non-cnc' | 'unknown';
+
+type CncStatusMeta = {
+  category: CncCategory;
+  label: string;
+  shortLabel: string;
+  description: string;
+  badgeClass: string;
+  dotClass: string;
+};
+
 const SOURCE_URL = 'https://minerbaone.esdm.go.id/publik/badan-usaha';
 const emptyText = (value: string | undefined) => value?.trim() || '-';
+
+const CNC_LEGEND: Array<{ code: string; title: string; description: string; badgeClass: string; dotClass: string }> = [
+  {
+    code: 'CNC',
+    title: 'Clean & Clear',
+    description: 'Status hasil penataan/evaluasi CnC. Tetap cek masa berlaku izin dan kewajiban terkini.',
+    badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
+    dotClass: 'bg-emerald-500',
+  },
+  {
+    code: 'CNC-XX',
+    title: 'CnC Pengumuman',
+    description: 'IUP yang sebelumnya diumumkan CnC; angka/romawi menunjukkan angkatan atau pengumuman.',
+    badgeClass: 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300',
+    dotClass: 'bg-green-500',
+  },
+  {
+    code: 'I.T',
+    title: 'IUP Terdaftar',
+    description: 'Kategori registrasi untuk IUP Mineral Logam/Batubara berdasarkan putusan pengadilan atau lembaga berwenang terkait. Bukan Non-CnC.',
+    badgeClass: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
+    dotClass: 'bg-amber-500',
+  },
+  {
+    code: 'NON-CNC',
+    title: 'Belum / Non-CnC',
+    description: 'Belum atau tidak memperoleh status CnC. Alasan spesifik harus dilihat pada evaluasi dan riwayat izin.',
+    badgeClass: 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300',
+    dotClass: 'bg-red-500',
+  },
+];
+
+const classifyCncStatus = (rawStatus: string | undefined): CncStatusMeta => {
+  const raw = rawStatus?.trim() || '';
+  const upper = raw.toUpperCase().replace(/\s+/g, ' ').trim();
+  const compact = upper.replace(/\s+/g, '');
+
+  if (!raw) {
+    return {
+      category: 'unknown',
+      label: 'Status tidak tersedia',
+      shortLabel: 'Tidak tersedia',
+      description: 'Status CnC tidak tersedia pada data publik. Jangan diasumsikan CnC maupun Non-CnC.',
+      badgeClass: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+      dotClass: 'bg-slate-400',
+    };
+  }
+
+  if (/\bI\.?\s*T\.?\b/i.test(raw) || compact === 'IT' || compact.includes('I.T')) {
+    return {
+      category: 'registered',
+      label: `${raw} · IUP Terdaftar`,
+      shortLabel: 'I.T Terdaftar',
+      description: 'I.T adalah kategori registrasi MODI untuk IUP Mineral Logam/Batubara yang masuk daftar berdasarkan putusan pengadilan atau lembaga berwenang terkait. Status ini tidak tepat ditampilkan sebagai Non-CnC.',
+      badgeClass: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300',
+      dotClass: 'bg-amber-500',
+    };
+  }
+
+  if (/^CNC(?:[-\s]+)(?:\d+|[IVXLCDM]+)$/i.test(raw)) {
+    return {
+      category: 'cnc-batch',
+      label: `${raw} · CnC Pengumuman`,
+      shortLabel: raw,
+      description: 'IUP pernah diumumkan Clean & Clear pada salah satu pengumuman/angkatan CnC. Nomor atau angka romawi menunjukkan angkatan/pengumuman tersebut.',
+      badgeClass: 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/20 dark:bg-green-500/10 dark:text-green-300',
+      dotClass: 'bg-green-500',
+    };
+  }
+
+  if (upper === 'CNC' || upper === 'C&C' || upper === 'CNC VALID') {
+    return {
+      category: 'cnc',
+      label: 'CNC · Clean & Clear',
+      shortLabel: 'CNC',
+      description: 'Clean & Clear menunjukkan status hasil penataan/evaluasi IUP. Kriteria CnC historis mencakup administrasi/kewilayahan, teknis-lingkungan, dan kewajiban keuangan. Tetap cek masa berlaku izin dan kewajiban terkini.',
+      badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300',
+      dotClass: 'bg-emerald-500',
+    };
+  }
+
+  if (/NON\s*-?\s*CNC|NONCNC|BELUM.*CNC|TIDAK.*CNC/i.test(upper)) {
+    return {
+      category: 'non-cnc',
+      label: raw,
+      shortLabel: 'Non-CnC',
+      description: 'IUP belum atau tidak memperoleh status CnC. Penyebab spesifik dapat berkaitan dengan hasil evaluasi administrasi, kewilayahan, teknis/lingkungan, atau kewajiban keuangan dan harus diverifikasi pada dokumen sumber.',
+      badgeClass: 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300',
+      dotClass: 'bg-red-500',
+    };
+  }
+
+  return {
+    category: 'unknown',
+    label: raw,
+    shortLabel: raw,
+    description: 'Nilai status tersedia di sumber publik, tetapi kategorinya tidak dikenali oleh mapping CnC saat ini. Perlu verifikasi manual sebelum menyimpulkan status izin.',
+    badgeClass: 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    dotClass: 'bg-slate-400',
+  };
+};
 
 export default function MinerbaOneChecker() {
   const [query, setQuery] = useState('');
@@ -111,13 +223,31 @@ export default function MinerbaOneChecker() {
   };
 
   const cncSummary = useMemo(() => {
-    if (!detail) return { valid: 0, invalid: 0 };
+    const empty = { cnc: 0, registered: 0, nonCnc: 0, unknown: 0 };
+    if (!detail) return empty;
     return detail.perizinan.reduce((summary, izin) => {
-      if (izin.status_cnc?.trim().toUpperCase() === 'CNC') summary.valid += 1;
-      else summary.invalid += 1;
+      const category = classifyCncStatus(izin.status_cnc).category;
+      if (category === 'cnc' || category === 'cnc-batch') summary.cnc += 1;
+      else if (category === 'registered') summary.registered += 1;
+      else if (category === 'non-cnc') summary.nonCnc += 1;
+      else summary.unknown += 1;
       return summary;
-    }, { valid: 0, invalid: 0 });
+    }, empty);
   }, [detail]);
+
+  const cncSummaryStyle = cncSummary.nonCnc > 0
+    ? 'border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10'
+    : cncSummary.registered > 0 && cncSummary.cnc === 0
+      ? 'border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10'
+      : cncSummary.unknown > 0 && cncSummary.cnc === 0
+        ? 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
+        : 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10';
+
+  const cncSummaryHeadline = cncSummary.nonCnc > 0
+    ? `${cncSummary.nonCnc} Non-CnC`
+    : cncSummary.registered > 0 && cncSummary.cnc === 0
+      ? `${cncSummary.registered} I.T Terdaftar`
+      : `${cncSummary.cnc} CnC`;
 
   return (
     <div className="mx-auto max-w-[1500px] space-y-5 p-4 text-slate-900 dark:text-slate-100 md:p-6">
@@ -236,10 +366,10 @@ export default function MinerbaOneChecker() {
               <strong className="mt-2 block text-xl">{detail.perizinan.length}</strong>
               <span className="mt-1 block text-xs text-slate-500">izin terdaftar</span>
             </article>
-            <article className={`rounded-2xl border p-4 ${cncSummary.invalid > 0 ? 'border-red-200 bg-red-50 dark:border-red-500/20 dark:bg-red-500/10' : 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10'}`}>
-              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500">CnC Indicator</p>
-              <strong className={`mt-2 block text-xl ${cncSummary.invalid > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{cncSummary.valid} Valid</strong>
-              <span className="mt-1 block text-xs text-slate-500">{cncSummary.invalid} non-CnC</span>
+            <article className={`rounded-2xl border p-4 ${cncSummaryStyle}`}>
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500">Status CnC</p>
+              <strong className="mt-2 block text-lg">{cncSummaryHeadline}</strong>
+              <span className="mt-1 block text-[10px] leading-4 text-slate-500">CnC {cncSummary.cnc} · I.T {cncSummary.registered} · Non-CnC {cncSummary.nonCnc} · Lainnya {cncSummary.unknown}</span>
             </article>
           </section>
 
@@ -277,40 +407,64 @@ export default function MinerbaOneChecker() {
 
           <DataSection title="Daftar Perizinan" icon={<ShieldCheck size={17} />}>
             {detail.perizinan.length === 0 ? <Empty /> : (
-              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
-                <table className="w-full min-w-[1600px] text-left text-[11px]">
-                  <thead className="bg-slate-50 text-[9px] uppercase tracking-wide text-slate-500 dark:bg-slate-950/50">
-                    <tr>
-                      {['No', 'Nomor Izin', 'Jenis Izin', 'Tahap Kegiatan', 'Golongan', 'Komoditas', 'Luas ha', 'Tanggal Berlaku', 'Tanggal Berakhir', 'Status CNC', 'Lokasi', 'Kode WIUP'].map((header) => <th key={header} className="px-3 py-2.5">{header}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {detail.perizinan.map((row, index) => {
-                      const valid = row.status_cnc?.trim().toUpperCase() === 'CNC';
-                      return (
-                        <tr key={`${row.nomor_izin}-${index}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                          <td className="px-3 py-3 text-slate-500">{index + 1}</td>
-                          <td className="px-3 py-3 font-semibold">{emptyText(row.nomor_izin)}</td>
-                          <td className="px-3 py-3">{emptyText(row.jenis_izin)}</td>
-                          <td className="px-3 py-3">{emptyText(row.tahap_kegiatan)}</td>
-                          <td className="px-3 py-3">{emptyText(row.golongan)}</td>
-                          <td className="px-3 py-3">{emptyText(row.komoditas)}</td>
-                          <td className="px-3 py-3 text-right">{emptyText(row.luas_ha)}</td>
-                          <td className="px-3 py-3">{emptyText(row.tanggal_berlaku)}</td>
-                          <td className="px-3 py-3">{emptyText(row.tanggal_berakhir)}</td>
-                          <td className="px-3 py-3">
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold ${valid ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'}`}>
-                              {valid ? <CheckCircle2 size={11} /> : <AlertTriangle size={11} />}
-                              {valid ? 'CnC Valid' : 'Non-CnC'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-3">{emptyText(row.lokasi)}</td>
-                          <td className="px-3 py-3 font-mono text-[10px]">{emptyText(row.kode_wiup)}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <strong className="text-[11px]">Keterangan kategori status CnC</strong>
+                      <p className="mt-0.5 text-[10px] leading-4 text-slate-500 dark:text-slate-400">Interpretasi membantu membaca nilai status dari MinerbaOne. Status CnC bukan pengganti pengecekan masa berlaku izin, RKAB, PNBP, dan kewajiban lain yang berlaku saat ini.</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    {CNC_LEGEND.map((item) => (
+                      <div key={item.code} className="rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 shrink-0 rounded-full ${item.dotClass}`} />
+                          <span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${item.badgeClass}`}>{item.code}</span>
+                          <strong className="text-[10px]">{item.title}</strong>
+                        </div>
+                        <p className="mt-2 text-[9px] leading-4 text-slate-500 dark:text-slate-400">{item.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                  <table className="w-full min-w-[1750px] text-left text-[11px]">
+                    <thead className="bg-slate-50 text-[9px] uppercase tracking-wide text-slate-500 dark:bg-slate-950/50">
+                      <tr>
+                        {['No', 'Nomor Izin', 'Jenis Izin', 'Tahap Kegiatan', 'Golongan', 'Komoditas', 'Luas ha', 'Tanggal Berlaku', 'Tanggal Berakhir', 'Status CNC', 'Lokasi', 'Kode WIUP'].map((header) => <th key={header} className="px-3 py-2.5">{header}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {detail.perizinan.map((row, index) => {
+                        const cnc = classifyCncStatus(row.status_cnc);
+                        return (
+                          <tr key={`${row.nomor_izin}-${index}`} className="align-top hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="px-3 py-3 text-slate-500">{index + 1}</td>
+                            <td className="px-3 py-3 font-semibold">{emptyText(row.nomor_izin)}</td>
+                            <td className="px-3 py-3">{emptyText(row.jenis_izin)}</td>
+                            <td className="px-3 py-3">{emptyText(row.tahap_kegiatan)}</td>
+                            <td className="px-3 py-3">{emptyText(row.golongan)}</td>
+                            <td className="px-3 py-3">{emptyText(row.komoditas)}</td>
+                            <td className="px-3 py-3 text-right">{emptyText(row.luas_ha)}</td>
+                            <td className="px-3 py-3">{emptyText(row.tanggal_berlaku)}</td>
+                            <td className="px-3 py-3">{emptyText(row.tanggal_berakhir)}</td>
+                            <td className="w-[300px] px-3 py-3">
+                              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] font-bold ${cnc.badgeClass}`}>
+                                <span className={`h-1.5 w-1.5 rounded-full ${cnc.dotClass}`} />
+                                {cnc.label}
+                              </span>
+                              <p className="mt-1.5 max-w-[290px] text-[9px] leading-4 text-slate-500 dark:text-slate-400">{cnc.description}</p>
+                            </td>
+                            <td className="px-3 py-3">{emptyText(row.lokasi)}</td>
+                            <td className="px-3 py-3 font-mono text-[10px]">{emptyText(row.kode_wiup)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </DataSection>
