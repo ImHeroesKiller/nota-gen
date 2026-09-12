@@ -5,12 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PERADA Tools — Productivity Suite</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      (() => {
+        try {
+          const savedTheme = localStorage.getItem('perada.theme');
+          const useDark = savedTheme !== 'light';
+          document.documentElement.classList.toggle('dark', useDark);
+          document.documentElement.classList.toggle('light', !useDark);
+        } catch {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
-      html, html body { background-color: #F8FAFC !important; color: #0F172A; }
+      html, html body { background-color: #0f1419 !important; color: #e6edf3; }
       html.dark, html.dark body { background-color: #0f1419 !important; color: #e6edf3; }
       html.light, html.light body { background-color: #F8FAFC !important; color: #0F172A; }
     </style>
