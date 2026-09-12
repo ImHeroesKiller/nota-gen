@@ -1,6 +1,47 @@
 import { minerbaCors } from '../../server/minerba.js';
+import type { MinerbaSearchItem } from '../../server/minerba.js';
 import { searchMinerbaPublic } from '../../server/minerbaPublic.js';
 import { searchMinerbaV2 } from '../../server/minerbaSearchV2.js';
+
+const normalize = (value: unknown) => String(value ?? '')
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, ' ');
+
+const sanitize = (item: MinerbaSearchItem): MinerbaSearchItem => ({
+  kode_badan_usaha: String(item.kode_badan_usaha || '').trim(),
+  nama: String(item.nama || '').trim(),
+  jenis: String(item.jenis || '').trim(),
+});
+
+const rankPublicResults = (items: MinerbaSearchItem[], query: string) => {
+  const q = normalize(query);
+  return items
+    .map(sanitize)
+    .filter((item) => {
+      const nama = normalize(item.nama);
+      const kode = normalize(item.kode_badan_usaha);
+      return nama.includes(q) || kode.includes(q);
+    })
+    .sort((a, b) => {
+      const aName = normalize(a.nama);
+      const bName = normalize(b.nama);
+      const aCode = normalize(a.kode_badan_usaha);
+      const bCode = normalize(b.kode_badan_usaha);
+      const score = (name: string, code: string) => {
+        if (name === q || code === q) return 0;
+        if (name.startsWith(q) || code.startsWith(q)) return 1;
+        return 2;
+      };
+      return score(aName, aCode) - score(bName, bCode) || a.nama.localeCompare(b.nama, 'id');
+    })
+    .slice(0, 25);
+};
+
+const sanitizeBrowserResults = (items: MinerbaSearchItem[]) => items
+  .map(sanitize)
+  .filter((item) => item.kode_badan_usaha && item.nama)
+  .slice(0, 25);
 
 export default async function handler(req: any, res: any) {
   minerbaCors(req, res);
@@ -14,13 +55,15 @@ export default async function handler(req: any, res: any) {
 
   try {
     const publicResults = await searchMinerbaPublic(query);
-    if (publicResults.length) return res.status(200).json(publicResults);
+    const relevantPublicResults = rankPublicResults(publicResults, query);
+    if (relevantPublicResults.length) return res.status(200).json(relevantPublicResults);
 
-    // Public API returned a valid empty result. Keep the requested JS-rendered
-    // page fallback, but do not turn a browser-runtime failure into a 502.
+    // The public endpoint can return a broad company page even when the search
+    // term is a Nomor Izin / Kode WIUP. In that case use the JS-rendered public
+    // listing as the fallback and trust the page's own filtering.
     try {
       const browserResults = await searchMinerbaV2(query);
-      return res.status(200).json(browserResults);
+      return res.status(200).json(sanitizeBrowserResults(browserResults));
     } catch (browserError) {
       console.warn('Minerba browser fallback unavailable', browserError);
       return res.status(200).json([]);
@@ -29,7 +72,7 @@ export default async function handler(req: any, res: any) {
     console.warn('Minerba public API search failed, using browser fallback', publicError);
     try {
       const browserResults = await searchMinerbaV2(query);
-      return res.status(200).json(browserResults);
+      return res.status(200).json(sanitizeBrowserResults(browserResults));
     } catch (browserError) {
       console.error('Minerba search failed', browserError);
       return res.status(502).json({ error: 'Gagal mengambil data publik MinerbaOne.' });
