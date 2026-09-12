@@ -1,5 +1,4 @@
 import {
-  Boxes,
   Grid,
   HelpCircle,
   Home,
@@ -50,7 +49,7 @@ export function Sidebar({
           aria-label={collapsed ? 'Buka sidebar' : 'Tutup sidebar'}
           title={collapsed ? 'Buka sidebar' : 'Tutup sidebar'}
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
 
         <button
@@ -59,11 +58,11 @@ export function Sidebar({
           onClick={() => onNavigate('dashboard')}
           aria-label="PERADA Tools Dashboard"
         >
-          <span className="erp-brand-mark">PA</span>
-          <span className="erp-brand-copy">
-            <strong>PERADA Tools</strong>
-            <small>Enterprise Resource Planning Suite</small>
-          </span>
+          <img
+            src={collapsed ? '/perada-tools-icon.svg' : '/perada-tools-logo.svg'}
+            alt="PERADA Tools"
+            className="erp-brand-logo"
+          />
         </button>
       </div>
 
@@ -81,7 +80,7 @@ export function Sidebar({
               aria-current={active ? 'page' : undefined}
               title={collapsed ? item.label : undefined}
             >
-              <Icon size={19} />
+              <Icon size={17} />
               <span>{item.label}</span>
             </button>
           );
@@ -97,21 +96,13 @@ export function Sidebar({
           onClick={openDocumentSettings}
           title={collapsed ? 'Pengaturan Template Dokumen' : 'Atur logo, kop surat, footer, dan template dokumen'}
         >
-          <Settings size={19} />
+          <Settings size={17} />
           <span>Pengaturan</span>
         </button>
         <button type="button" className="erp-nav-item erp-nav-muted" title={collapsed ? 'Bantuan & Dukungan' : undefined}>
-          <HelpCircle size={19} />
+          <HelpCircle size={17} />
           <span>Bantuan & Dukungan</span>
         </button>
-
-        <div className="erp-sidebar-company">
-          <span className="erp-company-symbol"><Boxes size={17} /></span>
-          <span className="erp-company-copy">
-            <strong>PERADA</strong>
-            <small>People. Process. Possibility.</small>
-          </span>
-        </div>
       </div>
     </aside>
   );
